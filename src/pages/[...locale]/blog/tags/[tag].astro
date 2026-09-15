@@ -59,7 +59,7 @@ const countLabel =
     rel="alternate"
     type="application/rss+xml"
     title={t.ui.blog.feedTitle}
-    href="/blog/rss.xml"
+    href={new URL('/blog/rss.xml', Astro.site).href}
   />
 
   <div class="page">

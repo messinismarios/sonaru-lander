@@ -31,6 +31,14 @@ export async function GET(context: APIContext): Promise<Response> {
     throw new Error('astro.config.mjs must set `site` - an RSS feed needs absolute URLs.');
   }
 
+  /*
+   * SEO audit L6. The feed names its own address, so a reader holding a copy knows the
+   * original; and `lastBuildDate` is the newest post rather than the build time, for M3's
+   * reason - a date that moves on every deploy while the feed did not is a date to ignore.
+   */
+  const self = new URL('/blog/rss.xml', site).href;
+  const newest = posts[0];
+
   return rss({
     title: t.ui.blog.feedTitle,
     description: t.ui.meta.blog.description,
@@ -44,6 +52,14 @@ export async function GET(context: APIContext): Promise<Response> {
       link: post.href,
       categories: post.tags.map((tag) => t.ui.blog.tags[tag.slug].label),
     })),
-    customData: '<language>en</language>',
+    xmlns: { atom: 'http://www.w3.org/2005/Atom' },
+    customData: [
+      '<language>en</language>',
+      `<atom:link href="${self}" rel="self" type="application/rss+xml"/>`,
+      newest &&
+        `<lastBuildDate>${new Date(newest.entry.data.publishedAt).toUTCString()}</lastBuildDate>`,
+    ]
+      .filter(Boolean)
+      .join(''),
   });
 }

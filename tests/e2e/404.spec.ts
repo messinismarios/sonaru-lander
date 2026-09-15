@@ -141,6 +141,13 @@ test.describe('the head', () => {
     await page.goto('/404');
     await expect(page.locator('head meta[name="robots"]')).toHaveAttribute('content', 'noindex');
   });
+
+  test('and claims no canonical URL or language versions', async ({ page }) => {
+    // SEO audit L2: both named `/404`, which contradicts the noindex beside them.
+    await page.goto('/404');
+    await expect(page.locator('head link[rel="canonical"]')).toHaveCount(0);
+    await expect(page.locator('head link[rel="alternate"][hreflang]')).toHaveCount(0);
+  });
 });
 
 test.describe('the motion budget', () => {

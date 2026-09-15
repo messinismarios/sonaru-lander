@@ -58,7 +58,9 @@ test.describe('social cards', () => {
       }
 
       await expect(page.locator('head meta[name="twitter:card"]')).toHaveCount(1);
-      await expect(page.locator('head link[rel="canonical"]')).toHaveCount(1);
+      /* The 404 is noindex and names no canonical at all - SEO audit L2. */
+      const indexed = splitLocale(route).path !== '/404';
+      await expect(page.locator('head link[rel="canonical"]')).toHaveCount(indexed ? 1 : 0);
     });
 
     test(`${route}'s card URLs are absolute`, async ({ page }) => {
@@ -71,6 +73,7 @@ test.describe('social cards', () => {
        */
       const image = await page.locator('head meta[property="og:image"]').getAttribute('content');
       expect(image, `${route}'s og:image should be absolute`).toMatch(new RegExp(`^${SITE}/`));
+      if (splitLocale(route).path === '/404') return;
 
       const canonical = await page.locator('head link[rel="canonical"]').getAttribute('href');
       expect(canonical, `${route}'s canonical should be absolute`).toMatch(new RegExp(`^${SITE}`));

@@ -8,6 +8,8 @@ import { devWaitlistEndpoint } from './scripts/dev-waitlist-endpoint.mjs';
 import { localeFallback404 } from './scripts/locale-404.mjs';
 import { cspHashes } from './scripts/csp-hashes.mjs';
 import { pruneDevRoutes } from './scripts/prune-dev-routes.mjs';
+import { lastmod } from './scripts/lib/lastmod.mjs';
+import { SCREENS } from './src/data/press.ts';
 import { isShippingRoute } from './src/data/routes.ts';
 import { hasCatalogue, PUBLISHED_LOCALES, DEFAULT_LOCALE } from './src/i18n/index.ts';
 import { splitLocale } from './src/i18n/routing.ts';
@@ -133,10 +135,29 @@ export default defineConfig({
         return hasCatalogue(locale) && isShippingRoute(path);
       },
       /*
-       * No `serialize` to strip trailing slashes any more: under `trailingSlash: 'never'` the
+       * **`<lastmod>` from each page's own content date, and the press screenshots as
+       * `image:image`** - SEO audit M3 and L7. `scripts/lib/lastmod.mjs` says where each date
+       * comes from and why it is never the build time.
+       *
+       * `serialize` no longer strips trailing slashes: under `trailingSlash: 'never'` the
        * integration emits `/pricing` itself, which is the URL Pages serves and the canonical
        * names (SEO audit C1). `tests/unit/i18n-routes.spec.ts` holds it there.
        */
+      serialize: (item) => {
+        const { path } = splitLocale(new URL(item.url).pathname);
+        const date = lastmod(path);
+        return {
+          ...item,
+          ...(date === undefined ? {} : { lastmod: date.toISOString() }),
+          ...(path === '/press'
+            ? {
+                img: SCREENS.map((screen) => ({
+                  url: new URL(`/press/screens/${screen.id}.jpg`, item.url).href,
+                })),
+              }
+            : {}),
+        };
+      },
       chunks: Object.fromEntries(
         PUBLISHED_LOCALES.map((locale) => [
           locale,

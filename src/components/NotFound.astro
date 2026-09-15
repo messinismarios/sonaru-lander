@@ -47,14 +47,13 @@ import { catalogue } from '../i18n';
 const t = catalogue(Astro.currentLocale);
 ---
 
-<Base title={t.ui.meta.notFound.title} description={t.ui.meta.notFound.description}>
+<Base title={t.ui.meta.notFound.title} description={t.ui.meta.notFound.description} noindex>
   {
     /*
-    The one thing taken from superlist's 404 verbatim, because it is simply correct: a
-    page that exists to say "this is not a page" must never enter an index.
+    `noindex` is the one thing taken from superlist's 404 verbatim, because it is simply
+    correct: a page that exists to say "this is not a page" must never enter an index.
   */
   }
-  <meta slot="head" name="robots" content="noindex" />
 
   <section class="not-found">
     <div class="atmosphere">

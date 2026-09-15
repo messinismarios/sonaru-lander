@@ -63,12 +63,36 @@ function iconHtml(px) {
 mkdirSync(join(ROOT, 'public/icons'), { recursive: true });
 writeFileSync(join(ROOT, 'public/favicon.svg'), markSvg({ size: 32 }));
 
+/*
+ * `/favicon.ico` - SEO audit L1. Bing and older clients request it by name whatever the head
+ * says, and it was a 404 served as HTML. One PNG inside an ICO container, which every client
+ * since Windows Vista reads.
+ */
+function ico(png, px) {
+  const header = Buffer.alloc(22);
+  header.writeUInt16LE(1, 2); // type: icon
+  header.writeUInt16LE(1, 4); // one image
+  header.writeUInt8(px, 6);
+  header.writeUInt8(px, 7);
+  header.writeUInt16LE(1, 10); // colour planes
+  header.writeUInt16LE(32, 12); // bits per pixel
+  header.writeUInt32LE(png.length, 14);
+  header.writeUInt32LE(header.length, 18);
+  return Buffer.concat([header, png]);
+}
+
+const { ui } = await import('../copy/en/ui.ts');
+
 const browser = await chromium.launch({ channel: 'chrome' });
-const shoot = async (html, width, height, out) => {
+const render = async (html, width, height) => {
   const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
   await page.setContent(html);
-  await page.screenshot({ path: join(ROOT, out), omitBackground: false });
+  const png = await page.screenshot({ omitBackground: false });
   await page.close();
+  return png;
+};
+const shoot = async (html, width, height, out) => {
+  writeFileSync(join(ROOT, out), await render(html, width, height));
   return out;
 };
 
@@ -80,17 +104,29 @@ for (const [px, out] of [
 ]) {
   written.push(await shoot(iconHtml(px), px, px, out));
 }
+/* The app icon's composition, not the SVG's: a white mark on no ground vanishes on a white page. */
+writeFileSync(join(ROOT, 'public/favicon.ico'), ico(await render(iconHtml(48), 48, 48), 48));
+written.push(join('public', 'favicon.ico'));
 await browser.close();
 
+/*
+ * `id`, `start_url`, `description` and a maskable icon - SEO audit L4. The maskable entry is
+ * the same 512 file: the mark fills 62% of it, and measured on the PNG it reaches 156px from
+ * the centre, inside the 205px circle a platform mask may keep.
+ */
 writeFileSync(
   join(ROOT, 'public/site.webmanifest'),
   `${JSON.stringify(
     {
+      id: '/',
       name: 'Sonaru',
       short_name: 'Sonaru',
+      description: ui.meta.home.description,
+      start_url: '/',
       icons: [
         { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
         { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+        { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
       ],
       theme_color: INK,
       background_color: INK,

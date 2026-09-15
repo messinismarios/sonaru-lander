@@ -25,9 +25,22 @@ interface Props {
   readonly ogImage?: string | undefined;
   /** `article` on a post, `website` everywhere else. */
   readonly ogType?: 'website' | 'article' | undefined;
+  /**
+   * Keep the page out of every index - `/404` only. It also drops the canonical and the
+   * hreflang alternates (SEO audit L2): "do not index me" beside "this is my canonical URL"
+   * is two signals that disagree, and the alternates named `/404` as if it had language
+   * versions.
+   */
+  readonly noindex?: boolean | undefined;
 }
 
-const { title, description, ogImage = '/og/site.jpg', ogType = 'website' } = Astro.props;
+const {
+  title,
+  description,
+  ogImage = '/og/site.jpg',
+  ogType = 'website',
+  noindex = false,
+} = Astro.props;
 
 /*
  * Absolute, because a scraper does not resolve relative URLs - a relative `og:image` is a
@@ -164,9 +177,18 @@ const lang = locale;
       duplicate them; that is theirs to maintain.
     */
     }
-    <link rel="canonical" href={canonical} />
-    {alternates.map((alt) => <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />)}
-    <link rel="alternate" hreflang="x-default" href={xDefault} />
+    {noindex && <meta name="robots" content="noindex" />}
+    {
+      !noindex && (
+        <>
+          <link rel="canonical" href={canonical} />
+          {alternates.map((alt) => (
+            <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />
+          ))}
+          <link rel="alternate" hreflang="x-default" href={xDefault} />
+        </>
+      )
+    }
     <meta property="og:site_name" content="Sonaru" />
     {
       /*
@@ -204,7 +226,7 @@ const lang = locale;
       /*
       Everything a route needs in the head that this layout cannot know:
       `article:published_time` on a post, `BlogPosting` JSON-LD, the feed's
-      `<link rel="alternate">`, `/404`'s `noindex`. Added at 8.9c.
+      `<link rel="alternate">`. Added at 8.9c.
 
       A slot rather than props, because the alternative is a `Props` interface that grows
       a field per route and a layout that has to know what a blog post is. The card left

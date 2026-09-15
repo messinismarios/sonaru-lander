@@ -78,9 +78,10 @@ test.describe('the index', () => {
 
   test('the feed is advertised in the head', async ({ page }) => {
     await page.goto('/blog');
+    // Absolute since SEO audit L6: a feed reader resolves nothing against the page.
     await expect(page.locator('link[rel="alternate"][type="application/rss+xml"]')).toHaveAttribute(
       'href',
-      '/blog/rss.xml',
+      'https://sonaru.app/blog/rss.xml',
     );
   });
 });

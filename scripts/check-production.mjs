@@ -127,6 +127,17 @@ const aasaType = aasa.headers.get('content-type') ?? '(none)';
 if (aasa.status !== 200 || !aasaType.startsWith('application/json')) {
   failures.push(`apple-app-site-association returned ${aasa.status} as ${aasaType}`);
 }
+/* SEO audit L1 and L8: files clients request by name, which a 404 page would answer as HTML. */
+for (const [path, type] of [
+  ['/favicon.ico', 'image/'],
+  ['/.well-known/security.txt', 'text/plain'],
+]) {
+  const response = await get(`${origin}${path}`);
+  const served = response.headers.get('content-type') ?? '(none)';
+  if (response.status !== 200 || !served.startsWith(type)) {
+    failures.push(`${path} returned ${response.status} as ${served}`);
+  }
+}
 
 if (failures.length > 0) {
   process.stderr.write(`${failures.length} problem(s) on ${origin}:\n`);
