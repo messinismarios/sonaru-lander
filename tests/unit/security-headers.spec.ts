@@ -189,6 +189,31 @@ test('every external origin the build references is allowed by the CSP', () => {
   expect(unlisted, 'referenced by the build and absent from the CSP').toEqual([]);
 });
 
+/** The header lines under one exact path pattern, up to the next unindented line. */
+function rule(path: string): string {
+  const lines = headers.split('\n');
+  const start = lines.indexOf(path);
+  if (start === -1) throw new Error(`_headers has no ${path} rule`);
+  const end = lines.findIndex((l, i) => i > start && l !== '' && !/^\s/.test(l));
+  return lines.slice(start + 1, end === -1 ? undefined : end).join('\n');
+}
+
+test('hashed assets are cached for a year, and unhashed fonts are not', () => {
+  /*
+   * SEO audit M2. `immutable` is only true of a file whose name changes with its bytes, which
+   * Vite guarantees under `_astro/` and nothing guarantees under `fonts/`.
+   */
+  expect(rule('/_astro/*')).toContain('Cache-Control: public, max-age=31536000, immutable');
+  expect(headers).not.toMatch(/^\/fonts\//m);
+});
+
+test('the app site association is served as JSON', () => {
+  /* SEO audit L3: Pages served the extensionless file as `application/octet-stream`. */
+  expect(rule('/.well-known/apple-app-site-association')).toContain(
+    'Content-Type: application/json',
+  );
+});
+
 test('HSTS is two years and is not preloaded', () => {
   /*
    * `includeSubDomains` binds `api.sonaru.app`; `preload` is a submission to a browser-vendor

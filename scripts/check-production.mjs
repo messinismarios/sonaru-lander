@@ -109,6 +109,25 @@ if (origin === APEX) {
   }
 }
 
+/*
+ * **Headers a build can only promise** - SEO audit M2 and L3. `tests/unit/security-headers.spec.ts`
+ * checks `dist/_headers`; this checks Pages actually serves them.
+ */
+const home = await text(`${origin}/`, 'home');
+const stylesheet = home?.match(/href="(\/_astro\/[^"]+\.css)"/)?.[1];
+if (home && !stylesheet) failures.push('the home page links no /_astro/ stylesheet');
+if (stylesheet) {
+  const cache = (await get(`${origin}${stylesheet}`)).headers.get('cache-control') ?? '(none)';
+  if (!cache.includes('max-age=31536000') || !cache.includes('immutable')) {
+    failures.push(`${stylesheet} is cached as "${cache}", not a year immutable`);
+  }
+}
+const aasa = await get(`${origin}/.well-known/apple-app-site-association`);
+const aasaType = aasa.headers.get('content-type') ?? '(none)';
+if (aasa.status !== 200 || !aasaType.startsWith('application/json')) {
+  failures.push(`apple-app-site-association returned ${aasa.status} as ${aasaType}`);
+}
+
 if (failures.length > 0) {
   process.stderr.write(`${failures.length} problem(s) on ${origin}:\n`);
   for (const failure of failures) process.stderr.write(`  ${failure}\n`);
