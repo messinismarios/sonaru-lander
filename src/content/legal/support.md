@@ -25,8 +25,8 @@ address above and say so. What we keep and for how long is set out in the
 ## Artwork and takedown requests
 
 This website shows real album artwork and real artist names to illustrate what Sonaru
-does. No artist shown here is a partner, a user, or an endorser of Sonaru, and we use no
-artist photography, logos or wordmarks.
+does. No artist shown here is a partner, a user, or an endorser of Sonaru, and we use
+artist photography only to illustrate the app, and no logos or wordmarks.
 
 **If you hold rights in something shown on this site and you want it gone, email
 [support@sonaru.app](mailto:support@sonaru.app) with "takedown" in the subject.**

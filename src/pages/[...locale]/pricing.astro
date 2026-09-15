@@ -20,6 +20,7 @@ import Faq from '../../components/sections/Faq.astro';
 import { catalogue } from '../../i18n';
 import type { GetStaticPaths } from 'astro';
 import { localePaths } from '../../i18n/routing';
+import { CURRENCY, PRO_PLAN, formatPrice, monthlyEquivalentCents } from '../../data/pricing';
 
 /*
  * The route in both locales from one file - phases.md 8.11b. `undefined` is the default
@@ -28,9 +29,14 @@ import { localePaths } from '../../i18n/routing';
 export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
 
 const t = catalogue(Astro.currentLocale);
+/* The price comes from `src/data/pricing.ts`, so the title cannot quote a number the page does not. */
+const title = t.ui.meta.pricing.title.replace(
+  '{amount}',
+  `${CURRENCY}${formatPrice(monthlyEquivalentCents(PRO_PLAN))}`,
+);
 ---
 
-<Base title={t.ui.meta.pricing.title} description={t.ui.meta.pricing.description}>
+<Base title={title} description={t.ui.meta.pricing.description}>
   <PricingHero />
   <Plans />
   <Compare />

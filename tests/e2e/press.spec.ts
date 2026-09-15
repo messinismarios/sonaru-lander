@@ -68,7 +68,7 @@ test.describe('the page', () => {
     await expect(page.locator(`main a[href="mailto:${PRESS_EMAIL}"]`)).toBeVisible();
   });
 
-  test('every screenshot is described, and the logo previews are not', async ({ page }) => {
+  test('every screenshot and both logo previews are described', async ({ page }) => {
     await page.goto('/press');
     for (const screen of SCREENS) {
       await expect(page.locator(`img[src="/press/screens/${screen.id}.jpg"]`)).toHaveAttribute(
@@ -76,14 +76,15 @@ test.describe('the page', () => {
         copy.screenshots.screens[screen.id].alt,
       );
     }
-    // The colourway previews repeat the wordmark beside them; an alt would be noise.
+    /*
+     * The previews were `alt=""` as decoration until SEO audit L5 (owner, 2026-09-16): they
+     * are the download itself, so image search and a screen reader should both be told what
+     * they are.
+     */
     const previews = page.locator('.preview img');
     await expect(previews).toHaveCount(2);
-    for (const alt of await previews.evaluateAll((nodes) =>
-      nodes.map((node) => node.getAttribute('alt')),
-    )) {
-      expect(alt).toBe('');
-    }
+    await expect(previews.nth(0)).toHaveAttribute('alt', copy.logo.ways.dark.alt);
+    await expect(previews.nth(1)).toHaveAttribute('alt', copy.logo.ways.light.alt);
   });
 
   test('every image reserves its own space, so nothing shifts as they load', async ({ page }) => {

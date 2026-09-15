@@ -65,11 +65,14 @@
 # **A year, immutable, for what Vite names by content hash** - SEO audit M2. Pages' default
 # was four hours with `must-revalidate`, so every returning visitor revalidated bytes that
 # can never change: a changed file gets a new name. Pages merges this with the block above.
-#
-# **`/fonts/*` is not here on purpose.** Those names carry no hash (`satoshi-subset.woff2`),
-# so a rebuilt font under an immutable year would reach returning visitors a year late.
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
+
+# **A week, and not immutable, for the fonts** (owner, 2026-09-16). Their names carry no hash
+# (`satoshi-subset.woff2`), so a year would pin a rebuilt font for a year; a week caps that
+# at a week while sparing returning visitors the four-hour revalidation.
+/fonts/*
+  Cache-Control: public, max-age=604800
 
 # Apple fetches this without an extension and Pages guessed `application/octet-stream` -
 # SEO audit L3. Universal Links want JSON.

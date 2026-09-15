@@ -101,7 +101,8 @@ export const ui = {
         "Meet the app that makes sure you hear from your favorite artists. Notifications the moment they drop, a feed that doesn't skip songs, playlist auto-adds.",
     },
     pricing: {
-      title: 'Pricing · Sonaru',
+      /** Query-led (SEO audit M6). `{amount}` is Pro's lowest monthly price, with its currency. */
+      title: 'Sonaru pricing: free release alerts, Pro from {amount}/month',
       description:
         "Meet the app that makes sure you hear from your favorite artists. Notifications the moment they drop, a feed that doesn't skip songs, playlist auto-adds.",
     },

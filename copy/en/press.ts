@@ -52,10 +52,13 @@ export const press = {
       dark: {
         label: 'On dark',
         note: "The site's own colourway. Use it on anything darker than the mid-greys.",
+        /** The preview is download content, so it is named (SEO audit L5). */
+        alt: 'Sonaru logo lockup, light on dark',
       },
       light: {
         label: 'On light',
         note: 'For white and near-white grounds, where the pink wave disappears.',
+        alt: 'Sonaru logo lockup, dark on light',
       },
     },
     /**

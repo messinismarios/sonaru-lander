@@ -198,13 +198,14 @@ function rule(path: string): string {
   return lines.slice(start + 1, end === -1 ? undefined : end).join('\n');
 }
 
-test('hashed assets are cached for a year, and unhashed fonts are not', () => {
+test('hashed assets are cached for a year, and unhashed fonts for a week', () => {
   /*
    * SEO audit M2. `immutable` is only true of a file whose name changes with its bytes, which
    * Vite guarantees under `_astro/` and nothing guarantees under `fonts/`.
    */
   expect(rule('/_astro/*')).toContain('Cache-Control: public, max-age=31536000, immutable');
-  expect(headers).not.toMatch(/^\/fonts\//m);
+  expect(rule('/fonts/*')).toContain('Cache-Control: public, max-age=604800');
+  expect(rule('/fonts/*')).not.toContain('immutable');
 });
 
 test('the app site association is served as JSON', () => {

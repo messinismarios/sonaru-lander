@@ -1,5 +1,6 @@
 ---
 title: 'What Sonaru is, and who it is for'
+metaTitle: 'Sonaru: new release alerts for every artist you follow'
 hook: 'Every release, the moment it drops.'
 description: 'Sonaru is an app that notifies you of every new release from your favorite artists, the moment they drop.'
 lede: 'Sonaru is an app that notifies you of every new release from your favorite artists, the moment they drop.'

@@ -84,7 +84,7 @@ const breadcrumbs = {
 
 <Document
   title={data.title}
-  metaTitle={`${data.title} · Sonaru`}
+  metaTitle={data.metaTitle ?? `${data.title} · Sonaru`}
   eyebrow={t.ui.blog.eyebrow}
   description={data.description}
   lede={data.lede}
