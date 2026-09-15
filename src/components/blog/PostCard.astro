@@ -35,18 +35,37 @@ const { data } = post.entry;
 ---
 
 <article class="card">
-  <img
-    class="cover"
-    src={`/og/${post.slug}-640.jpg`}
-    srcset={`/og/${post.slug}-640.jpg 640w, /og/${post.slug}.jpg 1200w`}
-    sizes="(min-width: 720px) 640px, 100vw"
-    width="1200"
-    height="600"
-    alt={data.hook}
-    loading={priority ? 'eager' : 'lazy'}
-    decoding={priority ? 'sync' : 'async'}
-    fetchpriority={priority ? 'high' : 'auto'}
-  />
+  {
+    /*
+      AVIF, then WebP, then the JPEG - SEO audit M1. `npm run og` writes all three from one
+      capture; the JPEG stays the `og:image`, because social scrapers take JPEG and PNG. The
+      `picture` has no box (`display: contents`), so `.cover` sizes the image exactly as before.
+    */
+  }
+  <picture class="cover-picture">
+    <source
+      type="image/avif"
+      srcset={`/og/${post.slug}-640.avif 640w, /og/${post.slug}.avif 1200w`}
+      sizes="(min-width: 720px) 640px, 100vw"
+    />
+    <source
+      type="image/webp"
+      srcset={`/og/${post.slug}-640.webp 640w, /og/${post.slug}.webp 1200w`}
+      sizes="(min-width: 720px) 640px, 100vw"
+    />
+    <img
+      class="cover"
+      src={`/og/${post.slug}-640.jpg`}
+      srcset={`/og/${post.slug}-640.jpg 640w, /og/${post.slug}.jpg 1200w`}
+      sizes="(min-width: 720px) 640px, 100vw"
+      width="1200"
+      height="600"
+      alt={data.hook}
+      loading={priority ? 'eager' : 'lazy'}
+      decoding={priority ? 'sync' : 'async'}
+      fetchpriority={priority ? 'high' : 'auto'}
+    />
+  </picture>
   <PostMeta publishedAt={data.publishedAt} minutes={post.minutes} tags={post.tags} />
   <h2 class="title"><a href={post.href}><span>{data.title}</span></a></h2>
   <p class="excerpt">{data.lede}</p>
@@ -55,6 +74,10 @@ const { data } = post.entry;
 <style>
   .card {
     position: relative;
+  }
+
+  .cover-picture {
+    display: contents;
   }
 
   /*
