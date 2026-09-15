@@ -91,24 +91,30 @@ const structuredData = [
   <About />
   {/* Last, like `Faq.astro`'s: a script first in the slot would shift `:first-child`. */}
   <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+  {
+    /*
+      Inside the layout's slot, not after `</Base>`: a page-level script outside the slot is
+      emitted after `</html>`, which the HTML validator stops at (SEO audit H7). It still runs
+      as the module it was - position in the body changes nothing for a module script.
+    */
+  }
+  <script>
+    import {
+      initMotion,
+      createHeroTimeline,
+      createProblemTimeline,
+      createPromiseTimeline,
+      createPlaylistTimeline,
+      createNotifyTimeline,
+      restBlooms,
+    } from '../../motion';
+
+    restBlooms();
+    initMotion();
+    createHeroTimeline();
+    await createProblemTimeline();
+    createPromiseTimeline();
+    createPlaylistTimeline();
+    createNotifyTimeline();
+  </script>
 </Base>
-
-<script>
-  import {
-    initMotion,
-    createHeroTimeline,
-    createProblemTimeline,
-    createPromiseTimeline,
-    createPlaylistTimeline,
-    createNotifyTimeline,
-    restBlooms,
-  } from '../../motion';
-
-  restBlooms();
-  initMotion();
-  createHeroTimeline();
-  await createProblemTimeline();
-  createPromiseTimeline();
-  createPlaylistTimeline();
-  createNotifyTimeline();
-</script>

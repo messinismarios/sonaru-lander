@@ -83,6 +83,22 @@ export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
       </noscript>
     </div>
   </section>
+
+  {
+    /*
+    Turnstile's widget script, and the site's only third-party script - loaded on this route
+    alone, never on the home page. It carries no `integrity` hash deliberately: Cloudflare
+    ships this file mutably and documents that pinning it will break the widget the next time
+    they change it. The trade is accepted here and nowhere else.
+
+    Inside the slot: after `</Base>` it was emitted after `</html>` (SEO audit H7).
+  */
+  }
+  <script
+    is:inline
+    async
+    defer
+    src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
 </Base>
 
 <style>
@@ -178,17 +194,3 @@ export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
     color: var(--color-plum-300);
   }
 </style>
-
-{
-  /*
-  Turnstile's widget script, and the site's only third-party script - loaded on this route
-  alone, never on the home page. It carries no `integrity` hash deliberately: Cloudflare
-  ships this file mutably and documents that pinning it will break the widget the next time
-  they change it. The trade is accepted here and nowhere else.
-*/
-}
-<script
-  is:inline
-  async
-  defer
-  src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>

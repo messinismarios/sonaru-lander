@@ -19,7 +19,8 @@
     "format:check": "prettier --check .",
     "contrast": "node --experimental-strip-types scripts/check-contrast.mjs",
     "check:production": "node scripts/check-production.mjs",
-    "verify": "npm run typecheck && npm run lint && npm run format:check && npm run contrast && npm run build && npm test",
+    "validate:html": "node scripts/validate-html.mjs",
+    "verify": "npm run typecheck && npm run lint && npm run format:check && npm run contrast && npm run build && npm run validate:html && npm test",
     "fonts": "node scripts/build-fonts.mjs",
     "test": "playwright test",
     "brand": "node --experimental-strip-types scripts/build-brand-assets.mjs",
@@ -58,6 +59,7 @@
     "svelte": "5.57.0",
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.68.0"
+    "typescript-eslint": "8.68.0",
+    "vnu-jar": "26.9.7"
   }
 }

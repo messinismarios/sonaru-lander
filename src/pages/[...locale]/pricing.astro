@@ -35,11 +35,11 @@ const t = catalogue(Astro.currentLocale);
   <Plans />
   <Compare />
   <Faq />
+  {/* Inside the slot: after `</Base>` it is emitted after `</html>` (SEO audit H7). */}
+  <script>
+    import { initMotion, createPricingTimeline } from '../../motion';
+
+    initMotion();
+    await createPricingTimeline();
+  </script>
 </Base>
-
-<script>
-  import { initMotion, createPricingTimeline } from '../../motion';
-
-  initMotion();
-  await createPricingTimeline();
-</script>

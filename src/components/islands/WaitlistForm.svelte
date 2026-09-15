@@ -326,9 +326,13 @@
           the first version put the refusal below the reassurance line where it read as a
           footnote about something else.
         -->
-        <p id="waitlist-message" class="message" role="alert" hidden={state !== 'error'}>
+        <!--
+          A `span`, not a `p`: a label may only hold phrasing content (SEO audit H7). As a
+          flex item of `.field` it is blockified either way, and `.message` sets no margin.
+        -->
+        <span id="waitlist-message" class="message" role="alert" hidden={state !== 'error'}>
           {state === 'error' ? message : ''}
-        </p>
+        </span>
       </label>
 
       <!--
