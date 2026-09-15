@@ -2,13 +2,11 @@
 /**
  * The Sonaru wordmark - "Sonaru", with the `u` carrying the beat.
  *
- * Owner's direction at 8.1's Gate A: keep the beat story and the tinted `i` from
+ * Owner's direction at 8.1's Gate A: keep the beat story and the tinted last letter from
  * direction 03, and use it on the home page - hero or header - alongside the S mark.
  *
- * The tint lands on the whole letter for now. Isolating just the dot needs a drawn glyph:
- * a dotless i (U+0131) sits outside the Latin-1 subset we ship, so faking it in live text
- * would silently fall back to another typeface. The finished wordmark will be outlines,
- * at which point the dot becomes a shape we own and can colour on its own.
+ * The beat is the whole letter, set as a live glyph. The finished wordmark will be
+ * outlines, at which point the beat becomes a shape we own rather than a letter.
  *
  * Set in **Outfit at 600, tracked −0.03em**, with the beat in `--plum-300`. Chosen by the
  * owner over Satoshi and three other rounder candidates (Figtree, Plus Jakarta Sans,
@@ -74,8 +72,8 @@ const {
    * as two words.
    *
    * `--wm-beat` is still plumbed through and the span is still here, because the finished
-   * wordmark becomes outlines and the dot becomes a shape we own - at which point colour
-   * on the dot alone is available again as a deliberate choice rather than a fallback.
+   * wordmark becomes outlines and the beat becomes a shape we own - at which point colour
+   * on it is available again as a deliberate choice rather than a fallback.
    */
   .beat {
     color: inherit;
