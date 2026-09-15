@@ -122,6 +122,15 @@ test.describe('the notification act', () => {
   });
 
   test('the notification arrives whole, never part-way', async ({ page }) => {
+    // Eleven settled samples, and settling is counted in frames, not milliseconds: each
+    // `stateAt` waits for the scroll to land, two frames for the handlers, then eight
+    // identical frames, and the sample that crosses the threshold also waits out the
+    // banner's tween. At 60fps that is 3.3s. The CI runner has no GPU and paints this
+    // bloom-heavy 1440 frame in software, so the same frames cost several times as long and
+    // the test ran out of Playwright's default 30s part-way through the samples - the only
+    // test in this file that settles this many times at this size. A budget that fits the
+    // work keeps every sample, which is the assertion; thinning them would not.
+    test.setTimeout(120_000);
     const { top, sleep, wake } = await budget(page);
 
     // Sample densely across the wake and let each sample settle. Every reading must be
