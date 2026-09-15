@@ -177,7 +177,8 @@ test.describe('tags', () => {
   });
 
   test('a tag page offers a way back', async ({ page }) => {
-    await page.goto('/blog/tags/craft');
+    // `product`: since SEO audit H5 a tag with no published post has no page.
+    await page.goto('/blog/tags/product');
     await expect(page.locator('.back a')).toHaveAttribute('href', '/blog');
   });
 });

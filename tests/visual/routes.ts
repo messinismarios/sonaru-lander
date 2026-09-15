@@ -1,6 +1,7 @@
-import { readdirSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { TAGS } from '../../src/data/tags';
 import { DEFAULT_LOCALE, PUBLISHED_LOCALES } from '../../src/i18n';
+import { isLive } from '../../src/lib/published';
 
 /*
  * **The inventory moved to `src/` at 8.11b and is re-exported here.** `astro.config.mjs`'s
@@ -43,16 +44,37 @@ const DYNAMIC_FILL: Readonly<Record<string, string>> = {
 };
 
 /**
- * Dynamic routes whose params come from *values inside* a collection rather than from its
- * entries - 8.9c's `/blog/tags/[tag]`.
+ * The tags at least one published post carries, in `src/data/tags.ts`'s order - the tags
+ * that have a page.
  *
- * `src/data/tags.ts` is a real module the collection schema also validates against, so
- * this reads it rather than parsing frontmatter with a regex in a test helper. A tag that
- * exists in that file has a page whether or not a post carries it, which is why the slugs
- * come from there and not from the posts.
+ * **Since SEO audit H5 (owner, 2026-09-15) a tag with no published post has no page**, so
+ * this can no longer be `TAGS` alone: it has to read which tags the posts carry. That means
+ * reading frontmatter here, which 8.9c avoided while it did not need to. The rule for
+ * "published" is not re-derived - it is `isLive()`, the function `src/lib/posts.ts` uses,
+ * with `dev` false because the build is what decides whether a page ships.
+ */
+export function liveTagSlugs(): string[] {
+  const blog = new URL('blog/', CONTENT);
+  const carried = new Set<string>();
+  for (const entry of readdirSync(blog, { withFileTypes: true })) {
+    if (!entry.isFile() || !/\.mdx?$/.test(entry.name)) continue;
+    const source = readFileSync(new URL(entry.name, blog), 'utf8');
+    const frontmatter = /^---\n([\s\S]*?)\n---/.exec(source)?.[1] ?? '';
+    if (/^draft:\s*true\s*$/m.test(frontmatter)) continue;
+    const publishedAt = /^publishedAt:\s*['"]?([^'"\n]+)['"]?\s*$/m.exec(frontmatter)?.[1];
+    if (publishedAt === undefined || !isLive(publishedAt, new Date(), false)) continue;
+    const tags = /^tags:\s*\[(.*)\]\s*$/m.exec(frontmatter)?.[1] ?? '';
+    for (const raw of tags.split(',')) carried.add(raw.trim().replace(/^['"]|['"]$/g, ''));
+  }
+  return TAGS.filter((tag) => carried.has(tag.slug)).map((tag) => tag.slug);
+}
+
+/**
+ * Dynamic routes whose params come from *values inside* a collection rather than from its
+ * entries - 8.9c's `/blog/tags/[tag]`, which `liveTagSlugs` above fills.
  */
 const DYNAMIC_VALUES: Readonly<Record<string, () => string[]>> = {
-  '[tag]': () => TAGS.map((tag) => tag.slug),
+  '[tag]': liveTagSlugs,
 };
 
 /** The slugs a collection contributes, from its files - the ids the glob loader assigns. */

@@ -8,9 +8,13 @@
  * what makes it defensible is that the tags describe subjects 8.9d is actually writing
  * about rather than a taxonomy invented to look populated.
  *
- * Paths come from `src/data/tags.ts`, not from the posts, so a tag with nothing under it
- * still has a page. An empty tag page is a smaller problem than a link in a meta line that
- * 404s, and the guard in `tests/unit/blog-inventory.spec.ts` asserts the two sets agree.
+ * **Only a tag that a published post carries gets a page** (SEO audit H5, owner,
+ * 2026-09-15). Until then every tag in `src/data/tags.ts` had one, on the reasoning that an
+ * empty page beats a meta-line link that 404s - but the only links to a tag page are the
+ * chips on a post's own meta line, so a tag with no published post has no link to break,
+ * and its page was a thin, indexed page listing nothing. A tag's page appears in the build,
+ * and so in the sitemap, with its first published post. `tests/visual/routes.ts` applies
+ * the same rule, and `tests/unit/blog-inventory.spec.ts` asserts the two agree.
  */
 import type { GetStaticPaths } from 'astro';
 import Base from '../../../../layouts/Base.astro';
@@ -23,9 +27,9 @@ import { localePaths } from '../../../../i18n/routing';
 
 /* The locale × tag product - phases.md 8.11b. */
 export const getStaticPaths = (async () => {
-  const tags = await Promise.all(
-    TAGS.map(async (tag) => ({ tag, posts: await postsForTag(tag.slug) })),
-  );
+  const tags = (
+    await Promise.all(TAGS.map(async (tag) => ({ tag, posts: await postsForTag(tag.slug) })))
+  ).filter(({ posts }) => posts.length > 0);
   return localePaths().flatMap(({ params: { locale } }) =>
     tags.map(({ tag, posts }) => ({ params: { locale, tag: tag.slug }, props: { tag, posts } })),
   );
