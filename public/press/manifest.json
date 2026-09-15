@@ -18,7 +18,7 @@
       "height": 1024
     },
     "sonaru-lockup-1024.png": {
-      "bytes": 21975,
+      "bytes": 21968,
       "width": 1024,
       "height": 271
     },
@@ -38,7 +38,7 @@
       "height": 1024
     },
     "sonaru-lockup-light-1024.png": {
-      "bytes": 22309,
+      "bytes": 22305,
       "width": 1024,
       "height": 271
     },
@@ -59,51 +59,51 @@
       "height": 781
     },
     "screens/feed-full.jpg": {
-      "bytes": 122866,
+      "bytes": 123662,
       "width": 1178,
       "height": 2556,
-      "sourceSha": "0219bac6aa49603a"
+      "sourceSha": "33ac792a1c15c957"
     },
     "screens/feed.jpg": {
-      "bytes": 17407,
+      "bytes": 17326,
       "width": 360,
       "height": 781
     },
     "screens/search-full.jpg": {
-      "bytes": 211047,
+      "bytes": 209212,
       "width": 1178,
       "height": 2556,
-      "sourceSha": "3280127b60bacc98"
+      "sourceSha": "10ed5754ddb494ca"
     },
     "screens/search.jpg": {
-      "bytes": 32505,
+      "bytes": 31875,
       "width": 360,
       "height": 781
     },
     "screens/auto-add-full.jpg": {
-      "bytes": 230094,
+      "bytes": 232172,
       "width": 1178,
       "height": 2556,
-      "sourceSha": "095faf77b3371f9e"
+      "sourceSha": "5e6336c16a3cdb88"
     },
     "screens/auto-add.jpg": {
-      "bytes": 29452,
+      "bytes": 29587,
       "width": 360,
       "height": 781
     },
     "screens/pro-full.jpg": {
-      "bytes": 127214,
+      "bytes": 127480,
       "width": 1178,
       "height": 2556,
-      "sourceSha": "4f773470dfb1fd18"
+      "sourceSha": "3d839ea61118e00b"
     },
     "screens/pro.jpg": {
-      "bytes": 16992,
+      "bytes": 17137,
       "width": 360,
       "height": 781
     },
     "sonaru-press-kit.zip": {
-      "bytes": 847707
+      "bytes": 981674
     }
   }
 }
