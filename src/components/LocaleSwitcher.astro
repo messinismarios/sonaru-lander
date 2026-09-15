@@ -1,0 +1,116 @@
+---
+/**
+ * The language switcher - phases.md 8.11b, Gate A approved 2026-09-11.
+ *
+ * Two text links in the footer's baseline row, beside the copyright. **superlist has none
+ * at all** - the four `<link rel="alternate">` tags in its head are its entire cross-locale
+ * surface, so discovery there is search engines and nothing else - but `phases.md` and
+ * `design-system.md` §9 have mandated one since 8.1, and a visitor handed an English link
+ * would otherwise have no way across. The owner chose the specs over the reference.
+ *
+ * **It preserves the route.** `/es/pricing` from `/pricing`, not the Spanish home page,
+ * which is the switcher failure everyone has met. `splitLocale` does that, and it is the
+ * only reason path segments are not translated (Gate A): a prefix operation cannot go stale
+ * in one direction the way a route table can.
+ *
+ * **The language names are not translated and must never be.** *English* and *Español* are
+ * endonyms - a switcher is read by someone who does **not** speak the page they are on, so
+ * the one word they can recognise is their own language's name for itself. They are in
+ * `copy/config.ts` with that reason - beside the locale list itself, where the catalogue
+ * guard already does not look, rather than as an exemption from it - instead of being
+ * catalogue keys a translator would dutifully translate.
+ *
+ * **Every locale but the current one is a link, whether or not it has words yet** - owner,
+ * Gate C, reversing this unit's own Gate A sub-decision.
+ *
+ * It was built the other way first: a locale with no catalogue rendered as inert text, on
+ * `Footer.astro`'s `live`/pending idiom from 8.9a, so that offering *Español* could not
+ * advertise a language and then deliver English. **What that missed is that it made the
+ * switcher one-way.** A visitor lands on English, so the only direction they would ever use
+ * was the dead one, and all 21 `/es/` pages this unit builds were reachable only by typing
+ * the URL. A switcher that cannot switch is not a conservative switcher, it is a broken one.
+ *
+ * The risk the inert span was guarding against is still real and is still answered - four
+ * times, on the page itself rather than on the way to it: the canonical points at the English
+ * twin, no `es` alternate is emitted, the page stays out of the Spanish sitemap, and
+ * `<main lang="en">` switches a screen reader's voice at the body (see `Base.astro`). The span
+ * was a fifth guard on top of those, and the only one a visitor paid for.
+ *
+ * **So this component no longer reads catalogue state at all**, which is the real gain:
+ * nothing here changes on the day 8.11c writes Spanish, so there is no behaviour that
+ * silently reverses when a translation file lands.
+ */
+import Link from './primitives/Link.astro';
+import { PUBLISHED_LOCALES, LOCALE_NAMES } from '../i18n';
+import { localePath, splitLocale } from '../i18n/routing';
+
+const { locale: current, path } = splitLocale(Astro.url.pathname);
+
+/**
+ * **One language is no switch, so the component renders nothing at all** - 8.11e.
+ *
+ * Not a disabled control and not the current language on its own: a switcher showing a single
+ * name is furniture that asks to be clicked and cannot be, and it would leave the footer's
+ * baseline row carrying a word that does nothing. An empty `<ul>` would also still take the
+ * `.identity` row's flex gap, so the whole element goes rather than its contents.
+ *
+ * It comes back on its own the day `WITHHELD_LOCALES` is emptied - nothing here is 8.11c's to
+ * remember.
+ */
+const shows = PUBLISHED_LOCALES.length > 1;
+---
+
+{
+  shows && (
+    <ul class="locales">
+      {PUBLISHED_LOCALES.map((locale) => (
+        <li>
+          {locale === current ? (
+            <span class="current" aria-current="true" lang={locale}>
+              {LOCALE_NAMES[locale]}
+            </span>
+          ) : (
+            <Link href={localePath(locale, path)} variant="muted" hreflang={locale} lang={locale}>
+              {LOCALE_NAMES[locale]}
+            </Link>
+          )}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+<style>
+  /*
+   * **A list, not two spans in a paragraph, and `tests/visual/inline-spacing.spec.ts` is
+   * what made that necessary.** The first version put both names in one `<p>` separated by a
+   * flex gap - which is a gap in the *layout* and nothing at all in the text, so the footer
+   * read aloud as "EnglishEspañol". The guard caught it on all seventeen Spanish routes. A
+   * list is what this actually is, and its items are announced separately.
+   */
+  .locales {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    /* The separator is a gap and a border, not a `·` text node: a literal dot between two
+     * links is a third thing a screen reader reads out between two language names. */
+    gap: var(--spacing-3);
+    margin: 0;
+  }
+
+  .locales > :not(:first-child) {
+    padding-left: var(--spacing-3);
+    border-left: 1px solid var(--color-ink-700);
+  }
+
+  /*
+   * The current language is not dimmed, for the reason 8.9a gave for pending footer text:
+   * `--mute-400` at reduced opacity composites to roughly 2:1 against the ground, which is
+   * below AA for text a visitor reads. It separates from the link by weight and by having
+   * no underline to draw.
+   */
+  .current {
+    color: var(--color-white);
+    font-weight: 600;
+  }
+</style>

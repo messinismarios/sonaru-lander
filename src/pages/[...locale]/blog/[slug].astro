@@ -1,0 +1,220 @@
+---
+/**
+ * `/blog/<slug>` - one post.
+ *
+ * **It renders `Document.astro` unchanged.** That layout was deliberately named for the
+ * object rather than the subject at 8.9b's Gate B - *"8.9b builds it for /privacy, /terms
+ * and /support, but what it is is a long-form document, and 8.9c's article template is the
+ * same one. Calling it LegalLayout would guarantee a second copy of it three weeks from
+ * now."* This is that promise being kept: the reading measure, the type ramp, the prose
+ * link treatment and the anchored bloom are all inherited, and none of them is re-decided
+ * here.
+ *
+ * **The cover is not repeated at the top** (owner, Gate B). superlist.com does show a hero
+ * image above its body column; ours would put the hook directly above a different headline,
+ * which is Gate A's duplication problem stood upright. It also keeps the LCP element text.
+ *
+ * What this file adds beyond the layout is the head - `og:image`, the article dates, and
+ * the JSON-LD `acceptance-criteria.md` §96 requires - plus the meta line and a way back.
+ */
+import { render } from 'astro:content';
+import type { GetStaticPaths } from 'astro';
+import Document from '../../../layouts/Document.astro';
+import PostMeta from '../../../components/blog/PostMeta.astro';
+import { publishedPosts, type Post } from '../../../lib/posts';
+import { catalogue } from '../../../i18n';
+import { localePaths } from '../../../i18n/routing';
+
+const t = catalogue(Astro.currentLocale);
+
+/* The locale × post product - phases.md 8.11b. */
+export const getStaticPaths = (async () => {
+  const posts = await publishedPosts();
+  return localePaths().flatMap(({ params: { locale } }) =>
+    posts.map((post) => ({ params: { locale, slug: post.slug }, props: { post } })),
+  );
+}) satisfies GetStaticPaths;
+
+interface Props {
+  readonly post: Post;
+}
+
+const { post } = Astro.props;
+const { data } = post.entry;
+const { Content } = await render(post.entry);
+
+const canonical = new URL(post.href, Astro.site).href;
+const ogImage = new URL(`/og/${post.slug}.jpg`, Astro.site).href;
+
+/*
+ * `author` is the Organization, not a person - the owner chose **no byline** at Gate A,
+ * and a JSON-LD author that contradicts the page is worse than none. Structured data that
+ * says something the page does not say is the kind of thing that gets a site's rich
+ * results turned off.
+ */
+const blogPosting = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  '@id': canonical,
+  mainEntityOfPage: canonical,
+  url: canonical,
+  headline: data.title,
+  description: data.description,
+  image: ogImage,
+  datePublished: data.publishedAt,
+  keywords: data.tags.join(', '),
+  author: { '@type': 'Organization', name: 'Sonaru', url: 'https://sonaru.app' },
+  publisher: { '@type': 'Organization', name: 'Sonaru', url: 'https://sonaru.app' },
+};
+
+const breadcrumbs = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: t.ui.blog.eyebrow,
+      item: new URL('/blog', Astro.site).href,
+    },
+    { '@type': 'ListItem', position: 2, name: data.title, item: canonical },
+  ],
+};
+---
+
+<Document
+  title={data.title}
+  metaTitle={`${data.title} · Sonaru`}
+  eyebrow={t.ui.blog.eyebrow}
+  description={data.description}
+  lede={data.lede}
+  ogImage={ogImage}
+  ogType="article"
+>
+  <Fragment slot="head">
+    {
+      /*
+      **Five tags left this slot at 8.10a** - `og:type`, `og:title`, `og:description`,
+      `og:image`, `og:url` and `twitter:card`, plus the canonical link. `Base` emits all of
+      them for every route now, from props it already had, and this route passes only the
+      two things that are actually specific to it: the generated cover and `article`.
+
+      What stays is what genuinely only a post knows.
+    */
+    }
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={t.ui.blog.feedTitle}
+      href="/blog/rss.xml"
+    />
+    <meta property="article:published_time" content={data.publishedAt} />
+    {
+      /*
+      `is:inline` keeps Astro's script pipeline out of these: without it the bundler treats
+      a `<script>` as JavaScript to process and hash, and `application/ld+json` is data.
+      `set:html` rather than a child expression, because JSON inside a text node is escaped.
+    */
+    }
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(blogPosting)} />
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(breadcrumbs)} />
+  </Fragment>
+
+  <div class="post-body">
+    <PostMeta
+      publishedAt={data.publishedAt}
+      minutes={post.minutes}
+      tags={post.tags}
+      linked={true}
+    />
+
+    <Content />
+
+    <p class="back"><a href="/blog">{t.ui.blog.backToIndex}</a></p>
+  </div>
+</Document>
+
+<style>
+  /*
+   * Only what a post needs that a legal document did not.
+   *
+   * `Document.astro`'s `.prose` already sets paragraphs, headings, lists, bold and links,
+   * and its appearance is frozen behind 8.9b's Gate C. Code blocks, blockquotes, rules and
+   * images are new surface rather than a change to approved surface, so they live here.
+   * Nothing below re-declares anything that layout already owns.
+   */
+  .post-body {
+    display: contents;
+  }
+
+  .back {
+    margin: var(--spacing-16) 0 0;
+    font-size: var(--text-sm);
+  }
+
+  .back a {
+    color: var(--color-mute-400);
+    text-decoration: none;
+  }
+
+  .back a:hover,
+  .back a:focus-visible {
+    color: var(--color-plum-300);
+  }
+</style>
+
+<style is:global>
+  /*
+   * Global because the content is rendered markdown, which Astro's scoping never sees -
+   * the same reason `Document.astro` reaches for `:global`. Every selector below is a
+   * descendant of `.prose`, so none of it can reach a component.
+   */
+  .prose pre {
+    /*
+     * **Wider than the reading measure, on purpose.** A line of SQL is not prose: at the
+     * reading column the query in the MusicBrainz post was cut mid-word with only a
+     * scrollbar to say so, which is a reading experience nobody has. `--measure-wide` is
+     * the site's one width for things that are not prose, derived from the same reading
+     * size so the relationship holds at every viewport rather than only at the one it was
+     * chosen on. It still scrolls when a line is longer than that, and it still never makes
+     * the page scroll sideways - `tests/e2e/blog.spec.ts` asserts the second half at every
+     * viewport.
+     */
+    width: min(var(--measure-wide), calc(100vw - 2 * var(--gutter)));
+    margin: 0 0 var(--spacing-6);
+    padding: var(--spacing-4);
+    border: 1px solid var(--color-ink-700);
+    border-radius: 12px;
+    overflow-x: auto;
+    font-size: var(--text-sm);
+    line-height: 1.65;
+  }
+
+  .prose :not(pre) > code {
+    padding: 0.15em 0.4em;
+    border-radius: 6px;
+    background: var(--color-ink-800);
+    font-size: 0.9em;
+    color: var(--color-mute-200);
+  }
+
+  .prose blockquote {
+    margin: 0 0 var(--spacing-6);
+    padding-left: var(--spacing-6);
+    border-left: 2px solid var(--color-plum-700);
+    color: var(--color-mute-400);
+  }
+
+  .prose hr {
+    margin: var(--spacing-12) 0;
+    border: 0;
+    border-top: 1px solid var(--color-ink-700);
+  }
+
+  .prose img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+  }
+</style>

@@ -1,0 +1,458 @@
+---
+/**
+ * Logo lab - drag the numbers yourself.
+ *
+ * Nine revisions of the mark went through me re-running a generator, which made every
+ * "try it a bit tighter" a round trip. This is the same geometry (`mark-geometry.ts`,
+ * the module the shipped mark uses) wired to sliders, so a variation costs a drag instead
+ * of a message.
+ *
+ * The path data and the parameter block are printed live at the bottom. Paste either back
+ * to me and I can freeze it, or just tell me the numbers.
+ *
+ * Dev-only: removed from the production build in 8.13.
+ */
+import Base from '../../layouts/Base.astro';
+import { PRESET } from '../../components/brand/mark-geometry';
+
+const CONTROLS = [
+  { key: 'radius', label: 'C radius', min: 12, max: 28, step: 0.5 },
+  { key: 'tailRadius', label: 'Tail radius', min: 4, max: 16, step: 0.5 },
+  { key: 'startAngle', label: 'C start angle', min: 40, max: 120, step: 1 },
+  { key: 'endAngle', label: 'Tail end angle', min: 240, max: 359, step: 1 },
+  { key: 'stroke', label: 'S stroke', min: 4, max: 16, step: 0.5 },
+  { key: 'sonarRadius', label: 'Sonar radius', min: 20, max: 44, step: 0.5 },
+  { key: 'sonarSpan', label: 'Sonar span', min: 30, max: 220, step: 1 },
+  { key: 'sonarOffset', label: 'Sonar offset (left)', min: 0, max: 24, step: 0.05 },
+  { key: 'sonarStroke', label: 'Sonar stroke', min: 3, max: 16, step: 0.5 },
+  { key: 'sonarOpacity', label: 'Sonar opacity', min: 0.2, max: 1, step: 0.02 },
+] as const;
+---
+
+<Base title="Logo lab - Sonaru" description="Drag the mark's parameters and see it live.">
+  <header class="bar">
+    <div class="wrap">
+      <p class="kicker">8.1 · logo lab · same geometry as the shipped mark</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="layout">
+      <form class="controls" id="controls">
+        {
+          CONTROLS.map((c) => (
+            <label class="control">
+              <span class="row">
+                <span>{c.label}</span>
+                <output id={`out-${c.key}`}>{PRESET[c.key]}</output>
+              </span>
+              <input
+                type="range"
+                name={c.key}
+                min={c.min}
+                max={c.max}
+                step={c.step}
+                value={PRESET[c.key]}
+              />
+            </label>
+          ))
+        }
+        <div class="buttons">
+          <button type="button" id="reset">Reset to current mark</button>
+          <button type="button" id="copy">Copy parameters</button>
+        </div>
+
+        <label class="paste">
+          <span class="row"><span>Paste saved parameters</span></span>
+          <textarea
+            id="paste"
+            rows="4"
+            spellcheck="false"
+            placeholder={'{ "radius": 20, "tailRadius": 10.5, … }'}></textarea>
+          <span class="buttons">
+            <button type="button" id="apply">Apply</button>
+          </span>
+          <span class="status" id="status" role="status" aria-live="polite"></span>
+        </label>
+        <p class="gap">
+          Clearance to the C: <b id="gap">-</b>
+          <span class="hint">measured at the arc's tips, which is where it is tightest</span>
+        </p>
+      </form>
+
+      <div class="preview">
+        <div class="stage" id="stage-lg"></div>
+        <div class="sizes">
+          <span class="chip"><span id="stage-32"></span> 32</span>
+          <span class="chip"><span id="stage-16"></span> 16</span>
+          <span class="icon-app" id="stage-icon"></span>
+          <span class="icon-app light" id="stage-light"></span>
+        </div>
+        <pre class="out" id="paths"></pre>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    import {
+      PRESET,
+      sPath,
+      sonarPath,
+      minGap,
+      fitViewBox,
+      type MarkParams,
+    } from '../../components/brand/mark-geometry';
+
+    const form = document.getElementById('controls');
+    if (form instanceof HTMLFormElement) {
+      let params: MarkParams = { ...PRESET };
+
+      const draw = (size: number): string =>
+        `<svg viewBox="${fitViewBox(params)}" width="${size}" height="${size}" aria-hidden="true">` +
+        `<g fill="none" stroke="currentColor" stroke-linecap="round">` +
+        `<path d="${sonarPath(params)}" stroke-width="${params.sonarStroke}" opacity="${params.sonarOpacity}"/>` +
+        `<path d="${sPath(params)}" stroke-width="${params.stroke}"/>` +
+        `</g></svg>`;
+
+      const paint = (): void => {
+        const targets: Array<[string, number]> = [
+          ['stage-lg', 260],
+          ['stage-32', 32],
+          ['stage-16', 16],
+          ['stage-icon', 34],
+          ['stage-light', 34],
+        ];
+        for (const [id, size] of targets) {
+          const host = document.getElementById(id);
+          if (host) host.innerHTML = draw(size);
+        }
+        for (const [key, value] of Object.entries(params)) {
+          const out = document.getElementById(`out-${key}`);
+          if (out) out.textContent = String(value);
+        }
+        const gap = document.getElementById('gap');
+        if (gap) gap.textContent = `${minGap(params).toFixed(2)}`;
+        const paths = document.getElementById('paths');
+        if (paths) {
+          paths.textContent =
+            `viewBox: ${fitViewBox(params)}\n` +
+            `S:       ${sPath(params)}\n` +
+            `sonar:   ${sonarPath(params)}\n\n` +
+            JSON.stringify(params, null, 2);
+        }
+      };
+
+      form.addEventListener('input', (event) => {
+        const input = event.target;
+        if (!(input instanceof HTMLInputElement)) return;
+        params = { ...params, [input.name]: Number(input.value) };
+        paint();
+      });
+
+      document.getElementById('reset')?.addEventListener('click', () => {
+        params = { ...PRESET };
+        for (const input of form.querySelectorAll('input')) {
+          const value = PRESET[input.name as keyof MarkParams];
+          if (value !== undefined) input.value = String(value);
+        }
+        paint();
+      });
+
+      const status = document.getElementById('status');
+      const say = (message: string, tone: 'ok' | 'bad'): void => {
+        if (!status) return;
+        status.textContent = message;
+        status.dataset['tone'] = tone;
+      };
+
+      document.getElementById('copy')?.addEventListener('click', () => {
+        navigator.clipboard.writeText(JSON.stringify(params, null, 2)).then(
+          () => say('Parameters copied.', 'ok'),
+          () => say('Could not reach the clipboard - select the block below instead.', 'bad'),
+        );
+      });
+
+      /**
+       * Apply a pasted parameter block.
+       *
+       * Deliberately noisy: unknown keys, non-numeric values and out-of-range numbers are
+       * all reported rather than dropped. A paste that silently applies half of itself is
+       * worse than one that refuses, because the mark on screen would no longer match the
+       * numbers you think you pasted.
+       */
+      const applyPasted = (text: string): void => {
+        const trimmed = text.trim();
+        if (trimmed === '') {
+          say('Nothing to apply - paste a parameter block first.', 'bad');
+          return;
+        }
+
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(trimmed);
+        } catch (error) {
+          say(`Not valid JSON: ${error instanceof Error ? error.message : 'unparseable'}`, 'bad');
+          return;
+        }
+        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+          say('Expected a JSON object of parameters.', 'bad');
+          return;
+        }
+
+        const next: Record<string, number> = {};
+        const ignored: string[] = [];
+        const clamped: string[] = [];
+        const invalid: string[] = [];
+
+        for (const [key, value] of Object.entries(parsed)) {
+          const input = form.querySelector(`input[name="${CSS.escape(key)}"]`);
+          if (!(input instanceof HTMLInputElement)) {
+            ignored.push(key);
+            continue;
+          }
+          const raw = Number(value);
+          if (typeof value !== 'number' || !Number.isFinite(raw)) {
+            invalid.push(key);
+            continue;
+          }
+          const min = Number(input.min);
+          const max = Number(input.max);
+          const bounded = Math.min(max, Math.max(min, raw));
+          if (bounded !== raw) clamped.push(`${key} → ${bounded}`);
+          next[key] = bounded;
+        }
+
+        if (invalid.length > 0) {
+          say(`Not numbers: ${invalid.join(', ')}. Nothing applied.`, 'bad');
+          return;
+        }
+        if (Object.keys(next).length === 0) {
+          say('No recognised parameters in that block.', 'bad');
+          return;
+        }
+
+        /*
+         * Sliders are written only once the whole paste has been accepted. Moving them
+         * inside the validation loop left them showing values the mark was never given
+         * when a later key turned out to be invalid - the controls lying about what is on
+         * screen is a worse failure than the rejected paste itself.
+         */
+        for (const [key, value] of Object.entries(next)) {
+          const input = form.querySelector(`input[name="${CSS.escape(key)}"]`);
+          if (input instanceof HTMLInputElement) input.value = String(value);
+        }
+
+        params = { ...params, ...next } as MarkParams;
+        paint();
+
+        const notes = [`Applied ${Object.keys(next).length} parameter(s)`];
+        if (clamped.length > 0) notes.push(`clamped to slider range: ${clamped.join(', ')}`);
+        if (ignored.length > 0) notes.push(`ignored unknown: ${ignored.join(', ')}`);
+        say(`${notes.join(' · ')}.`, clamped.length > 0 || ignored.length > 0 ? 'bad' : 'ok');
+      };
+
+      const pasteBox = document.getElementById('paste');
+      document.getElementById('apply')?.addEventListener('click', () => {
+        if (pasteBox instanceof HTMLTextAreaElement) applyPasted(pasteBox.value);
+      });
+      // Pasting into the box applies immediately - the extra click is friction with no purpose.
+      pasteBox?.addEventListener('paste', (event) => {
+        const text = (event as ClipboardEvent).clipboardData?.getData('text');
+        if (text === undefined) return;
+        event.preventDefault();
+        if (pasteBox instanceof HTMLTextAreaElement) pasteBox.value = text;
+        applyPasted(text);
+      });
+
+      paint();
+    }
+  </script>
+
+  <style>
+    .bar {
+      border-bottom: 1px solid var(--color-ink-700);
+      padding-block: var(--spacing-4);
+    }
+    .kicker {
+      margin: 0;
+      font-size: var(--text-xs);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-plum-400);
+    }
+    .wrap {
+      max-width: var(--content-max);
+      margin-inline: auto;
+      padding-inline: var(--gutter);
+    }
+    .layout {
+      display: grid;
+      /*
+       * `minmax(0, 1fr)`, not `1fr`. A grid track's automatic minimum is its content's
+       * min-content size, and the control panel's rows are letterspaced uppercase labels
+       * beside a numeric output - 598px of it, which at 320 made this the only route on the
+       * site that still scrolled sideways after 8.10b's Gate C fix. Found by the guard in
+       * `tests/e2e/no-horizontal-scroll.spec.ts`, not by looking at the page.
+       */
+      grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+      gap: var(--spacing-16);
+      padding-block: var(--spacing-12) var(--spacing-32);
+      align-items: start;
+    }
+    @media (max-width: 820px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-4);
+      position: sticky;
+      top: var(--spacing-4);
+    }
+    .control {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-1);
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      font-size: var(--text-xs);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-mute-400);
+    }
+    output {
+      font-variant-numeric: tabular-nums;
+      color: var(--color-plum-300);
+    }
+    input[type='range'] {
+      width: 100%;
+      accent-color: var(--color-plum-400);
+    }
+
+    .buttons {
+      display: flex;
+      gap: var(--spacing-2);
+      padding-top: var(--spacing-2);
+    }
+    .buttons button {
+      font: inherit;
+      font-size: var(--text-sm);
+      padding: var(--spacing-2) var(--spacing-4);
+      border: 1px solid var(--color-ink-700);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--color-mute-200);
+      cursor: pointer;
+    }
+    .buttons button:hover {
+      border-color: var(--color-plum-400);
+      color: var(--color-white);
+    }
+    .paste {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-2);
+      padding-top: var(--spacing-2);
+    }
+    textarea {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      padding: var(--spacing-3);
+      border: 1px solid var(--color-ink-700);
+      border-radius: 10px;
+      background: var(--color-ink-900);
+      color: var(--color-mute-200);
+      resize: vertical;
+    }
+    textarea:focus-visible {
+      border-color: var(--color-plum-400);
+    }
+    .status {
+      font-size: var(--text-xs);
+      line-height: 1.5;
+      min-height: 1.2em;
+    }
+    .status[data-tone='ok'] {
+      color: var(--color-bloom-cyan);
+    }
+    .status[data-tone='bad'] {
+      color: var(--color-bloom-amber);
+    }
+
+    .gap {
+      margin: 0;
+      font-size: var(--text-sm);
+      color: var(--color-mute-200);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-1);
+    }
+    .gap b {
+      color: var(--color-white);
+      font-variant-numeric: tabular-nums;
+    }
+    .hint {
+      font-size: var(--text-xs);
+      color: var(--color-mute-400);
+    }
+
+    .preview {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-6);
+    }
+    .stage {
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1;
+      max-width: 420px;
+      border: 1px solid var(--color-ink-700);
+      border-radius: 16px;
+      background: var(--color-ink-900);
+      color: var(--color-white);
+    }
+    .sizes {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-4);
+      color: var(--color-white);
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-2);
+      font-size: var(--text-xs);
+      color: var(--color-mute-400);
+    }
+    .icon-app {
+      display: grid;
+      place-items: center;
+      width: 56px;
+      height: 56px;
+      border-radius: 13px;
+      background: linear-gradient(160deg, var(--color-plum-800), var(--color-plum-950));
+    }
+    .icon-app.light {
+      background: var(--color-mute-200);
+      color: var(--color-plum-900);
+    }
+    .out {
+      margin: 0;
+      padding: var(--spacing-4);
+      border: 1px solid var(--color-ink-700);
+      border-radius: 12px;
+      background: var(--color-ink-900);
+      color: var(--color-mute-200);
+      font-size: 12px;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre;
+    }
+  </style>
+</Base>

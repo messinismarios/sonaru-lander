@@ -1,0 +1,71 @@
+---
+/**
+ * The home route - the first real page on the site.
+ *
+ * It carries the hero, act one (phases.md 8.3), act two (phases.md 8.4), act three
+ * (phases.md 8.6) and act four (phases.md 8.5). The hero's
+ * "See how it works" CTA resolves at `#how`, now the top of act two - the device moved
+ * there from the hero (owner, 2026-09-03), so "how it works" is literally what that
+ * section shows.
+ *
+ * **The last two acts are in the reverse of their spec order** (owner, 2026-09-04): the
+ * page reads better closing on the notification, so `Playlist` (8.6) comes third and
+ * `Notify` (8.5) fourth and last. The section numbers in `phases.md` are work items and
+ * were left alone; "act three" and "act four" mean what the words mean, which is the order
+ * a visitor meets them in. The final CTA moved with the swap - it belongs to whichever
+ * section ends the page - and both sections were recomposed around that, which is why the
+ * change was more than reordering two lines here.
+ *
+ * **The page is one release end to end**: missed in act one, listed in act two, filed in
+ * act three, announced in act four. All four read it from the same showcase manifest, so
+ * the spine cannot come apart. The waitlist island act four's CTA lands in is 8.8.
+ */
+import Base from '../../layouts/Base.astro';
+import Hero from '../../components/sections/Hero.astro';
+import Problem from '../../components/sections/Problem.astro';
+import Feed from '../../components/sections/Feed.astro';
+import Playlist from '../../components/sections/Playlist.astro';
+import Notify from '../../components/sections/Notify.astro';
+import Closing from '../../components/sections/Closing.astro';
+import { catalogue } from '../../i18n';
+import type { GetStaticPaths } from 'astro';
+import { localePaths } from '../../i18n/routing';
+
+/*
+ * The route in both locales from one file - phases.md 8.11b. `undefined` is the default
+ * locale, which is what leaves it unprefixed.
+ */
+export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
+
+const t = catalogue(Astro.currentLocale);
+---
+
+<Base title={t.ui.meta.home.title} description={t.ui.meta.home.description}>
+  <Hero />
+  <Problem />
+  <Feed />
+  <Playlist />
+  <Notify />
+  {/* Phones only - the closing ask as its own static section (8.14c). */}
+  <Closing />
+</Base>
+
+<script>
+  import {
+    initMotion,
+    createHeroTimeline,
+    createProblemTimeline,
+    createPromiseTimeline,
+    createPlaylistTimeline,
+    createNotifyTimeline,
+    restBlooms,
+  } from '../../motion';
+
+  restBlooms();
+  initMotion();
+  createHeroTimeline();
+  await createProblemTimeline();
+  createPromiseTimeline();
+  createPlaylistTimeline();
+  createNotifyTimeline();
+</script>

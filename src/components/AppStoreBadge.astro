@@ -1,0 +1,88 @@
+---
+/**
+ * Apple's "Download on the App Store" badge - phases.md 8.8.
+ *
+ * **The artwork is Apple's, unmodified.** `public/badges/download-on-the-app-store.svg`
+ * is the official asset from Apple's marketing tools, not a redraw: the badge is a
+ * trademark and Apple's guidelines require the supplied file, its aspect ratio, and a
+ * clear space of 1/4 its height on every side. Only the size is set here - never the
+ * colours, never the corner radius, never the type.
+ *
+ * **It is not visible on the site yet.** `LAUNCH_STAGE` is `'waitlist'`; this renders
+ * where a page asks for it, and 8.8's job was to build and gate both states so the flip
+ * to `'ga'` is a config edit rather than a design exercise. Until `APP_STORE_APP_ID`
+ * exists it has nowhere to point, which is why the link is only a link when it does -
+ * a badge that goes nowhere is worse than no badge.
+ */
+import { appStoreUrl } from '../config/launch';
+import { catalogue } from '../i18n';
+
+const t = catalogue(Astro.currentLocale);
+
+interface Props {
+  /** Rendered height in px. Apple's minimum for the badge is 40. */
+  readonly height?: number;
+  readonly class?: string | undefined;
+}
+
+const { height = 48, class: className } = Astro.props;
+const href = appStoreUrl();
+
+// The supplied SVG's own aspect ratio, 119.66407 x 40. Never recomputed by eye.
+const width = Math.round((height * 119.66407) / 40);
+const label = t.ui.appStoreBadge;
+
+/*
+ * Apple's required clear space, a quarter of the badge's height on every side. Written as
+ * an inline value rather than a custom property the stylesheet reads: this component is
+ * not rendered while `LAUNCH_STAGE` is `'waitlist'`, but its scoped CSS still ships - and
+ * `tests/visual/tokens.spec.ts` rightly flagged a `var()` that resolved to nothing on
+ * every page that loaded the stylesheet without the element.
+ */
+const clearSpace = `${height / 4}px`;
+---
+
+{
+  href === null ? (
+    /*
+     * No listing yet, so it renders as an inert image with its purpose still announced.
+     * `aria-disabled` is on the wrapper rather than a disabled link, because there is no
+     * such thing as a disabled anchor.
+     */
+    <span
+      class:list={['badge', className]}
+      style={`padding:${clearSpace}`}
+      role="img"
+      aria-label={`${label} - coming soon`}
+    >
+      <img src="/badges/download-on-the-app-store.svg" alt="" width={width} height={height} />
+    </span>
+  ) : (
+    <a
+      class:list={['badge', className]}
+      style={`padding:${clearSpace}`}
+      href={href}
+      aria-label={label}
+    >
+      <img src="/badges/download-on-the-app-store.svg" alt="" width={width} height={height} />
+    </a>
+  )
+}
+
+<style>
+  .badge {
+    display: inline-flex;
+    /* Padding is set inline - see `clearSpace` in the frontmatter for why. */
+    border-radius: 8px;
+  }
+
+  .badge img {
+    display: block;
+    height: auto;
+  }
+
+  a.badge:focus-visible {
+    outline: 2px solid var(--color-plum-300);
+    outline-offset: 2px;
+  }
+</style>

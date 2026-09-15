@@ -1,0 +1,507 @@
+---
+/**
+ * The hero - phases.md 8.2, restructured (owner, 2026-09-03) to hand the device off to
+ * `Feed.astro` (phases.md 8.4). The hero is now copy only: the headline, sub-line and CTA
+ * sit sticky through one dark hand-off, then release into normal flow.
+ *
+ * **The promise outlives the rest of the copy (owner, 2026-09-03).** "You always catch it"
+ * used to be left standing at full opacity when the pin released, and simply scrolled away
+ * with the section. The two blocks around it now fade on `--blackout` and it does not, so
+ * it is alone on black for a `hold` spacer's worth of scroll; then `--farewell` fades it
+ * *while the released pin is carrying it up the screen*, finishing just before it would be
+ * clipped by the top of the viewport. **The promise itself never moves** (owner, revised):
+ * an earlier pass translated it down to the pin's exact centre once its neighbours had
+ * gone, and the owner's call is that only their opacity should change.
+ *
+ * **The headline still does not animate** (`docs/adr-0003-hero-lcp.md`, 8.2 Gate A). With
+ * the device gone it is now unambiguously the largest paint at every breakpoint, so the
+ * rule binds harder than it did: present, complete and unanimated in the first painted
+ * frame. Any motion below is transform-only and never delays or hides the text itself.
+ *
+ * **Text-motion prototype (owner, 2026-09-03): three variants, compared live via
+ * `?text=settle|recede|bloom` (defaults to `recede`).** All three are pure CSS driven off
+ * `--blackout`, the same signal that already drives the lights going out, so none of them
+ * need their own scroll listener:
+ * - `settle` - a one-time on-load transform entrance (`docs/adr-0003-hero-lcp.md`
+ *   explicitly allows this: a translated element is still painted and stays LCP-eligible).
+ * - `recede` - the copy itself very subtly scales down and drifts up as `--blackout`
+ *   rises, so the sentence reads as sinking into the dark with the section, rather than
+ *   just sitting in front of it. This is the recommended default.
+ * - `bloom` - the copy never moves; the atmosphere behind it grows more present instead,
+ *   carrying all of the added motion.
+ *
+ * **The "See how it works" CTA is no longer here** (owner, 2026-09-03). It moved to act
+ * one, where it now points at act two's full-screen phone rather than at act one itself -
+ * the offer to be shown the product reads better once the problem has been stated.
+ *
+ * References (`review-gates.md` §7), unchanged from the prior structure: cash.app's
+ * resting composition and whitespace/one-idea-per-screen from revolut.com
+ * (`reference-study.md` §2, §2.5). The device itself, and everything about it, now lives
+ * in `Feed.astro` - this file cites nothing about it any more.
+ */
+import BloomField from '../BloomField.astro';
+
+const TEXT_MOTIONS = ['settle', 'recede', 'bloom'] as const;
+type TextMotion = (typeof TEXT_MOTIONS)[number];
+const requested = Astro.url.searchParams.get('text');
+const textMotion: TextMotion = (TEXT_MOTIONS as readonly string[]).includes(requested ?? '')
+  ? (requested as TextMotion)
+  : 'recede';
+
+import { catalogue } from '../../i18n';
+
+const t = catalogue(Astro.currentLocale);
+---
+
+<section class="hero" data-hero-stage data-text-motion={textMotion}>
+  {
+    /*
+    The approved bloom field, feathered into the ground rather than run edge to edge -
+    unchanged from 8.2's Gate C rev 4/7. `reference-study.md` §3: "gradient feather strips
+    to blend an atmosphere layer into the ground", taken from superlist.
+  */
+  }
+  <div class="atmosphere">
+    <BloomField act="hero" intensity="feature" />
+  </div>
+
+  {
+    /*
+    The lights going out. A layer rather than an opacity tween on content, because the
+    page's ground is a `background-image` on <html>, which cannot itself be faded -
+    covering it is the only way to take the gradient, the grain and the blooms down
+    together. Curve unchanged from 8.2 Gate C rev 18-20: two monotonically-darkening
+    stages, never reversing.
+  */
+  }
+  <div class="blackout"></div>
+
+  <div class="pin" data-hero-pin>
+    <div class="copy">
+      <h1 class="headline">
+        <span class="drop">{t.home.hero.drop}</span><br /><span class="turn"
+          >{t.home.hero.turn}</span
+        >
+      </h1>
+
+      <p class="sub">{t.home.hero.sub}</p>
+    </div>
+  </div>
+
+  {
+    /*
+    Two scroll budgets, in order, both inside the one sticky pin.
+
+    Two scroll budgets inside the pin. `lights` is the original one: the blackout, and in
+    the `recede` variant the copy riding the same signal. `hold` is the promise's - the
+    line stands alone on a fully black screen across it with nothing being driven at all.
+
+    **The fade has no spacer, deliberately.** It runs after the pin releases, on
+    `scroll-progress.ts`'s `overrun`, so the line is still fading as it is carried up the
+    screen and is gone just before the top of the viewport would cut it off. A spacer would
+    put it back inside the pin, which is the one place it cannot happen.
+
+    Deliberately `lights`/`hold` and not, say, `travel hero` - a modifier class that
+    collides with the section's own class is selected by the section's own rule, because
+    Astro scopes every element in a component with one shared `astro-cid`. `Feed.astro`
+    carries the same warning and the bug that earned it.
+  */
+  }
+  <div class="travel lights" data-hero-lights></div>
+  <div class="travel hold" data-hero-hold></div>
+</section>
+
+<style>
+  /* How far the lights are down, 0 lit to 1 out. */
+  @property --blackout {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+
+  /*
+   * The tail after the lights are fully out, 0 (the promise still standing) to 1 (gone).
+   * A second, separate signal rather than a later stretch of `--blackout`: the two phases
+   * are sequential and neither needs to know the other's shape.
+   */
+  @property --farewell {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+
+  /*
+   * Mobile only (8.14c) - how big the bloom's orbs sit, big while the hero rests at the
+   * top of the page and shrinking as it scrolls away. `hero.ts`'s mobile branch is a
+   * plain scroll listener, not a pin, so the initial value here is the resting one: the
+   * hero is always at the top of the page on load, never mid-scroll.
+   */
+  @property --hero-mobile-orb-scale {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 2.2;
+  }
+
+  /*
+   * `svh`, not `vh` or `dvh` - `dvh` changes as iOS collapses its address bar, which would
+   * resize the pin mid-scroll (`reference-study.md`'s Safari warning).
+   */
+  .hero {
+    position: relative;
+    /* Establishes a block formatting context: `.pin`'s sticky range is measured against
+     * this element, and without it the travel spacer's height does not translate into
+     * actual scrollable distance for the pin to travel through. */
+    display: flow-root;
+    overflow-x: clip;
+    --travel: 90svh;
+    /* How long the promise stands alone before it starts to go. Cut 30% at rev 23 and 30%
+     * again at rev 24 (owner, both times) - 80svh, then 56svh, now 39svh. `--travel`, the
+     * blackout's own budget, is untouched: it was never part of what got too slow. The
+     * fade's own length is not here at all; it is spent after the pin releases, so it is
+     * expressed in `hero.ts` as a fraction of the pin's height rather than as a spacer. */
+    --hold-travel: 39svh;
+  }
+
+  .atmosphere {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    margin-bottom: -100svh;
+    pointer-events: none;
+    opacity: 0.55;
+    -webkit-mask-image: radial-gradient(72% 58% at 50% 52%, #000 0%, transparent 74%);
+    mask-image: radial-gradient(72% 58% at 50% 52%, #000 0%, transparent 74%);
+    transition: opacity 0.3s var(--ease-out);
+  }
+
+  /* `bloom` variant: the atmosphere carries the added presence the text isn't taking. */
+  .hero[data-text-motion='bloom'] .atmosphere {
+    opacity: calc(0.55 + var(--blackout) * 0.3);
+    transform: scale(calc(1 + var(--blackout) * 0.12));
+  }
+
+  .blackout {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    margin-bottom: -100svh;
+    pointer-events: none;
+    background: var(--color-ink-950);
+    opacity: var(--blackout);
+  }
+
+  .pin {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+  }
+
+  .travel.lights {
+    height: var(--travel);
+  }
+
+  .travel.hold {
+    height: var(--hold-travel);
+  }
+
+  .copy {
+    position: relative;
+    z-index: 2;
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+    display: grid;
+    gap: var(--spacing-6);
+    justify-items: center;
+    text-align: center;
+    /* The farewell, applied to the whole block so it holds for all three text variants:
+     * by this point `recede` has already taken everything except the promise to 0, and the
+     * other two simply go out together. `.turn` needs no fade of its own. */
+    opacity: calc(1 - var(--farewell));
+  }
+
+  /* `recede` variant: the sentence sinks into the dark with the section. The scale/drift
+   * is transform-only on the whole block (LCP is already locked in by the time this runs
+   * - it only moves after the visitor has scrolled, and Chrome stops accepting new LCP
+   * candidates at that point). The opacity fade below is layered on top of it, on
+   * everything except "You always catch it" (owner, 2026-09-03): the promise is what's
+   * left standing once the problem and the CTA have gone. */
+  .hero[data-text-motion='recede'] .copy {
+    transform: scale(calc(1 - 0.06 * var(--blackout))) translateY(calc(var(--blackout) * -12px));
+  }
+
+  .hero[data-text-motion='recede'] .drop,
+  .hero[data-text-motion='recede'] .sub,
+  .hero[data-text-motion='recede'] .actions {
+    opacity: calc(1 - var(--blackout));
+  }
+
+  /* `settle` variant: a one-time on-load entrance. Still fully opaque throughout - see
+   * `docs/adr-0003-hero-lcp.md` - so it never gates when the headline counts as painted. */
+  .hero[data-text-motion='settle'] .copy {
+    animation: hero-copy-settle var(--dur-4) var(--ease-out) both;
+  }
+
+  @keyframes hero-copy-settle {
+    from {
+      transform: translateY(14px);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  .headline {
+    margin: 0;
+    max-width: var(--measure-display);
+    font-size: var(--text-3xl);
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    font-weight: 700;
+    color: var(--color-white);
+    text-wrap: balance;
+  }
+
+  .turn {
+    color: var(--color-plum-500);
+  }
+
+  .sub {
+    margin: 0;
+    max-width: var(--measure);
+    font-size: var(--text-lg);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+    text-wrap: pretty;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-4);
+    justify-content: center;
+  }
+
+  @media (max-width: 767px) {
+    .actions {
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--spacing-2);
+    }
+  }
+
+  /*
+   * 8.14c: below `md`, the same unpinned composition reduced motion already uses -
+   * `hero.ts`'s `full` branch skips `observeScrollProgress` entirely at this width (no
+   * listener, so nothing ever sets `--blackout`/`--farewell` and they hold their
+   * `@property` initial value of 0, same as the reduced build). A separate block rather
+   * than folding this into the reduced-motion query below: unlike reduced motion, a
+   * mobile visitor with no motion preference still gets the `settle` entrance animation,
+   * so that disable must not leak in here.
+   */
+  @media (max-width: 767px) {
+    .hero {
+      --travel: 0svh;
+      --hold-travel: 0svh;
+    }
+
+    .blackout {
+      position: absolute;
+      inset: 0;
+      height: auto;
+      margin-bottom: 0;
+      opacity: 0;
+      /* Never lit at this width, so never drawn (8.14, owner: the phone's motion ran at a low
+       * frame rate). At opacity 0 it still held a composited layer, which Chromium measured
+       * at 390x4082 at 390x844 @3x - the tallest drawn layer on the page after the document. */
+      display: none;
+    }
+
+    .pin {
+      position: relative;
+      min-height: 100svh;
+      height: auto;
+      /* Centred in the frame below the fixed header rather than in the whole frame (8.14c
+       * round 5, owner: "not vertically centered"). The header is 76px tall at this width,
+       * so the copy sat 38px above the middle of what a visitor can actually see. */
+      padding-top: 76px;
+    }
+
+    .atmosphere {
+      position: absolute;
+      inset: 0;
+      height: auto;
+      margin-bottom: 0;
+    }
+
+    /*
+     * The field's resting brightness at this width, matched to the middle of the breathing
+     * range below (0.33-0.465). 8.14c round 7: rounds 5 and 6 dimmed only the breathing
+     * keyframes, which never run under reduced motion - so a phone with Reduce Motion on
+     * kept the base 0.55 (or the `bloom` variant's `0.55 + --blackout * 0.3`, also 0.55 here
+     * since nothing drives `--blackout`) and looked brighter than devtools, which does not
+     * emulate the setting. `[data-text-motion]` out-specifies the variant rules above.
+     */
+    .hero[data-text-motion] .atmosphere {
+      opacity: 0.4;
+    }
+  }
+
+  /*
+   * 8.14c (owner: mobile "missing some glitter" - two candidates shown, both approved).
+   * `recede`/`bloom` are both pure functions of `--blackout`, which never leaves 0 below
+   * `md` now that nothing scrolls it - so whichever variant a route requests, mobile
+   * would otherwise get neither's motion. This applies `settle`'s one-time on-load rise
+   * to `.copy` regardless of `data-text-motion`, since a scroll-linked variant has
+   * nothing to hand off to at this width anyway.
+   */
+  /* Both motion modes since 8.14c round 8 (owner). */
+  @media (max-width: 767px) {
+    .copy {
+      animation: hero-copy-settle var(--dur-4) var(--ease-out) both;
+    }
+  }
+
+  /*
+   * The second approved candidate: a slow, continuous glow on the promise line - not
+   * scroll-linked, so it survives at every scroll position rather than only on load.
+   * Mirrors `BloomField`'s own "alive, not attention-grabbing" ambient quality (its
+   * `orbit-*` keyframes are the same idea for the background); this is the same
+   * treatment for the one line of text the palette already makes the accent.
+   */
+  /* The one effect Reduce Motion still removes on phones (8.14c round 8, owner). */
+  @media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+    @keyframes turn-glow {
+      0%,
+      100% {
+        text-shadow: 0 0 0 transparent;
+      }
+      50% {
+        text-shadow: 0 0 18px color-mix(in srgb, var(--color-plum-500) 55%, transparent);
+      }
+    }
+
+    .turn {
+      animation: turn-glow 5s var(--ease-in-out) infinite;
+    }
+  }
+
+  /*
+   * The background's own approved treatment (same gate, owner: the mobile background
+   * still "feels stale" after the text got its glow - two ideas shown, both approved).
+   * `BloomField`'s own `orbit-*` drift is already running underneath - 25-43s periods,
+   * tuned at 8.2 Gate C to be "something you notice having changed, not something you
+   * watch" - which is by design too slow to register on a quick visit. Both treatments
+   * below animate the wrapper `.atmosphere` div this file owns, layered on top of that
+   * drift rather than reaching into the shared, frozen component to speed it up (which
+   * would repaint every act on the site, not just the mobile hero).
+   *
+   * A slow hue drift, so the field's colour temperature itself moves rather than only
+   * the shapes within it.
+   */
+  /* Both motion modes since 8.14c round 8 (owner). */
+  @media (max-width: 767px) {
+    @keyframes hero-atmosphere-hue {
+      0%,
+      100% {
+        filter: hue-rotate(0deg);
+      }
+      50% {
+        filter: hue-rotate(35deg);
+      }
+    }
+
+    /*
+     * A slow breathing pulse: the field swells and brightens together, reading as one
+     * light source rather than three orbiting ones. Combined with the hue drift into
+     * one `animation` list on the same element rather than two rules, since a second
+     * rule setting the same shorthand would simply replace the first instead of
+     * running alongside it.
+     */
+    /* Opacity 0.55-0.78 until 8.14c round 5 (owner: "pulled down a little"), 0.44-0.62 at
+     * round 5, and 25% lower again at round 6. */
+    @keyframes hero-atmosphere-breathe {
+      0%,
+      100% {
+        transform: scale(1.3);
+        opacity: 0.33;
+      }
+      50% {
+        transform: scale(1.5);
+        opacity: 0.465;
+      }
+    }
+
+    .atmosphere {
+      animation:
+        hero-atmosphere-hue 9s var(--ease-in-out) infinite,
+        hero-atmosphere-breathe 7s var(--ease-in-out) infinite;
+    }
+
+    /*
+     * Owner: the orbs "look too small" and less like the desktop version, then "bigger
+     * and more bunched up together in the center" (approved), then a top/bottom
+     * gradient (rejected - not what was meant), then: the reference is desktop's own
+     * `--bloom-scroll` (wired up in `promise.ts`/`notify.ts`/`playlist.ts`, growing the
+     * field as its section scrolls through), and mobile should have the same idea
+     * *inverted* - big while the hero is at rest, shrinking as it scrolls away, since
+     * there is no pin left to hold it in place while something else grows instead.
+     *
+     * Scaling `.atmosphere` itself would move every orb further from centre as it grows
+     * (the opposite of "bunched"), so the scale still lands on each `.orb` in place,
+     * around its own already-set `left`/`top` anchor - only the *value* is now driven
+     * by `--hero-mobile-orb-scale` (`hero.ts`, a plain scroll listener, not a pin) rather
+     * than fixed. `:global()` reaches into `BloomField`'s scoped markup - anchored under
+     * `.atmosphere`, which still carries this file's own scoping attribute, so the rule
+     * cannot reach a `.orb` anywhere else on the site (`CLAUDE.md`'s bare-`:global()`
+     * warning is about the unanchored form).
+     */
+    .atmosphere :global(.orb) {
+      transform: translate(-50%, -50%) scale(var(--hero-mobile-orb-scale));
+    }
+  }
+
+  /*
+   * The designed reduced-motion composition (acceptance-criteria.md §4). The pin stops
+   * being sticky and the section collapses to one still screen - nothing to travel
+   * through, so `--blackout` simply stays at 0 (`hero.ts`'s reduced build never sets it)
+   * and neither text variant has anything to react to.
+   */
+  /* At `md` and up only since 8.14c round 8 (owner): below it, phones keep the full
+   * motion build under Reduce Motion. */
+  @media (prefers-reduced-motion: reduce) and (min-width: 768px) {
+    .hero {
+      --travel: 0svh;
+      --hold-travel: 0svh;
+    }
+
+    .blackout {
+      position: absolute;
+      inset: 0;
+      height: auto;
+      margin-bottom: 0;
+      opacity: 0;
+    }
+
+    .pin {
+      position: relative;
+      height: auto;
+      padding: var(--spacing-24) 0;
+    }
+
+    .atmosphere {
+      position: absolute;
+      inset: 0;
+      height: auto;
+      margin-bottom: 0;
+    }
+
+    .hero[data-text-motion='settle'] .copy {
+      animation: none;
+    }
+  }
+</style>

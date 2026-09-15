@@ -1,0 +1,154 @@
+---
+/**
+ * The FAQ - phases.md 8.7, with the `FAQPage` structured data that section asks for.
+ *
+ * **Native `<details>`/`<summary>`, not a scripted accordion.** Keyboard operation,
+ * expanded/collapsed announcement and no-JS behaviour all come free and none of them can
+ * be got subtly wrong; a div-and-click-handler version would need `aria-expanded`,
+ * `aria-controls`, roving focus and a key handler to reach the same place. This is also
+ * the reason the page ships zero JavaScript below the toggle.
+ *
+ * The JSON-LD is generated from the same `FAQ` array the page renders, so the structured
+ * data cannot describe questions the page does not show - the mismatch Google penalises.
+ */
+import SectionHeader from '../primitives/SectionHeader.astro';
+import { catalogue } from '../../i18n';
+
+const t = catalogue(Astro.currentLocale);
+const { entries: FAQ, eyebrow, headline } = t.pricing.faq;
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQ.map((entry) => ({
+    '@type': 'Question',
+    name: entry.question,
+    acceptedAnswer: { '@type': 'Answer', text: entry.answer },
+  })),
+};
+---
+
+<section class="faq" data-pricing-faq aria-labelledby="faq-title">
+  <div class="inner">
+    <SectionHeader eyebrow={eyebrow} headline={headline} id="faq-title" />
+
+    <div class="list">
+      {
+        FAQ.map((entry) => (
+          <details class="item" data-faq-item>
+            <summary>
+              <span class="question">{entry.question}</span>
+              <span class="marker" aria-hidden="true" />
+            </summary>
+            <p class="answer">{entry.answer}</p>
+          </details>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+
+<style>
+  .faq {
+    padding: 0 var(--gutter) var(--spacing-32);
+  }
+
+  .inner {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-12);
+  }
+
+  .list {
+    max-width: var(--measure);
+  }
+
+  .item {
+    border-top: 1px solid var(--color-ink-700);
+  }
+
+  .item:last-child {
+    border-bottom: 1px solid var(--color-ink-700);
+  }
+
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-6);
+    /* WCAG 2.2 target size, and room for the question to breathe. */
+    min-height: 44px;
+    padding: var(--spacing-6) 0;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  /* Safari draws its own disclosure triangle through a pseudo-element the standard
+   * `list-style: none` above does not reach. */
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  summary:focus-visible {
+    outline: 2px solid var(--color-plum-400);
+    outline-offset: 4px;
+    border-radius: var(--spacing-2);
+  }
+
+  .question {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--color-white);
+  }
+
+  /* A plus that becomes a minus: two bars, one of which rotates away. */
+  .marker {
+    position: relative;
+    flex: none;
+    width: 14px;
+    height: 14px;
+  }
+
+  .marker::before,
+  .marker::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    margin-top: -1px;
+    border-radius: 2px;
+    background: var(--color-plum-300);
+    transition: transform var(--dur-2) var(--ease-in-out);
+  }
+
+  .marker::after {
+    transform: rotate(90deg);
+  }
+
+  .item[open] .marker::after {
+    transform: rotate(0deg);
+  }
+
+  .answer {
+    max-width: var(--measure);
+    margin: 0;
+    padding-bottom: var(--spacing-6);
+    font-size: var(--text-body);
+    line-height: 1.6;
+    color: var(--color-mute-200);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marker::before,
+    .marker::after {
+      transition: none;
+    }
+  }
+</style>

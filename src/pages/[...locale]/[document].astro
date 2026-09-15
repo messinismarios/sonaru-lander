@@ -1,0 +1,50 @@
+---
+/**
+ * The site's long-form documents - `/privacy`, `/terms`, `/support` (phases.md 8.9b).
+ *
+ * One route rather than three pages, because they are one document type: the collection
+ * is what 8.9c adds MDX to and what 8.11 adds locales to, where three hand-authored
+ * `.astro` pages would each be a migration (Gate A, 2026-09-07).
+ *
+ * **This is the site's first dynamic route.** Two guards - the spacing sweep and the
+ * footer's nav inventory - discover routes by reading `src/pages` filenames, and both
+ * would have taken this one literally as `/[document]`. `tests/visual/routes.ts` expands
+ * it instead; the blog hits the identical wall in 8.9c and now inherits the fix.
+ */
+import { getCollection, render } from 'astro:content';
+import Document from '../../layouts/Document.astro';
+import { catalogue } from '../../i18n';
+import { localePaths } from '../../i18n/routing';
+
+/*
+ * The locale is the outer dimension and the document the inner one - phases.md 8.11b. Each
+ * document exists once per locale, so the paths are the product rather than two lists.
+ */
+export async function getStaticPaths() {
+  const documents = await getCollection('legal');
+  return localePaths().flatMap(({ params: { locale } }) =>
+    documents.map((entry) => ({ params: { locale, document: entry.id }, props: { entry } })),
+  );
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+
+const meta = Object.entries(catalogue(Astro.currentLocale).ui.meta.documents).find(
+  ([id]) => id === entry.id,
+)?.[1];
+if (meta === undefined) {
+  throw new Error(`Document "${entry.id}" has no title or description in ui.meta.documents.`);
+}
+---
+
+<Document
+  title={entry.data.title}
+  metaTitle={meta.title}
+  eyebrow={entry.data.eyebrow}
+  description={meta.description}
+  lede={entry.data.lede}
+  effective={entry.data.effective}
+>
+  <Content />
+</Document>

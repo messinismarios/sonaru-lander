@@ -1,0 +1,31 @@
+name: Scheduled rebuild
+
+# Scheduled blog posts. A post committed with a future `publishedAt` is left out of the
+# build until that instant has passed (`src/lib/published.ts`), and a static site only
+# changes when it is rebuilt - so this asks Cloudflare Pages for a fresh production build
+# once a day, and the post goes live without anybody pushing on the day.
+#
+# Daily at 06:00 UTC: a post dated at or before 06:00 appears that morning, one dated later
+# appears the next. Once a day keeps it to ~30 builds a month against Pages' 500.
+#
+# The deploy hook is created on the Pages project - `docs/launch-runbook.md` §1 - and
+# stored as the `CLOUDFLARE_PAGES_DEPLOY_HOOK` repository secret. The URL is the whole
+# credential, so it lives nowhere else.
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger a production build
+        env:
+          DEPLOY_HOOK: ${{ secrets.CLOUDFLARE_PAGES_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "::error::CLOUDFLARE_PAGES_DEPLOY_HOOK is not set - scheduled posts will not go live."
+            exit 1
+          fi
+          curl --fail --silent --show-error --request POST "$DEPLOY_HOOK"

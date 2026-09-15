@@ -1,0 +1,84 @@
+---
+/**
+ * The device frame - bezel, screen mask, and the container everything inside sizes
+ * against. `design-system.md` §6 gives this component sole ownership of the shell so a
+ * screen never draws its own bezel and the two can never drift apart.
+ *
+ * The whole device is `aria-hidden`. It is decorative UI: the copy beside it carries the
+ * meaning, and §6 is explicit that a screen reader must never have to walk a fake app.
+ * Nothing inside is focusable, so it is out of the tab order by construction rather than
+ * by `tabindex` housekeeping.
+ *
+ * The screen sets `container-type: size`, which is what lets the screens inside express
+ * every dimension as a fraction of the screen the way the SwiftUI original does
+ * (`min(18, H * 0.022)` becomes `min(18px, 2.2cqh)`). Change the device's width and every
+ * proportion inside follows, exactly as it does when the app runs on a bigger handset.
+ */
+---
+
+<div class="device" aria-hidden="true" data-device>
+  <div class="shade"></div>
+  <div class="bezel">
+    <div class="screen">
+      <slot />
+    </div>
+  </div>
+</div>
+
+<style>
+  .device {
+    /* 390x844 - the iPhone the whole site is designed against (design-system.md §4). */
+    aspect-ratio: 390 / 844;
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  /*
+   * The shell's shadow, on its own layer so it can go out with the lights.
+   *
+   * It cannot live on `.bezel`: that element holds the screen, so fading it would fade
+   * the feed with it - and animating `box-shadow` is a repaint per frame, which this
+   * repo bans in anything scrubbed. An `opacity` on a layer that draws nothing else is
+   * composited. `--blackout` is 0 on any page that does not drive it, so the shadow is
+   * simply present everywhere else, `/kit` included.
+   *
+   * Floored at 0.3 from Gate C rev 16 to rev 19 (owner: "add back the shadow on the
+   * phone"). Rev 20 (owner): the shadow should go fully out with the background once it
+   * reaches true full black, not stay at a floor - `--blackout` itself no longer reverses
+   * (rev 19), so there is nothing left for a floor to protect against.
+   */
+  .shade {
+    position: absolute;
+    inset: 0;
+    border-radius: 13.6%/6.3%;
+    box-shadow:
+      0 2px 1px rgba(250, 250, 250, 0.08) inset,
+      0 40px 80px -20px rgba(0, 0, 0, 0.75);
+    opacity: calc(1 - var(--blackout));
+    pointer-events: none;
+  }
+
+  .bezel {
+    height: 100%;
+    border-radius: 13.6%/6.3%;
+    padding: 1.9%;
+    /* Transparent (owner, Gate C rev 13). The shell is read entirely from its shadow -
+     * which `.shade` owns - and the screen it frames, so the page's own ground shows
+     * through the bezel instead of a second, darker slab sitting on top of it. */
+    background: none;
+  }
+
+  .screen {
+    height: 100%;
+    /* Concentric with the bezel: outer radius minus the bezel's own thickness. */
+    border-radius: 11.7%/5.4%;
+    overflow: hidden;
+    /* The classic iOS Safari mockup bug is a transformed child bleeding past a rounded
+     * clip. A new stacking context is what actually holds the corners. */
+    isolation: isolate;
+    position: relative;
+    container-type: size;
+    background: var(--color-ink-950);
+  }
+</style>

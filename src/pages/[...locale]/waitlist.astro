@@ -1,0 +1,194 @@
+---
+/**
+ * The waitlist route - phases.md 8.8.
+ *
+ * **A route rather than a band on the home page**, chosen by the owner at Gate A over
+ * the recommended closing section and over a dialog. The consequence taken deliberately:
+ * the header's action and act four's closing CTA stop being in-page anchors and become
+ * navigations. Unlike `/pricing`, this route is not orphaned - the fixed header points
+ * at it from every screen of the site.
+ *
+ * **It requires JavaScript, and it is the only page here that does.** Turnstile cannot
+ * issue a token without it, so "Turnstile-protected" and "works with JavaScript off"
+ * could not both be true; the owner chose protection at Gate B. The `<noscript>` below
+ * is the other half of that decision - someone with JavaScript off is told why, not
+ * handed a form that quietly cannot submit.
+ *
+ * **The island is `client:load`, server-rendered, since 8.14** (owner). It was `client:only`
+ * until then, which painted the heading and the lede and then, about a second later on a
+ * phone, dropped the whole form in beneath them. `client:only` had been chosen because
+ * `client:load` put a complete form in the HTML that could never submit without hydration -
+ * the exact dead form the noscript was written to prevent, caught by the JavaScript-off
+ * test. That is now answered where it arises: the island hides itself under
+ * `@media (scripting: none)`, and its form uses `method="dialog"` so a submit before
+ * hydration does nothing rather than navigate.
+ *
+ * The dev-only `?state=` review switch is read **inside** the island rather than here:
+ * this route is prerendered, and Astro strips search params from `Astro.url` on a
+ * prerendered route so that dev cannot promise something production will not do. The
+ * frontmatter version of it silently produced `idle` for every state, and the visual
+ * baselines were the thing that showed it.
+ *
+ * **No GSAP, no ScrollTrigger, no Lenis.** 8.12 tracks `/pricing` paying ~57 KB of motion
+ * stack through the `src/motion` barrel to run three fade-ins; this route is one screen
+ * and imports none of it. Nothing above the fold animates either - the `h1` is the LCP
+ * element and `acceptance-criteria.md` line 43 forbids an animated one.
+ */
+import Base from '../../layouts/Base.astro';
+import BloomField from '../../components/BloomField.astro';
+import WaitlistForm from '../../components/islands/WaitlistForm.svelte';
+import { catalogue } from '../../i18n';
+
+const t = catalogue(Astro.currentLocale);
+import { LAUNCH_STAGE } from '../../config/launch';
+import AppStoreBadge from '../../components/AppStoreBadge.astro';
+import type { GetStaticPaths } from 'astro';
+import { localePaths } from '../../i18n/routing';
+
+/*
+ * The route in both locales from one file - phases.md 8.11b. `undefined` is the default
+ * locale, which is what leaves it unprefixed.
+ */
+export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
+---
+
+<Base title={t.ui.meta.waitlist.title} description={t.ui.meta.waitlist.description}>
+  <section class="waitlist-route">
+    <div class="atmosphere">
+      <BloomField act="cta" intensity="ambient" />
+    </div>
+
+    <div class="inner">
+      <p class="eyebrow">{t.ui.waitlistPage.eyebrow}</p>
+      <h1>{t.ui.waitlistPage.headline}</h1>
+      <p class="lede">{t.ui.waitlistPage.lede}</p>
+
+      {
+        LAUNCH_STAGE === 'waitlist' ? (
+          <WaitlistForm client:load strings={t.waitlist} />
+        ) : (
+          <div class="ga">
+            <AppStoreBadge />
+            <p class="note">{t.ui.waitlistPage.gaNote}</p>
+          </div>
+        )
+      }
+
+      <noscript>
+        <p class="noscript">
+          {t.ui.waitlistPage.noscript.before}
+          <a href="mailto:hello@sonaru.app">hello@sonaru.app</a>
+          {t.ui.waitlistPage.noscript.after}
+        </p>
+      </noscript>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /*
+   * The one route on the site with nothing below the fold, so the block is centred in it
+   * rather than stacked at the top: left-aligned at the top of a full-height screen, this
+   * read as a page that had failed to finish loading. The fixed header still owes its
+   * clearance, hence the asymmetric padding - the content centres in what is left.
+   */
+  .waitlist-route {
+    position: relative;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    padding: calc(var(--spacing-24) + var(--spacing-8)) var(--gutter) var(--spacing-24);
+  }
+
+  .atmosphere {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    /*
+     * Masked since 2026-09-08 (owner, after 8.9b's Gate C) - see `PricingHero.astro` for
+     * the same note. These two routes were the ones still ending the field on a hard
+     * horizontal line; `Hero`, `Feed`, `Notify` and `Playlist` have always masked theirs,
+     * and 8.9b's `Document.astro` adopted it. Same gradient, so there is one treatment on
+     * the site rather than three.
+     */
+    -webkit-mask-image: radial-gradient(72% 58% at 50% 52%, #000 0%, transparent 74%);
+    mask-image: radial-gradient(72% 58% at 50% 52%, #000 0%, transparent 74%);
+  }
+
+  .inner {
+    width: 100%;
+    max-width: var(--content-max);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+
+  /* The same eyebrow every other section on the site opens with - see PricingHero. */
+  .eyebrow {
+    margin: 0;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-plum-300);
+  }
+
+  h1 {
+    max-width: var(--measure-display);
+    margin: 0;
+    font-size: var(--text-2xl);
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    color: var(--color-white);
+  }
+
+  .lede {
+    max-width: var(--measure);
+    margin: 0 0 var(--spacing-6);
+    font-size: var(--text-lg);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+  }
+
+  .ga {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-2);
+  }
+
+  .note,
+  .noscript {
+    margin: 0;
+    max-width: var(--measure);
+    font-size: var(--text-sm);
+    color: var(--color-mute-400);
+  }
+
+  .noscript {
+    margin-top: var(--spacing-6);
+    padding: var(--spacing-4);
+    border: 1px solid var(--color-plum-700);
+    border-radius: 12px;
+  }
+
+  .noscript a {
+    color: var(--color-plum-300);
+  }
+</style>
+
+{
+  /*
+  Turnstile's widget script, and the site's only third-party script - loaded on this route
+  alone, never on the home page. It carries no `integrity` hash deliberately: Cloudflare
+  ships this file mutably and documents that pinning it will break the widget the next time
+  they change it. The trade is accepted here and nowhere else.
+*/
+}
+<script
+  is:inline
+  async
+  defer
+  src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>

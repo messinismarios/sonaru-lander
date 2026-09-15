@@ -1,0 +1,122 @@
+---
+/**
+ * Something the visitor is meant to take away, with a button that takes it.
+ *
+ * `/press` has one reader - a journalist on a deadline - and the whole page is text they
+ * will paste somewhere else. cash.app puts its boilerplate on the page and leaves the
+ * selecting to you; gsap prints its logo *source* as copyable text. This does both: the
+ * text is always there and always selectable, and a button appears for the shorter route.
+ *
+ * **The button is created by the script, not rendered here, and that is a real bug it
+ * avoids rather than a purity exercise.** `navigator.clipboard` is undefined outside a
+ * secure context - which includes `npm run dev:host`, the LAN URL the owner opens Gate C
+ * on from a phone. Rendered in the markup, every button on the page would be dead there
+ * and nothing would say why. Created only where the API exists, the page degrades to the
+ * text itself, which was always the thing that mattered.
+ *
+ * This is the site's **first production route to ship hand-written JavaScript** - the home
+ * page has GSAP, `/pricing` and `/waitlist` have Svelte islands, and every `Document.astro`
+ * route so far has shipped none at all. It is ~0.6 KB, it is not a framework, and the page
+ * is complete without it.
+ */
+import { catalogue } from '../../i18n';
+
+interface Props {
+  /** What lands on the clipboard. */
+  readonly value: string;
+  /** Names the button for a screen reader: "Copy" alone says nothing about which. */
+  readonly label: string;
+  readonly class?: string | undefined;
+}
+
+const { value, label, class: className } = Astro.props;
+
+const button = catalogue(Astro.currentLocale).ui.copyButton;
+---
+
+<div
+  class:list={['copy', className]}
+  data-copy
+  data-copy-value={value}
+  data-copy-label={label}
+  data-copy-idle={button.idle}
+  data-copy-done={button.done}
+  data-copy-manual={button.manual}
+>
+  <slot />
+  {
+    /*
+      The button's landing place, so the script does not have to know this component's
+      structure - and so the announcement is in the DOM from the first paint rather than
+      inserted next to a live region that is itself new.
+    */
+  }
+  <p class="tools">
+    <span class="status" role="status" aria-live="polite"></span>
+  </p>
+</div>
+
+<style>
+  .copy {
+    position: relative;
+  }
+
+  .tools {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    margin: var(--spacing-3) 0 0;
+    min-height: 1.5em;
+  }
+
+  .status {
+    font-size: var(--text-sm);
+    color: var(--color-plum-300);
+  }
+
+  /* Injected by the script below. Styled here, where the rest of the component is. */
+  .copy :global(.copy-button) {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--spacing-2) var(--spacing-3);
+    border: 1px solid var(--color-ink-700);
+    border-radius: 8px;
+    background: var(--color-ink-900);
+    font: inherit;
+    font-size: var(--text-sm);
+    color: var(--color-mute-200);
+    cursor: pointer;
+    transition:
+      color 120ms ease,
+      border-color 120ms ease;
+  }
+
+  .copy :global(.copy-button:hover) {
+    color: var(--color-white);
+    border-color: var(--color-plum-500);
+  }
+
+  /*
+   * The label change is information, so it survives; the transition into it is decoration,
+   * so it does not. `design-system.md`'s rule that reduced motion is a designed state
+   * rather than a kill switch, on the smallest thing on the site that has one.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .copy :global(.copy-button) {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  import { wireCopyButtons } from '../../lib/copy-buttons';
+
+  /*
+   * One listener for every block on the page: Astro hoists and bundles a component's
+   * script once however many times the component is used, so this is the whole cost of
+   * copying on this route. The work is imported rather than written here so the build
+   * emits a *file* - an inlined script is blocked by the CSP this site ships with
+   * (`acceptance-criteria.md` §10). See `src/lib/copy-buttons.ts`.
+   */
+  wireCopyButtons();
+</script>

@@ -1,0 +1,84 @@
+---
+/**
+ * The two plan cards and the billing toggle - phases.md 8.7.
+ *
+ * **Two cards, not superlist's three.** `mission.md` §Business model has exactly two
+ * tiers, and a third card invented to fill out a symmetrical row would be advertising a
+ * product that does not exist (Gate A, rejected alternative).
+ *
+ * The row is width-constrained rather than stretched. Two cards allowed to fill a 1200px
+ * column read as an unfinished three-card grid - the risk called out at Gate B - so the
+ * grid caps well short of the content column and centres.
+ *
+ * `PlanToggle` is the site's only hydrated component, and it hydrates `client:visible`:
+ * it sits below the fold, nothing above it depends on it, and the cards are fully
+ * rendered and readable before it ever loads.
+ */
+import PriceCard from '../primitives/PriceCard.astro';
+import PlanToggle from '../islands/PlanToggle.svelte';
+import { PLANS } from '../../data/pricing';
+import { catalogue } from '../../i18n';
+
+const t = catalogue(Astro.currentLocale);
+---
+
+<section class="plans" data-pricing-plans aria-label={t.pricing.plansLabel}>
+  <div class="inner">
+    <div class="toggle-row" data-plans-toggle>
+      <PlanToggle client:visible strings={t.pricing.toggle} />
+    </div>
+
+    <div class="grid">
+      {PLANS.map((plan) => <div data-plan-card>{<PriceCard plan={plan} />}</div>)}
+    </div>
+  </div>
+</section>
+
+<style>
+  .plans {
+    padding: 0 var(--gutter) var(--spacing-24);
+  }
+
+  .inner {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-12);
+  }
+
+  .toggle-row {
+    display: flex;
+    justify-content: center;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-6);
+    /* Short of --content-max on purpose - see the file doc comment. */
+    max-width: 860px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* The cards are grid items; the wrapper exists so the entrance can translate them
+   * without fighting the grid's own alignment. */
+  .grid > [data-plan-card] {
+    display: flex;
+  }
+
+  .grid > [data-plan-card] > :global(*) {
+    width: 100%;
+  }
+
+  @media (max-width: 767px) {
+    .grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .plans {
+      padding-bottom: var(--spacing-16);
+    }
+  }
+</style>

@@ -1,0 +1,105 @@
+---
+/**
+ * The one button. Three variants, no fourth invented inside a section
+ * (`design-system.md` §9 - a one-off variant is a code-review failure).
+ *
+ * Renders an <a> when given `href` and a <button> otherwise, so a link that looks like a
+ * button is still a link: it opens in a new tab, it is announced as a link, and it works
+ * without JavaScript. The primary fill is `--plum-400` with an `--ink-950` label, the one
+ * pairing on the ramp that clears AA at 6.07:1 (scripts/check-contrast.mjs).
+ */
+interface Props {
+  readonly variant?: 'primary' | 'secondary' | 'ghost';
+  readonly href?: string | undefined;
+  readonly type?: 'button' | 'submit';
+  readonly class?: string | undefined;
+}
+
+const { variant = 'primary', href, type = 'button', class: className } = Astro.props;
+const Tag = href === undefined ? 'button' : 'a';
+---
+
+<Tag
+  class:list={['btn', className]}
+  data-variant={variant}
+  href={href}
+  type={href === undefined ? type : undefined}
+>
+  <slot />
+</Tag>
+
+<style>
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    /* WCAG 2.2 target size is 24x24 CSS px; this clears it with room to spare. */
+    min-height: 44px;
+    padding: var(--spacing-3) var(--spacing-6);
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font: inherit;
+    font-size: var(--text-base);
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      background-color var(--dur-1) var(--ease-out),
+      border-color var(--dur-1) var(--ease-out),
+      color var(--dur-1) var(--ease-out);
+  }
+
+  /*
+   * A deep wine fill with white text, rather than a bright fill with a dark label.
+   * White on --plum-700 is 8.59:1, and the fill is close enough to the brand ground
+   * (#43002B) to read as Sonaru rather than as a generic pink CTA. The border exists for
+   * WCAG 1.4.11: --plum-700 alone is 2.20:1 against the ground, so the control's own
+   * boundary would not be identifiable; --plum-500 clears 3:1 against both the near-black
+   * and the plum end of the gradient, and reads as a rim light rather than an outline.
+   */
+  .btn[data-variant='primary'] {
+    background: var(--color-plum-700);
+    border-color: var(--color-plum-500);
+    color: var(--color-white);
+  }
+  .btn[data-variant='primary']:hover {
+    background: var(--color-plum-600);
+    border-color: var(--color-plum-400);
+  }
+
+  .btn[data-variant='secondary'] {
+    background: transparent;
+    border-color: var(--color-ink-700);
+    color: var(--color-white);
+  }
+  .btn[data-variant='secondary']:hover {
+    border-color: var(--color-plum-400);
+  }
+
+  .btn[data-variant='ghost'] {
+    background: transparent;
+    color: var(--color-mute-200);
+    padding-inline: var(--spacing-3);
+  }
+  .btn[data-variant='ghost']:hover {
+    color: var(--color-white);
+  }
+
+  /* Motion is a material, not a garnish - but a control that does not acknowledge a
+     press feels dead. This is the smallest possible acknowledgement. */
+  .btn:active {
+    transform: translateY(1px);
+  }
+  /* At `md` and up only since 8.14c round 8 (owner): below it, phones keep the full
+   * motion build under Reduce Motion. */
+  @media (prefers-reduced-motion: reduce) and (min-width: 768px) {
+    .btn {
+      transition: none;
+    }
+    .btn:active {
+      transform: none;
+    }
+  }
+</style>

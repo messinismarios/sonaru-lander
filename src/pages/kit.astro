@@ -1,0 +1,282 @@
+---
+/**
+ * The design-system kit - every primitive and the bloom field, in one place, on the real
+ * ground at real sizes.
+ *
+ * This is the Gate C surface for 8.1's remaining pieces. It replaces `/blooms`, whose job
+ * ended when the owner picked the CSS-gradient direction at Gate A.
+ *
+ * It is also the thing that keeps `design-system.md` §9 honest: a primitive that is not
+ * on this page does not exist, and a section that invents its own variant of one is a
+ * code-review failure. When a component changes, this page is where the change is seen.
+ *
+ * Dev-only: removed from the production build in 8.13, along with `/specimen`.
+ */
+import Base from '../layouts/Base.astro';
+import BloomField from '../components/BloomField.astro';
+import Button from '../components/primitives/Button.astro';
+import Link from '../components/primitives/Link.astro';
+import Badge from '../components/primitives/Badge.astro';
+import Card from '../components/primitives/Card.astro';
+import SectionHeader from '../components/primitives/SectionHeader.astro';
+
+const ACTS = [
+  { act: 'hero', label: 'Hero / final CTA', feeling: 'The brand’s own light' },
+  { act: 'problem', label: 'Act one - the problem', feeling: 'Night, distance, missed' },
+  { act: 'feed', label: 'Act two - the feed', feeling: 'Clarity, order, resolution' },
+  { act: 'notify', label: 'Act three - the notification', feeling: 'Warmth, arrival' },
+] as const;
+
+const SCALE = [
+  { token: '--text-3xl', use: 'Hero', px: '40 → 84' },
+  { token: '--text-2xl', use: 'Act headline', px: '28 → 44' },
+  { token: '--text-xl', use: 'Card title', px: '22 → 28' },
+  { token: '--text-lg', use: 'Lede', px: '18 → 22' },
+  { token: '--text-body', use: 'Reading copy', px: '16 → 18' },
+  { token: '--text-sm', use: 'Meta', px: '14' },
+  { token: '--text-xs', use: 'Eyebrow', px: '11' },
+] as const;
+---
+
+<Base title="Design kit - Sonaru" description="Every primitive and the bloom field, in context.">
+  <header class="bar">
+    <div class="wrap">
+      <p class="kicker">8.1 · design system · Gate C</p>
+    </div>
+  </header>
+
+  <main>
+    <!-- The bloom field, one panel per act, at the scale it will really run. -->
+    <section class="acts" aria-labelledby="blooms-heading">
+      <div class="wrap">
+        <SectionHeader
+          eyebrow="Approved at Gate A"
+          headline="The bloom field"
+          lede="Each act owns a temperature, so the page changes as you scroll. Every colour comes from tokens.css - a new act is one attribute, not a new asset."
+          id="blooms-heading"
+        />
+      </div>
+      {
+        ACTS.map(({ act, label, feeling }) => (
+          <div class="act">
+            <BloomField act={act} intensity={act === 'hero' ? 'feature' : 'ambient'} />
+            <div class="wrap act-copy">
+              <Badge tone="brand">{label}</Badge>
+              <p class="feeling">{feeling}</p>
+            </div>
+          </div>
+        ))
+      }
+    </section>
+
+    <div class="wrap stack">
+      <!-- Buttons -->
+      <section aria-labelledby="buttons-heading">
+        <SectionHeader
+          eyebrow="Primitive"
+          headline="Buttons"
+          lede="Three variants and no fourth. Renders a link when given href, a button otherwise - so a link that looks like a button still behaves like a link."
+          id="buttons-heading"
+        />
+        <div class="row">
+          <Button variant="primary">Join the waitlist</Button>
+          <Button variant="secondary">See how it works</Button>
+          <Button variant="ghost">Not now</Button>
+        </div>
+        <div class="row">
+          <Button variant="primary" href="#kit">As a link</Button>
+          <Button variant="secondary" href="#kit">As a link</Button>
+        </div>
+      </section>
+
+      <!-- Links and badges -->
+      <section aria-labelledby="links-heading">
+        <SectionHeader eyebrow="Primitive" headline="Links and badges" id="links-heading" />
+        <p class="body">
+          {
+            /* Explicit {' '} rather than a plain space: Astro trims the newline before a
+              component that begins a line, and Prettier is free to re-wrap this paragraph
+              at any time. A literal space here is not durable; this is. */
+          }
+          Sonaru works alongside <Link href="#kit">Spotify</Link>{' '}
+          and <Link href="#kit">Apple Music</Link> - nobody switches. Read{' '}
+          <Link href="#kit" external>why release tracking is broken</Link> for the longer version.
+        </p>
+        <div class="row">
+          <Badge>new Single</Badge>
+          <Badge>96 new releases</Badge>
+          <Badge tone="brand">Pro</Badge>
+        </div>
+      </section>
+
+      <!-- Cards -->
+      <section aria-labelledby="cards-heading">
+        <SectionHeader eyebrow="Primitive" headline="Cards" id="cards-heading" />
+        <div class="cards">
+          <Card>
+            <h3>Chronological</h3>
+            <p>Newest first. Nothing ranked, nothing held back for a Friday.</p>
+          </Card>
+          <Card interactive>
+            <h3>Complete</h3>
+            <p>Every artist, every release - because the catalog is mirrored, not queried.</p>
+          </Card>
+          <Card interactive>
+            <h3>Automatic</h3>
+            <p>New releases land in your playlist without you doing anything.</p>
+          </Card>
+        </div>
+      </section>
+
+      <!-- Type scale -->
+      <section aria-labelledby="scale-heading">
+        <SectionHeader
+          eyebrow="Foundation"
+          headline="Fluid type scale"
+          lede="Every step is a clamp() between 390px and 1440px, so size grows continuously and never jumps at a breakpoint. Resize the window to check."
+          id="scale-heading"
+        />
+        <dl class="scale">
+          {
+            SCALE.map(({ token, use, px }) => (
+              <div class="step">
+                <dt>
+                  <code>{token}</code>
+                  <span>
+                    {use} · {px}px
+                  </span>
+                </dt>
+                <dd style={`font-size: var(${token});`}>Never miss a beat</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </section>
+    </div>
+  </main>
+
+  <style>
+    .bar {
+      border-bottom: 1px solid var(--color-ink-700);
+      padding-block: var(--spacing-4);
+    }
+    .kicker {
+      margin: 0;
+      font-size: var(--text-xs);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-plum-400);
+    }
+    .wrap {
+      max-width: var(--content-max);
+      margin-inline: auto;
+      padding-inline: var(--gutter);
+    }
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-32);
+      padding-block: var(--spacing-24) var(--spacing-48);
+    }
+    section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-8);
+    }
+
+    /* --- bloom panels --- */
+    .acts {
+      padding-block: var(--spacing-16) 0;
+      gap: var(--spacing-12);
+    }
+    .act {
+      position: relative;
+      min-height: 46vh;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+    .act-copy {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      padding-block: var(--spacing-12);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-3);
+      align-items: flex-start;
+    }
+    .feeling {
+      margin: 0;
+      font-size: var(--text-lg);
+      color: var(--color-mute-200);
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--spacing-4);
+    }
+    .body {
+      margin: 0;
+      font-size: var(--text-body);
+      line-height: var(--leading-body);
+      max-width: var(--measure);
+      color: var(--color-mute-200);
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: var(--spacing-4);
+    }
+    .cards h3 {
+      margin: 0 0 var(--spacing-2);
+      font-size: var(--text-xl);
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      color: var(--color-white);
+    }
+    .cards p {
+      margin: 0;
+      font-size: var(--text-body);
+      line-height: var(--leading-body);
+      color: var(--color-mute-200);
+    }
+
+    .scale {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-8);
+    }
+    .step {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-2);
+    }
+    .step dt {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-3);
+      font-size: var(--text-xs);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-mute-400);
+    }
+    .step dt code {
+      color: var(--color-plum-300);
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .step dd {
+      margin: 0;
+      font-weight: 700;
+      line-height: var(--leading-display);
+      letter-spacing: var(--tracking-display);
+      color: var(--color-white);
+    }
+  </style>
+</Base>

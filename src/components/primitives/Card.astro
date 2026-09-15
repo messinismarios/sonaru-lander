@@ -1,0 +1,40 @@
+---
+/**
+ * A raised surface. Deliberately plain: the design language carries weight through type
+ * and colour, not through boxes and rules (`design-system.md` §1.4), so a card is a
+ * quiet container and nothing more.
+ */
+interface Props {
+  /** `true` lifts the border toward the brand on hover - only for cards that are links. */
+  readonly interactive?: boolean;
+  readonly class?: string | undefined;
+}
+
+const { interactive = false, class: className } = Astro.props;
+---
+
+<div class:list={['card', className]} data-interactive={interactive}>
+  <slot />
+</div>
+
+<style>
+  .card {
+    background: var(--color-ink-900);
+    border: 1px solid var(--color-ink-700);
+    border-radius: 16px;
+    padding: var(--spacing-6);
+  }
+
+  .card[data-interactive='true'] {
+    transition: border-color var(--dur-2) var(--ease-out);
+  }
+  .card[data-interactive='true']:hover {
+    border-color: var(--color-plum-700);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card[data-interactive='true'] {
+      transition: none;
+    }
+  }
+</style>

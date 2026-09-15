@@ -1,0 +1,75 @@
+---
+/**
+ * The OG image's canvas - a bare 1200×600 page holding nothing but `PostCover`.
+ *
+ * **This route is a camera stand, not a page.** `scripts/build-og-images.mjs` photographs
+ * it through the Chrome Playwright already drives, exactly the way `npm run brand`
+ * rasterises the app icons; there is no second image toolchain, no satori, and no runtime
+ * image service - `tech-stack.md` §41 named satori + resvg, and 8.1 had already settled on
+ * screenshotting real markup instead, which is the precedent this follows.
+ *
+ * **Why a route rather than Astro's Container API**, which would render the component to a
+ * string with no server involved: the composition depends on scoped component styles and
+ * on `tokens.css`, and container rendering does not reliably carry either. This was tried
+ * first and this is the fallback, as Gate B said it would be. A route is also the thing
+ * Gate C already requires to be running.
+ *
+ * It renders **no `Base`**: no header, no footer, no skip link, no fonts beyond the one the
+ * cover uses. Whatever is in this document ends up in the picture.
+ *
+ * **Dev-only.** It is listed in `tests/unit/nav-inventory.spec.ts`'s `DEV_ONLY` and removed
+ * at 8.13 with `/kit` and `/specimen`. The generated PNGs are committed, so the production
+ * build only copies `public/og/` and never needs this route.
+ */
+import type { GetStaticPaths } from 'astro';
+import PostCover from '../../../components/blog/PostCover.astro';
+import { publishedPosts, type Post } from '../../../lib/posts';
+import '../../../styles/tokens.css';
+
+export const getStaticPaths = (async () => {
+  const posts = await publishedPosts();
+  return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  readonly post: Post;
+}
+
+const { post } = Astro.props;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{post.entry.data.hook}</title>
+    <link
+      rel="preload"
+      href="/fonts/satoshi-subset.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+  </head>
+  <body>
+    <div class="stage" data-og-stage>
+      <PostCover hook={post.entry.data.hook} act={post.primaryTag.act} />
+    </div>
+  </body>
+</html>
+
+<style>
+  :global(body) {
+    margin: 0;
+    background: var(--color-ink-950);
+  }
+
+  /*
+   * Exactly 1200×600 - Open Graph's own recommended size, and 2:1, which is the ratio the
+   * index card reserves with `aspect-ratio`. The screenshot is taken of this element
+   * rather than of the viewport, so the file's dimensions cannot drift from these.
+   */
+  .stage {
+    width: 1200px;
+    height: 600px;
+  }
+</style>

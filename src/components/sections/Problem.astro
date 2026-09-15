@@ -1,0 +1,502 @@
+---
+/**
+ * Act one - phases.md 8.3, "the problem". Gate A and B approved 2026-09-02
+ * (`gate-log.md`), revised across two Gate C rounds.
+ *
+ * A field of small violet points recedes past the copy as the section pins - each one a
+ * stand-in for a release from someone the visitor follows, most going out before they
+ * reach the top. Eight glide through as labelled chips naming the artists themselves
+ * (`getShowcaseArtists`, `../device/showcase`), implying "these made it" against the field
+ * that doesn't. The `problem` bloom (`../BloomField.astro`, defined at 8.1 and unused
+ * until now) fades in ahead of the pin, cooling the page from the hero's magenta toward
+ * `--bloom-violet` - "night, distance, missed" (`design-system.md` §2).
+ *
+ * **The chips carry artist photographs, not album covers** (2026-09-11, with the artwork
+ * swap). They used to read the release manifest, so a chip was a cover cropped to a 24px
+ * circle beside the artist's name - which is a cover used as an avatar, and at that size
+ * unreadable as either. The chips are about *people you follow*, not about releases; the
+ * releases are act two's and act three's job. `artists.json` is their own manifest, and it
+ * is why the field can hold eight names while the feed shows five releases.
+ *
+ * No device mockup here. `design-system.md` §6 reserves real-DOM app UI for the device
+ * frame specifically so that system stays the one place claiming to *be* the app; this
+ * act is atmosphere and copy. The actual choreography - the pin, the fade, the word
+ * reveal, the particle and chip timing - lives in `../../motion/timelines/problem.ts`.
+ *
+ * The headline is split into one `<span>` per word (not `SplitText`) so `problem.ts` can
+ * stagger it in on scroll. Each word is real text in its own element, joined by literal
+ * `{' '}` text nodes - the same fix `tests/visual/inline-spacing.spec.ts` guards for
+ * inline links - so nothing here needs an aria-hidden clone to keep the sentence intact
+ * for a screen reader.
+ */
+import Button from '../primitives/Button.astro';
+import BloomField from '../BloomField.astro';
+import { Image } from 'astro:assets';
+import { getFieldArtists } from '../device/showcase';
+import { catalogue } from '../../i18n';
+
+const t = catalogue(Astro.currentLocale);
+
+const photoFiles = import.meta.glob<{ default: ImageMetadata }>(
+  '/src/assets/showcase/artists/*.{jpg,jpeg,png,webp,avif}',
+  { eager: true },
+);
+
+/**
+ * Where each chip sits in the field, as a percentage of the section. **Eight places, and
+ * this array is what decides that there are eight** - its length is passed to
+ * `getFieldArtists`, which fails the build rather than let the manifest and this layout
+ * disagree about how many chips there are.
+ */
+/*
+ * `mobileY` is a second vertical position used only below `md` (8.14c Gate C). `y` is
+ * unchanged and still governs every width from 768 up, where the section is a full
+ * viewport and the copy sits in a column narrow enough for the field to scatter around it.
+ *
+ * At 390 the section is 60svh (506px) and the copy - headline, three-line lede and the CTA
+ * - spans 124-382px of it, i.e. the middle half, which is exactly where these `y` values
+ * land: chips were sitting across the lede's last line and under the button. So mobile gets
+ * the same eight places pushed into the two 124px bands left over. The left/right
+ * alternation and the near/far reading are preserved; only the band moves.
+ *
+ * **Both constraints are weighted by opacity, and getting that wrong once is what made
+ * this look impossible.** A chip travels upward across its whole life: it starts below its
+ * anchor at opacity 0, is fully opaque across roughly the first third of the way back, then
+ * fades out as it continues above it. So it is never visible at either extreme - which
+ * means the section's `overflow: clip` edge only binds on the part of the travel the chip
+ * can actually be seen on, not on the full ±62px (`MOBILE_CHIP_GLIDE_SCALE`). Sizing the
+ * bands against the full drift left a single legal anchor and forced the chips onto the
+ * copy; sizing them against the *visible* travel leaves 36-63px above and 380-432px below,
+ * which is the 8-12% / 76-84% used here.
+ *
+ * **The copy is deliberately not treated as a hard boundary.** A chip is only fully opaque
+ * near the middle of its drift - it fades in from +84 and out to −84 - so the extremes that
+ * reach the copy do it under 0.4 opacity, which is the same "passing behind the copy"
+ * desktop already does with its own `y: 48`/`y: 52` chips drifting ±120px straight through
+ * it. What was fixed earlier in this gate was different: chips sitting *statically* on the
+ * lede at full opacity, which is a collision rather than a pass.
+ *
+ * The numbers are measured against the English lede's three lines. A translation that wraps
+ * to four moves the band, so 8.11c re-checks this rather than inheriting it.
+ */
+const CHIP_POSITIONS = [
+  { x: 22, y: 30, mobileY: 10 },
+  { x: 76, y: 26, mobileY: 8 },
+  { x: 28, y: 74, mobileY: 79 },
+  { x: 72, y: 70, mobileY: 83 },
+  { x: 14, y: 52, mobileY: 12 },
+  { x: 86, y: 48, mobileY: 81 },
+  { x: 46, y: 18, mobileY: 9 },
+  { x: 54, y: 84, mobileY: 76 },
+] as const;
+
+/**
+ * The eight artists in the field, one per position above.
+ *
+ * `artists.json` carries more than these - every artist a release card names is in it too -
+ * and which ones stand here is the `field` flag on the entry rather than anything derived.
+ * That is a correction, not a preference: for one afternoon the field was "the first eight
+ * artists with a photograph", and adding four photographs for the release cards swapped
+ * three of these chips for three alphabetically earlier names, in a section frozen behind
+ * its own Gate C. `getFieldArtists` throws if the count and this layout ever disagree.
+ */
+const chips = (await getFieldArtists(CHIP_POSITIONS.length)).map((artist) => {
+  const path = `/src/assets/showcase/artists/${artist.data.photo}`;
+  const file = photoFiles[path];
+  if (!file) {
+    throw new Error(
+      `problem: showcase artist "${artist.id}" names ${artist.data.photo}, which is not in src/assets/showcase/artists/`,
+    );
+  }
+  return { key: artist.id, name: artist.data.name, photo: file.default };
+});
+
+/**
+ * Particle layers: count, dot size and parallax depth.
+ *
+ * Gate B shipped 10/8/6 at 12/8/5px. Gate C rev 1 (owner): 30% more, 40% bigger - counts
+ * kept, size reverted to Gate B's at Gate C rev 2 (owner: "revert the size change").
+ */
+const LAYERS = [
+  { count: 13, size: 12, depth: 1.4 },
+  { count: 10, size: 8, depth: 1.0 },
+  { count: 8, size: 5, depth: 0.6 },
+] as const;
+
+/** Deterministic scatter - see `problem.ts` for why this is not `Math.random()`. */
+const GOLDEN = 0.6180339887;
+
+const particles = LAYERS.flatMap((layer, layerIndex) =>
+  Array.from({ length: layer.count }, (_, i) => {
+    const seed = layerIndex * 37 + i;
+    return {
+      key: `${layerIndex}-${i}`,
+      size: layer.size,
+      depth: layer.depth,
+      x: ((seed * GOLDEN) % 1) * 100,
+      y: ((seed * GOLDEN * 2) % 1) * 70 + 15,
+    };
+  }),
+);
+
+/** The headline, split for `problem.ts`'s word-by-word reveal. */
+/*
+ * Split here rather than stored pre-split: a Spanish sentence has a different word count,
+ * and `problem.ts` staggers `[data-word]` by an amount rather than a per-item delay, so
+ * the timeline needs no edit when that count changes.
+ */
+const HEADLINE_WORDS = t.home.problem.headline.split(' ');
+---
+
+<section id="how" class="problem" data-problem-stage>
+  <div class="atmosphere" data-problem-atmosphere>
+    <BloomField act="problem" intensity="ambient" />
+  </div>
+
+  <div class="field">
+    {
+      particles.map((p) => (
+        <span
+          class="particle"
+          data-particle
+          data-depth={p.depth}
+          aria-hidden="true"
+          style={`--x: ${p.x}%; --y: ${p.y}%; --size: ${p.size}px`}
+        />
+      ))
+    }
+
+    {
+      chips.map((chip, index) => {
+        const position = CHIP_POSITIONS[index] ?? CHIP_POSITIONS[0];
+        return (
+          <span
+            class="chip"
+            data-chip
+            style={`--x: ${position.x}%; --y: ${position.y}%; --y-mobile: ${position.mobileY}%`}
+          >
+            <Image src={chip.photo} alt="" width={32} height={32} />
+            <span class="chip-name">{chip.name}</span>
+          </span>
+        );
+      })
+    }
+  </div>
+
+  <div class="copy">
+    <h2 class="headline">
+      {
+        HEADLINE_WORDS.map((word, index) => (
+          <>
+            <span class="word" data-word>
+              {word}
+            </span>
+            {index < HEADLINE_WORDS.length - 1 && ' '}
+          </>
+        ))
+      }
+    </h2>
+    <p class="sub" data-problem-sub>
+      {
+        t.home.problem.sub.map((line, index) => (
+          <>
+            {index > 0 && <br />}
+            {line}
+          </>
+        ))
+      }
+    </p>
+    <div class="actions" data-problem-actions>
+      <Button href="#feed">{t.home.problem.action}</Button>
+    </div>
+  </div>
+</section>
+
+<style>
+  .problem {
+    position: relative;
+    height: 100svh;
+    display: grid;
+    place-items: center;
+    overflow: clip;
+    background: var(--color-ink-950);
+  }
+
+  .atmosphere {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .field {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /*
+   * 30% brighter (Gate C rev 1, owner): a hot white-violet core rather than a flat
+   * violet dot - `color-mix` against `--color-white`, both from tokens.css, so no hex
+   * literal is introduced.
+   */
+  .particle {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: var(--size);
+    height: var(--size);
+    border-radius: 50%;
+    background: radial-gradient(
+      closest-side,
+      color-mix(in srgb, var(--color-bloom-violet) 65%, var(--color-white)) 0%,
+      var(--color-bloom-violet) 45%,
+      transparent 78%
+    );
+    mix-blend-mode: screen;
+    will-change: transform, opacity;
+  }
+
+  /*
+   * `--x` anchors the chip's *left* edge only - nothing about `position: absolute` keeps
+   * its own (fixed, nowrap) width inside the viewport, so a right-leaning position
+   * (`x: 76`, `x: 86`) that clears comfortably at 1440 clips outright at 390 (8.14b:
+   * confirmed against `problem-1440-default-chips` and `problem-390-default-chips`,
+   * "Martin Garrix" cut to "Ma"). `max-width` bounds the chip by the space actually left
+   * between its anchor and the viewport edge; `.chip-name` is what gives, ellipsising
+   * rather than being sliced off with no indication anything is missing.
+   */
+  .chip {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    max-width: calc(100% - var(--x) - var(--gutter));
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-1) var(--spacing-3) var(--spacing-1) var(--spacing-1);
+    border-radius: 999px;
+    background: rgba(250, 250, 250, 0.08);
+    color: var(--color-mute-200);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    white-space: nowrap;
+    will-change: transform, opacity;
+  }
+
+  .chip img {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .chip-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .copy {
+    position: relative;
+    z-index: 2;
+    max-width: var(--content-max);
+    padding: 0 var(--gutter);
+    display: grid;
+    gap: var(--spacing-4);
+    justify-items: center;
+    text-align: center;
+  }
+
+  .headline {
+    margin: 0;
+    max-width: var(--measure-display);
+    font-size: var(--text-2xl);
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    font-weight: 700;
+    color: var(--color-white);
+    text-wrap: balance;
+  }
+
+  .word {
+    display: inline-block;
+    will-change: transform, opacity;
+  }
+
+  .sub {
+    margin: 0;
+    max-width: var(--measure);
+    font-size: var(--text-lg);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+    text-wrap: pretty;
+    will-change: transform, opacity;
+  }
+
+  /*
+   * The "See how it works" CTA, moved here from the hero (owner, 2026-09-03) and pointed at
+   * act two's `#feed` - the full-screen phone - rather than at this section. The offer to be
+   * shown the product reads better once the problem has been stated, and act two's growth is
+   * driven by the section's *approach*, so an anchor jump to its top lands exactly where the
+   * phone reaches full size.
+   *
+   * It arrives on the sub-line's own window in `problem.ts`, which is why no timing constant
+   * there had to change to make room for it.
+   */
+  .actions {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--spacing-2);
+    will-change: transform, opacity;
+    /*
+     * Both of these exist because this is a focusable control inside a *scroll-revealed,
+     * pinned* section, which the hero was not - measured after the move: tabbing to it from
+     * the header left it at `opacity: 0` and 941px down a 945px viewport, i.e. focused,
+     * invisible and out of view. That is a WCAG 2.2 2.4.11/2.4.7 failure however good the
+     * animation is, and `hero-a11y.spec.ts`'s CTA test exists for exactly this.
+     *
+     * `scroll-margin-block` is what the browser's own focus scroll-into-view honours, so
+     * the control lands well inside the viewport rather than flush against its bottom edge.
+     * The `!important` is not decoration: `problem.ts` writes `opacity` *inline* via GSAP,
+     * and an important declaration is the only thing that outranks it - without it the
+     * reveal's own baseline keeps a focused control invisible.
+     */
+    scroll-margin-block: 40svh;
+  }
+
+  .actions:focus-within {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /*
+   * design-system.md §5: reduced motion is a designed final state, not a disabled
+   * animation. `problem.ts`'s reduced build sets the particles', chips', words' and
+   * sub-line's own transform and opacity; this only has to open the bloom, since the
+   * timeline never runs the ScrollTrigger that would otherwise leave it at 0.
+   */
+  /* At `md` and up only since 8.14c round 8 (owner): below it, phones keep the full
+   * motion build under Reduce Motion. */
+  @media (prefers-reduced-motion: reduce) and (min-width: 768px) {
+    .atmosphere {
+      opacity: 1;
+    }
+  }
+
+  /*
+   * 8.14b: at ≤767px the lede wraps to three lines instead of two (same text, narrower
+   * column), and the extra line's height means it has not fully scrolled clear of the
+   * fixed header by the time act two's approach makes its phone prominent - confirmed
+   * live at `feed`'s `mid-growth` checkpoint, `.sub` at `top: -54px, bottom: 60px`
+   * against a 76px header, opacity 1 (`problem.ts` never fades this copy; it is meant to
+   * simply scroll out of flow once the pin releases). Not present at 1440, where two
+   * lines clear the header well before that checkpoint - `feed-1440-default-mid-growth`.
+   * Reaching into `problem.ts`'s own exit timing or `promise.ts`'s approach budget to fix
+   * a document-flow gap risks both sections' tuned scrub math; the two sections do not
+   * otherwise depend on the exact gap between them, so a mobile-only spacer buys the taller
+   * copy the extra scroll distance it needs to clear the header before feed's approach
+   * begins in earnest.
+   */
+  @media (max-width: 767px) {
+    .problem {
+      /* 8.14c Gate C (owner: the full-height section is "a bit excessive" at this width -
+       * 80svh at round 1, 60svh at the approval round, 70svh at 8.14c's round 4 ("should be
+       * larger"), 80svh at round 5 and a full screen again at round 6). `svh`, not `vh`, for
+       * the reason every other height on this site uses it: a mobile browser's collapsing
+       * address bar changes `vh` mid-scroll. */
+      height: 100svh;
+      /* 8.14b's header clearance, recomputed each time this section's height changes
+       * rather than left to rot. At 100svh, 120px put `.sub`'s bottom clear of the 76px
+       * header band at act two's own checkpoint; every 20svh taken out of the section
+       * moves that checkpoint up with it and hands the lede's last line back into the
+       * header, so 80svh needed 210px and 60svh needs 300px.
+       *
+       * **The gap is `Feed.astro`'s `padding-top`, not a `margin-bottom` here** (owner,
+       * 8.14c: "a weird background box" before act two). Both sections paint
+       * `--color-ink-950`; a margin paints nothing, so 300px of the page's own plum ground
+       * showed through between them as a hard-edged band. As padding on the next section
+       * it is the same document distance with that section's background over it. */
+    }
+
+    /*
+     * 8.14c Gate C (owner: "the glow balls are not working here, just remove them"). The
+     * field's own violet particles carry this section at mobile; the bloom behind them
+     * was reading as two flat discs rather than as weather - the same thing `Playlist`
+     * found at ≤767px, where the orbs are sized off the field's *width* and a narrow
+     * viewport gets discrete circles instead of atmosphere. It answered that with a scale
+     * and a lift; this section is dense enough without it, so it simply goes.
+     *
+     * Scoped here, not in `BloomField` - the hero, act two and act four share that
+     * component behind their own frozen Gate C (`design-system.md` §9). `problem.ts`'s
+     * mobile branch animates nothing on this element, so there is no dead tween left
+     * driving a hidden layer.
+     */
+    .atmosphere {
+      display: none;
+    }
+
+    /*
+     * 8.14c Gate C (owner: the chips "are skewed to the right and should be centered").
+     * 8.14b's `max-width` clamp stopped them being *sliced* but could not stop them
+     * leaning, because `--x` anchors a chip's left edge: every chip grows rightward from
+     * its own point, so the four right-hand positions (72, 76, 86) spent their whole
+     * width on the last fifth of a 390px screen and ellipsised to two characters.
+     *
+     * Two changes, both of which have to be here rather than in the shared layout: the
+     * scatter is compressed toward the middle (14-86% becomes ~30-70%), since those
+     * percentages were placed against 1440's much wider field; and `--x` becomes the
+     * chip's *centre* rather than its left edge.
+     *
+     * `translate`, not a `transform: translateX()`: `problem.ts` owns this element's
+     * `transform` for the glide and the scale envelope, and GSAP writes that property
+     * wholesale. The independent `translate` property composes with it instead of
+     * fighting it - it is applied first, so the chip still scales about its own centre.
+     */
+    /*
+     * 8.14c Gate C round 2 (owner: the chips should be "smaller (like 50%)" and "a bit
+     * less concentrated in the centre - more spread out"). The two go together: halving
+     * the chip is what buys the room to widen the scatter again without putting it back
+     * over the edge, which is what the 0.55 compression was there to prevent.
+     *
+     * **Real metrics, not a `scale()`.** Scaling a rendered pill down composites its text
+     * rather than setting it - soft on a promoted layer, which this element is
+     * (`will-change: transform`) - and `problem.ts` already owns `scale` for the chip's
+     * own resolve-in envelope, so a second one would have to be multiplied into it.
+     *
+     * **A literal 50% is not available on the type and that is a token decision, not a
+     * judgement call here**: `--text-sm` halved is 7px, and `tokens.css` marks
+     * `--text-xs` (11px) "Fixed: it must not shrink further." So the type goes to that
+     * floor and the rest of the reduction comes out of the photograph and the padding,
+     * which carry no such constraint - measured below at ~41% of the old footprint.
+     */
+    .chip {
+      left: calc(50% + (var(--x) - 50%) * 0.8);
+      /* Out of the copy's own band - see `CHIP_POSITIONS` above for the measurement. */
+      top: var(--y-mobile);
+      translate: -50% 0;
+      max-width: calc(100% - 2 * var(--gutter));
+      gap: var(--spacing-1);
+      padding: calc(var(--spacing-1) / 2) var(--spacing-2) calc(var(--spacing-1) / 2)
+        calc(var(--spacing-1) / 2);
+      font-size: var(--text-xs);
+    }
+
+    .chip img {
+      width: 14px;
+      height: 14px;
+    }
+
+    /*
+     * The field's own points, halved (owner, same round: "the stars should also be a lot
+     * smaller (50%)"). A multiplier on `--size` rather than a second set of numbers in
+     * `LAYERS` - the three layers' *relative* sizes are what carry the parallax depth, and
+     * they stay in the one place that decides them.
+     */
+    .particle {
+      width: calc(var(--size) * 0.5);
+      height: calc(var(--size) * 0.5);
+    }
+  }
+</style>

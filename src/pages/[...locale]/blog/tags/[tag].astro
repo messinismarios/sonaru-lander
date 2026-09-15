@@ -1,0 +1,191 @@
+---
+/**
+ * `/blog/tags/<tag>` - one tag's posts.
+ *
+ * Real routes rather than labels, chosen by the owner at Gate A. gsap.com's model; superlist
+ * has no tags at all. **Three tags across three posts gives three pages holding one post
+ * each on launch day**, which was named at the gate rather than discovered afterwards -
+ * what makes it defensible is that the tags describe subjects 8.9d is actually writing
+ * about rather than a taxonomy invented to look populated.
+ *
+ * Paths come from `src/data/tags.ts`, not from the posts, so a tag with nothing under it
+ * still has a page. An empty tag page is a smaller problem than a link in a meta line that
+ * 404s, and the guard in `tests/unit/blog-inventory.spec.ts` asserts the two sets agree.
+ */
+import type { GetStaticPaths } from 'astro';
+import Base from '../../../../layouts/Base.astro';
+import BloomField from '../../../../components/BloomField.astro';
+import PostCard from '../../../../components/blog/PostCard.astro';
+import { postsForTag, type Post } from '../../../../lib/posts';
+import { TAGS, type Tag } from '../../../../data/tags';
+import { catalogue } from '../../../../i18n';
+import { localePaths } from '../../../../i18n/routing';
+
+/* The locale × tag product - phases.md 8.11b. */
+export const getStaticPaths = (async () => {
+  const tags = await Promise.all(
+    TAGS.map(async (tag) => ({ tag, posts: await postsForTag(tag.slug) })),
+  );
+  return localePaths().flatMap(({ params: { locale } }) =>
+    tags.map(({ tag, posts }) => ({ params: { locale, tag: tag.slug }, props: { tag, posts } })),
+  );
+}) satisfies GetStaticPaths;
+
+interface Props {
+  readonly tag: Tag;
+  readonly posts: readonly Post[];
+}
+
+const { tag, posts } = Astro.props;
+const count = posts.length;
+
+const t = catalogue(Astro.currentLocale);
+const { label, description } = t.ui.blog.tags[tag.slug];
+const meta = t.ui.meta.tags[tag.slug];
+/* One key per plural form, not a suffix glued to a number - see `ui.blog.postCount`. */
+const countLabel =
+  count === 1
+    ? t.ui.blog.postCount.one
+    : t.ui.blog.postCount.other.replace('{count}', String(count));
+---
+
+<Base title={meta.title} description={meta.description}>
+  <link
+    slot="head"
+    rel="alternate"
+    type="application/rss+xml"
+    title={t.ui.blog.feedTitle}
+    href="/blog/rss.xml"
+  />
+
+  <div class="page">
+    <div class="atmosphere">
+      <BloomField act={tag.act} intensity="ambient" />
+    </div>
+
+    <header class="masthead">
+      <p class="eyebrow">{t.ui.blog.eyebrow}</p>
+      <h1>{label}</h1>
+      <p class="lede">{description}</p>
+      <p class="count">{countLabel}</p>
+    </header>
+
+    {
+      count > 0 ? (
+        <ol class="index">
+          {posts.map((post, i) => (
+            <li>
+              <PostCard post={post} priority={i === 0} />
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p class="empty">{t.ui.blog.emptyTag}</p>
+      )
+    }
+
+    <p class="back"><a href="/blog">{t.ui.blog.backToIndex}</a></p>
+  </div>
+</Base>
+
+<style>
+  /* `/blog`'s composition, to the value - this is the same page with a narrower set. */
+  .page {
+    --page-inset: max(0px, (100vw - var(--content-max)) / 2);
+    --column-width: min(var(--measure-prose), 100vw - 2 * var(--page-inset) - 2 * var(--gutter));
+    --bloom-x: calc(var(--page-inset) + var(--gutter) + var(--column-width) / 2);
+    --bloom-y: var(--spacing-48);
+
+    position: relative;
+    z-index: 1;
+    padding: var(--spacing-32) var(--gutter) var(--spacing-24);
+    max-width: var(--content-max);
+    margin-inline: auto;
+  }
+
+  .atmosphere {
+    position: absolute;
+    top: 0;
+    left: calc(50% - 50vw);
+    width: 100vw;
+    height: 100svh;
+    z-index: -1;
+    pointer-events: none;
+    -webkit-mask-image: radial-gradient(
+      72% 58% at var(--bloom-x) var(--bloom-y),
+      #000 0%,
+      transparent 74%
+    );
+    mask-image: radial-gradient(72% 58% at var(--bloom-x) var(--bloom-y), #000 0%, transparent 74%);
+  }
+
+  .atmosphere :global(.bloom) {
+    transform: translateX(calc(var(--bloom-x) - 50%));
+  }
+
+  .masthead {
+    max-width: var(--measure-prose);
+  }
+
+  .eyebrow {
+    margin: 0;
+    font-size: var(--text-xs);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-plum-300);
+  }
+
+  h1 {
+    margin: var(--spacing-4) 0 0;
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    color: var(--color-white);
+  }
+
+  .lede {
+    margin: var(--spacing-6) 0 0;
+    font-size: var(--text-prose-lede);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+  }
+
+  .count {
+    margin: var(--spacing-3) 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-mute-400);
+  }
+
+  /* `/blog`'s column, to the value - see the note there. */
+  .index {
+    list-style: none;
+    margin: var(--spacing-24) 0 0;
+    padding: 0;
+    max-width: var(--measure-prose);
+    display: grid;
+    gap: var(--spacing-24);
+  }
+
+  .empty {
+    margin: var(--spacing-16) 0 0;
+    font-size: var(--text-body);
+    color: var(--color-mute-400);
+  }
+
+  .back {
+    margin: var(--spacing-16) 0 0;
+    font-size: var(--text-sm);
+  }
+
+  .back a {
+    color: var(--color-mute-400);
+    text-decoration: none;
+  }
+
+  .back a:hover,
+  .back a:focus-visible {
+    color: var(--color-plum-300);
+  }
+</style>

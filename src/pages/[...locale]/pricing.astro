@@ -1,0 +1,45 @@
+---
+/**
+ * The pricing route - phases.md 8.7.
+ *
+ * A static reading page, not a sixth act. The home page is the cinema: five sections,
+ * four pinned timelines, and most of the site's scroll budget. Someone arriving here has
+ * already been sold and wants to be told a number, so this page tells them one and gets
+ * out of the way (Gate A, 2026-09-06).
+ *
+ * **The prices it shows are indicative.** `mission.md` records that Pro pricing is not
+ * final; the owner's instruction was to put temporary numbers on the page anyway so the
+ * toggle has something to move between. `src/data/pricing.ts` owns them and says so,
+ * and replacing them is tracked as a launch blocker in phases.md 8.13.
+ */
+import Base from '../../layouts/Base.astro';
+import PricingHero from '../../components/sections/PricingHero.astro';
+import Plans from '../../components/sections/Plans.astro';
+import Compare from '../../components/sections/Compare.astro';
+import Faq from '../../components/sections/Faq.astro';
+import { catalogue } from '../../i18n';
+import type { GetStaticPaths } from 'astro';
+import { localePaths } from '../../i18n/routing';
+
+/*
+ * The route in both locales from one file - phases.md 8.11b. `undefined` is the default
+ * locale, which is what leaves it unprefixed.
+ */
+export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
+
+const t = catalogue(Astro.currentLocale);
+---
+
+<Base title={t.ui.meta.pricing.title} description={t.ui.meta.pricing.description}>
+  <PricingHero />
+  <Plans />
+  <Compare />
+  <Faq />
+</Base>
+
+<script>
+  import { initMotion, createPricingTimeline } from '../../motion';
+
+  initMotion();
+  await createPricingTimeline();
+</script>

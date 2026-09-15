@@ -1,0 +1,138 @@
+---
+/**
+ * A post's cover - **and its social card. They are the same artefact.**
+ *
+ * That is the whole of the direction the owner chose at Gate A (2026-09-08), from three
+ * treatments built at `/blog/lab`. Sonaru has no illustrator, no photographer and no stock
+ * budget, and the one kind of imagery the site owns - third-party album artwork - belongs
+ * to the device screens and carries `design-system.md` §7.4's attribution obligation. So
+ * the cover is generated, and generating it twice for two purposes would be two things to
+ * keep identical.
+ *
+ * **This file is the single source.** `src/pages/blog/og/[slug].astro` renders it at
+ * 1200×600 and `scripts/build-og-images.mjs` photographs that, the same way `npm run
+ * brand` rasterises the app icons through the Chrome the tests already drive. Nothing
+ * embeds its own copy of this composition.
+ *
+ * **The hook, not the title** (owner's amendment at Gate A). As first built, the cover
+ * repeated the post's title within 40px of itself; the fix was not deleting the second
+ * one - that leaves a picture with an excerpt - but giving the cover a sharper line of its
+ * own. `hook` is a required field for exactly this reason.
+ *
+ * **The palette comes from the post's first tag**, from the acts already in `tokens.css`.
+ * Three generated covers in one column read as three prints of one template otherwise;
+ * this is what makes them look like three different posts. Proposed at Gate B and
+ * approved there.
+ */
+import BloomField from '../BloomField.astro';
+import SonaruMark from '../brand/SonaruMark.astro';
+import type { Act } from '../../data/tags';
+
+interface Props {
+  readonly hook: string;
+  readonly act: Act;
+}
+
+const { hook, act } = Astro.props;
+---
+
+<div class="cover">
+  <div class="cover-bloom">
+    <BloomField act={act} intensity="feature" />
+  </div>
+  <div class="cover-mark">
+    <SonaruMark size={28} />
+  </div>
+  <p class="cover-hook">{hook}</p>
+  <p class="cover-foot">sonaru.app</p>
+</div>
+
+<style>
+  .cover {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    /* What the `cqw` units below resolve against - see `.cover-hook`. */
+    container-type: inline-size;
+    display: grid;
+    align-content: space-between;
+    padding: 5%;
+    /*
+     * The app icons' ground, and for the same reason: this composition is photographed and
+     * shown outside the site, where nothing else establishes the brand's colour.
+     */
+    background: linear-gradient(160deg, var(--color-plum-800), var(--color-plum-950));
+  }
+
+  .cover-bloom {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  /*
+   * A shade over the left of the bloom, where the hook sits (owner, 2026-09-15). A two-line
+   * hook on the `product` palette crossed its cyan orb at 4.36:1 against white type; this
+   * takes the brightest light behind the type down past AA without moving the hook or
+   * changing any palette. It sits under the type and over the light, so
+   * `tests/e2e/blog.spec.ts` measures it as part of the ground, which is what a reader sees.
+   */
+  .cover-bloom::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-plum-950) 35%, transparent),
+      transparent 70%
+    );
+  }
+
+  /*
+   * The mark scales with the composition like the type does. `SonaruMark` takes a pixel
+   * size, which is right for a page and wrong here: this cover is rendered at 1200 and at
+   * 640, and a fixed 28px mark is a different picture at each - conspicuous at the small
+   * size and a speck at the large one. The prop still sets the viewBox; `cqw` sets what
+   * it occupies.
+   */
+  .cover-mark {
+    position: relative;
+    z-index: 1;
+    justify-self: start;
+  }
+
+  .cover-mark :global(svg) {
+    width: 4cqw;
+    height: 4cqw;
+  }
+
+  /*
+   * Sized in `cqw` rather than `px` or the fluid scale, because this composition is
+   * rendered at two very different sizes - ~640px wide inside an index card and 1200px
+   * wide as an OG image - and it has to be the same picture at both. A viewport-relative
+   * clamp would make the card and the social card two different designs, which is the
+   * one thing the "same artefact" decision exists to prevent.
+   */
+  .cover-hook {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    max-width: 14em;
+    font-size: 5.6cqw;
+    font-weight: 700;
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    color: var(--color-white);
+    text-wrap: balance;
+  }
+
+  .cover-foot {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    font-size: 1.9cqw;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-plum-300);
+  }
+</style>

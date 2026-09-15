@@ -1,0 +1,311 @@
+---
+/**
+ * The lock screen, and one notification arriving on it - act three (phases.md 8.5).
+ *
+ * **This is the one screen component that does not mirror a Sonaru view**, and the
+ * distinction is deliberate rather than an exemption. `design-system.md` §6 requires
+ * screen components to mirror the real iOS components' structure and naming so a reader
+ * can map site → app. There is no `LockScreenView.swift` to mirror: a push notification is
+ * *iOS system UI*, drawn by the OS, and the only part Sonaru owns is the payload - the app
+ * name, the title, the body, and the icon. So this file reproduces Apple's banner as the
+ * frame around Sonaru's content, and everything inside it that is ours comes from the
+ * showcase manifest.
+ *
+ * **The release announced is the one the manifest marks `announced`** - and it is in act
+ * two's feed too, because `getFeedReleases` always keeps it there. That is the section's
+ * whole narrative trick: act three is not a new claim, it is the story of how that row got
+ * there. Reading it from the manifest rather than typing it in is also what
+ * `design-system.md` §7 requires.
+ *
+ * It used to be `showcase[0]`, the newest. That was the same release while the manifest's
+ * dates were staged; with real dates it was not, and the owner's call (2026-09-11) was that
+ * this act keeps its release while act two follows the dates. See `showcase.ts`.
+ *
+ * **The clock reads 00:00 on the release's own date.** Releases land at midnight, so the
+ * lock screen is telling the truth about when this would have arrived rather than picking
+ * a decorative time.
+ *
+ * Nothing here animates itself. Every moving part is a custom property this file only
+ * *reads* - `--notify-wake` for the screen coming up, `--notify-banner` for the arrival -
+ * and `motion/timelines/notify.ts` is the only thing that writes them. Both default to 0
+ * via `@property` on the section, so this screen renders correctly (asleep) on any page
+ * that does not drive it, `/kit` included.
+ */
+import SonaruMark from '../brand/SonaruMark.astro';
+import { catalogue } from '../../i18n';
+import { getAnnouncedRelease } from './showcase';
+
+/** The one release the manifest marks `announced`. `showcase.ts` owns that choice. */
+const release = await getAnnouncedRelease();
+
+const { artist, title, kind, releaseDate } = release.data;
+
+/**
+ * `en-GB` and `UTC` exactly as `ReleaseCard.astro` and `Feed.astro`'s stamps use them, so
+ * the date on the lock screen and the date beside the phone in act two cannot disagree.
+ */
+const at = new Date(`${releaseDate}T00:00:00Z`);
+const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long', timeZone: 'UTC' }).format(at);
+const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', timeZone: 'UTC' }).format(at);
+const month = new Intl.DateTimeFormat('en-GB', { month: 'long', timeZone: 'UTC' }).format(at);
+
+/**
+ * "just released Jungle" / "just released the album For Cryin' Out Loud!".
+ *
+ * Two forms rather than one with an optional article: English needs "the" before the kind
+ * and nothing before a bare title, and a language that agrees the article with the noun
+ * changes these two strings instead of this component.
+ */
+const banner = catalogue(Astro.currentLocale).home.device.lockScreen;
+const body =
+  kind === 'single'
+    ? banner.bodySingle.replace('{title}', title)
+    : banner.bodyOther.replace('{kind}', kind).replace('{title}', title);
+---
+
+<div class="lock">
+  {/* The ground the sleeping screen shows: the app's own plum, at rest. */}
+  <div class="wallpaper"></div>
+
+  {
+    /*
+    The screen being off. An overlay whose opacity is driven, *not* a `filter: brightness()`
+    on the screen - CLAUDE.md bans `filter` in anything scrubbed, and this is the same
+    layer-over-the-top move the hero uses for `--blackout`. It also means the "off" state is
+    a real black surface rather than a dimmed image, which is what a phone actually looks
+    like face-up in a dark room.
+  */
+  }
+  <div class="off"></div>
+
+  <div class="face">
+    <time class="clock" datetime={`${releaseDate}T00:00`}>
+      <span class="time">00:00</span>
+      <span class="date">{weekday} {day} {month}</span>
+    </time>
+
+    <div class="banner">
+      <span class="icon" aria-hidden="true"><SonaruMark class="glyph" /></span>
+      <span class="text">
+        <span class="app">{banner.appName}</span>
+        <span class="title">{artist}</span>
+        <span class="body">{body}</span>
+      </span>
+    </div>
+  </div>
+</div>
+
+<style>
+  /*
+   * Every dimension is a fraction of the screen (`cqh`/`cqw`), never a px - `Device.astro`
+   * sets `container-type: size` precisely so these follow the device at any scale, the way
+   * the SwiftUI original's `min(18, H * 0.022)` does.
+   */
+  .lock {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .wallpaper {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(120% 68% at 50% 8%, var(--color-plum-800) 0%, transparent 62%),
+      linear-gradient(to bottom, var(--color-plum-950) 0%, var(--color-ink-950) 72%);
+  }
+
+  /*
+   * The lights, as a layer over the screen rather than a `filter` on it.
+   *
+   * Opaque black at `--notify-wake: 0` and gone at 1. The inversion lives here rather than
+   * in the timeline so the property keeps one plain meaning everywhere it is read - 0
+   * asleep, 1 awake - and so the *undriven* default is the asleep state: `@property` gives
+   * `--notify-wake` an initial value of 0, which lands this layer fully opaque. A screen
+   * that defaulted to lit would show `/kit` a phone mid-notification.
+   */
+  .off {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    opacity: calc(1 - var(--notify-wake));
+    z-index: 2;
+  }
+
+  .face {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 6cqh 4.5cqw 5cqh;
+  }
+
+  /* --- the lock clock --- */
+
+  .clock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6cqh;
+    margin-top: 7cqh;
+    /* Comes up slightly ahead of the banner, so the screen reads as waking rather than as
+     * a banner appearing on an already-lit phone. */
+    opacity: var(--notify-wake);
+  }
+
+  .time {
+    font-family: var(--font-sans);
+    font-weight: 300;
+    font-size: 11cqh;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .date {
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: 2.4cqh;
+    color: rgb(255 255 255 / 0.72);
+  }
+
+  /* --- the notification banner --- */
+
+  /*
+   * **Positioned under the clock rather than in the lock screen's bottom list**, and this
+   * is a considered trade rather than an oversight. iOS parks a *settled* lock-screen
+   * notification in a list at the bottom of the screen, which is where this sat first. Two
+   * things were wrong with it: act three's copy lands in the lower third of the pin (act
+   * two's arrangement, reused) and covered the banner outright - the one element the whole
+   * section exists to show - and the arrival read as happening in the phone's periphery
+   * rather than to the person holding it. Sitting it below the clock puts the notification
+   * in the optical centre of a screen that is otherwise deliberately empty, which is where
+   * the eye already is when the screen comes up.
+   */
+  .banner {
+    margin-top: 9cqh;
+    display: flex;
+    align-items: center;
+    gap: 2.4cqw;
+    padding: 2.4cqh 3cqw;
+    border-radius: 4.6cqw;
+
+    /*
+     * iOS's notification material: a light-on-dark blur, not a flat panel. `backdrop-filter`
+     * is a *static* property here - it is never animated, so the repo's ban on animating
+     * `filter` in a scrubbed timeline does not apply. Safari needs the prefix.
+     */
+    background: rgb(64 58 64 / 0.62);
+    -webkit-backdrop-filter: blur(2.4cqw);
+    backdrop-filter: blur(2.4cqw);
+    border: 0.14cqh solid rgb(255 255 255 / 0.1);
+
+    /*
+     * The arrival. `--notify-banner` runs 0 → 1 and is written by a tween that always runs
+     * to completion, never scrubbed - see `notify.ts` for why. Transform and opacity only.
+     */
+    opacity: var(--notify-banner);
+    transform: translateY(calc((1 - var(--notify-banner)) * -9cqh))
+      scale(calc(0.965 + 0.035 * var(--notify-banner)));
+    will-change: transform, opacity;
+  }
+
+  /*
+   * The app icon is the real mark, not a letter (owner, 8.5's Gate C rev 2). It was a
+   * typographic `S` in the logotype face, which is the one place on the site the identity
+   * was being approximated rather than drawn - and this is an *app icon*, the single
+   * context where the mark is most literally what a real notification would show.
+   *
+   * **The tile is deliberately much fainter than it was.** It used to run
+   * `--plum-900 → --plum-700`, and `--plum-700` is a saturated wine at close enough a hue
+   * to the mark's `--plum-300` wave that the pink accent - the part of the identity that
+   * carries the meaning - was swallowed by its own background. The ground now stays down
+   * at the `--plum-900` end and is mixed toward transparency, so it reads as a dark tile
+   * on the banner's material and the wave is the brightest thing in it.
+   */
+  .icon {
+    flex: none;
+    width: 9cqw;
+    height: 9cqw;
+    border-radius: 2.4cqw;
+    background: linear-gradient(
+      150deg,
+      color-mix(in oklab, var(--color-plum-900) 78%, transparent),
+      color-mix(in oklab, var(--color-plum-800) 34%, transparent) 76%
+    );
+    border: 0.1cqh solid rgb(255 255 255 / 0.08);
+    display: grid;
+    place-items: center;
+  }
+
+  /*
+   * Sized as a fraction of the tile rather than in px, like every other dimension on this
+   * screen, so the mark follows the device at any scale. `SonaruMark` fits its own viewBox
+   * to the sampled path extents, so the glyph fills this box optically without a nudge.
+   *
+   * `:global` because Astro does not extend a parent's scope attribute onto a child
+   * component's root element - verified in the built HTML, where the `<svg>` carries only
+   * `SonaruMark`'s own `astro-cid`. This is the first use of it in the repo, and it is the
+   * narrower change: the alternative was inventing a size-by-custom-property protocol on
+   * `SonaruMark` for exactly one call site, since `size` is a px number and the SVG `width`
+   * attribute cannot take a container-query unit.
+   */
+  .icon :global(.glyph) {
+    width: 62%;
+    height: 62%;
+  }
+
+  .text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2cqh;
+    font-family: var(--font-sans);
+  }
+
+  .app {
+    font-size: 1.7cqh;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 0.6);
+  }
+
+  .title {
+    font-size: 2.2cqh;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.25;
+  }
+
+  .body {
+    font-size: 2.1cqh;
+    color: rgb(255 255 255 / 0.78);
+    line-height: 1.3;
+  }
+
+  /*
+   * One line each, ellipsised.
+   *
+   * **A long release title truncates, and that is accepted** (owner, 2026-09-11, asked
+   * directly). It was raised when real releases replaced the fictional ones and the body
+   * line first ran out of room - `just released the album For Cryin' Out ...` at 1440 and
+   * at 390. iOS ellipsises a lock-screen banner exactly like this, so what the mockup
+   * shows is what a real notification would do, and the alternative - a banner that grows
+   * to a second body line on some releases and not others - changes the shape of the one
+   * element the whole section exists to show, depending on which album is in the manifest.
+   *
+   * So this is a settled decision, not an open defect. Do not "fix" it by letting the text
+   * wrap.
+   */
+  .title,
+  .body {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+</style>

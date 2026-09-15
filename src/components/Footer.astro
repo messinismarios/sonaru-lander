@@ -1,0 +1,251 @@
+---
+/**
+ * The site footer - phases.md 8.9a, Gate A and Gate B approved 2026-09-07.
+ *
+ * Carried from 8.2, where the header was built and the footer was not. It is the thing
+ * that makes the legal pages reachable, which is why it belongs with them rather than
+ * with the header.
+ *
+ * **It is not a surface.** No border-top, no card, no panel, no bloom - the ground simply
+ * continues and the page goes quiet. That is 8.9a's central take from superlist.com,
+ * measured at this gate (`reference-study.md` §3, "The footer, measured"): their footer is
+ * `#181824`, the document's own ground, with `border-top: 0`. What was refused from the
+ * same reference is on record there too - their 46 links and SEO farm, their five
+ * per-column accent hues, and their 804px of height.
+ *
+ * **Head and link separate by value and weight, never by hue.** superlist gives each
+ * column head a different brand colour; Sonaru has one plum, so a rainbow here would be
+ * borrowed rather than adapted. `--mute-200` at 600 against `--mute-400` at 400 does the
+ * same job in our own palette.
+ *
+ * **Nothing animates.** On the home route this arrives immediately after act four's pin
+ * releases into its full-bleed close, and anything moving here competes with that close.
+ * The only motion is the link underline, and it is inherited from `Link` rather than
+ * authored - including its reduced-motion variant, which underlines permanently instead.
+ * There is no GSAP, no ScrollTrigger and no observer on this component.
+ *
+ * **Pending destinations render as inert text** (owner, Gate B). Six of the eight routes
+ * named here do not exist yet, so the alternative was a footer that 404s six ways or one
+ * that is a single link wide. `src/data/nav.ts` owns the inventory and the flag;
+ * `tests/unit/nav-inventory.spec.ts` fails the build if a route is built and its flag is
+ * not flipped, which is the failure nobody would otherwise notice.
+ */
+import Wordmark from './brand/Wordmark.astro';
+import Link from './primitives/Link.astro';
+import LocaleSwitcher from './LocaleSwitcher.astro';
+import { FOOTER_GROUPS, TAKEDOWN } from '../data/nav';
+import { catalogue } from '../i18n';
+
+const t = catalogue(Astro.currentLocale);
+
+const year = new Date().getFullYear();
+
+/*
+ * `aria-labelledby` needs an id per group, keyed off the group's stable id rather than
+ * its visible label. Before 8.11a this lowercased the label, which made the wiring a
+ * function of the translation - a Spanish footer would have pointed every group at an id
+ * that was never rendered. The ids it produces are unchanged: `footer-product`,
+ * `footer-company`, `footer-legal`.
+ */
+const groupId = (id: string) => `footer-${id}`;
+---
+
+<footer class="site-footer">
+  <div class="inner">
+    <div class="brand">
+      <a class="brand-link" href="/" aria-label={t.ui.homeLabel}>
+        <Wordmark variant="lockup" size={30} />
+      </a>
+      <p class="pitch">{t.home.claim}</p>
+    </div>
+
+    {
+      /*
+      Group labels are not headings. Three <h2>s per page purely for footer grouping would
+      land in every document's outline - the home route's only h2 is act four's CTA
+      headline - so the grouping is announced through `aria-labelledby` instead, which
+      gives a screen-reader user the same structure without inventing headings for it.
+    */
+    }
+    <nav class="groups" aria-label={t.ui.footer.label}>
+      {
+        FOOTER_GROUPS.map((group) => (
+          <div class="group">
+            <p class="group-label" id={groupId(group.id)}>
+              {t.ui.footer.groups[group.id]}
+            </p>
+            <ul aria-labelledby={groupId(group.id)}>
+              {group.items.map((item) => (
+                <li>
+                  {item.live ? (
+                    <Link href={item.href} variant="muted">
+                      {t.ui.footer.items[item.id]}
+                    </Link>
+                  ) : (
+                    <span class="pending">{t.ui.footer.items[item.id]}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </nav>
+  </div>
+
+  {
+    /*
+    The baseline carries the artwork attribution, which is 8.9a's argued divergence: none
+    of the three reference sites has anything like it. `design-system.md` §7.4 requires a
+    published takedown contact for the third-party album covers the site shows, and the
+    bottom bar of every page is where a rights holder will actually look - `/support`
+    alone is where they will not.
+  */
+  }
+  <div class="baseline">
+    {
+      /*
+      **The switcher is here and not in the header** (owner, 8.11b Gate A). The header was
+      gated down to the mark and one action permanently after 8.10e's nav was rejected, and
+      this row is where a language choice conventionally sits - beside the copyright, with
+      the artwork attribution keeping the far end. It groups with the copyright rather than
+      becoming a third item in `space-between`, which would have pushed the attribution to
+      the middle of the row and moved ink the owner has already approved.
+    */
+    }
+    <div class="identity">
+      <p class="copyright">© {year} Sonaru</p>
+      <LocaleSwitcher />
+    </div>
+    <p class="artwork">
+      {t.ui.footer.artwork}{' '}
+      {
+        TAKEDOWN.live ? (
+          <Link href={TAKEDOWN.href} variant="muted">
+            {t.ui.footer.items[TAKEDOWN.id]}
+          </Link>
+        ) : (
+          <span class="pending">{t.ui.footer.items[TAKEDOWN.id]}</span>
+        )
+      }
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    /* Above `body::before`'s dither, which is fixed at z-index 0 under everything. */
+    position: relative;
+    z-index: 1;
+    padding: var(--spacing-24) var(--gutter) var(--spacing-12);
+  }
+
+  .inner,
+  .baseline {
+    max-width: var(--content-max);
+    margin-inline: auto;
+  }
+
+  .inner {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--spacing-16);
+  }
+
+  .brand-link {
+    display: inline-flex;
+    text-decoration: none;
+    border-radius: var(--spacing-2);
+  }
+
+  .brand-link:hover {
+    opacity: 0.85;
+  }
+
+  .pitch {
+    margin: var(--spacing-4) 0 0;
+    max-width: var(--measure-tight);
+    color: var(--color-mute-200);
+    font-size: var(--text-base);
+  }
+
+  .groups {
+    display: flex;
+    gap: var(--spacing-16);
+  }
+
+  .group-label {
+    margin: 0 0 var(--spacing-4);
+    color: var(--color-mute-200);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+
+  .group ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: var(--spacing-3);
+    font-size: var(--text-sm);
+  }
+
+  /*
+   * A destination that exists in the design but not yet in the router. Same size and
+   * rhythm as a link, so the footer's shape is the shape it will keep, and not focusable,
+   * because a tab stop that goes nowhere is worse than an absent one.
+   *
+   * **It is not dimmed, and that was deliberate.** The obvious treatment - the same grey
+   * at reduced opacity - composites `--mute-400` to roughly 2:1 against `--plum-900`,
+   * which is below AA for text, and a pending entry is real text a visitor reads rather
+   * than decoration. So it sits at the validated colour and separates from a link by
+   * behaviour instead: no underline draw, no lift to `--mute-200`, no pointer.
+   */
+  .pending {
+    color: var(--color-mute-400);
+    cursor: default;
+  }
+
+  .identity {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2) var(--spacing-6);
+  }
+
+  .baseline {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--spacing-2) var(--spacing-8);
+    margin-top: var(--spacing-16);
+    color: var(--color-mute-400);
+    font-size: var(--text-xs);
+  }
+
+  .baseline p {
+    margin: 0;
+  }
+
+  @media (max-width: 1023px) {
+    .inner {
+      flex-direction: column;
+      gap: var(--spacing-12);
+    }
+  }
+
+  @media (max-width: 767px) {
+    .site-footer {
+      padding: var(--spacing-16) var(--gutter) var(--spacing-8);
+    }
+
+    .groups {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--spacing-8) var(--spacing-12);
+    }
+
+    .baseline {
+      margin-top: var(--spacing-12);
+    }
+  }
+</style>

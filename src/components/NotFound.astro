@@ -1,0 +1,143 @@
+---
+/**
+ * The 404 - phases.md 8.9f.
+ *
+ * **Both references' 404s were measured at Gate A** (`reference-study.md` §1 and §3) and
+ * they agree on exactly three things: the numeral is not the headline (gsap says
+ * `Oh no.` at 224px, superlist `Page not found`), there is exactly one call to action,
+ * and something on the page moves. They disagree on everything else - gsap carries its
+ * full header, mega-nav and footer across a 1,688px document; superlist has no chrome at
+ * all and is one 900px viewport.
+ *
+ * **We keep the chrome, against superlist**, and that is the whole design. 8.9a built the
+ * footer as an inventory of every route the site serves, guarded in both directions, so a
+ * 404 with that footer under it already *is* the "here is where you meant to go" page.
+ * There is nothing else to design, which is why this route adds no new layout, no new
+ * component and no new token - the lede's last clause is what points at it.
+ *
+ * The numeral is not thrown away, it is **demoted to the eyebrow**, where every other
+ * section of the site puts its label.
+ *
+ * **The one action is home, not gsap's `Pop us a message`.** `/support` exists, but a
+ * mistyped URL is not a support case and should not route a typo into a human's inbox.
+ *
+ * Structurally this is `/waitlist` - the site's one-screen precedent - for the same
+ * reason `Document.astro` is reused three times over: a second way to centre a block on a
+ * full-height screen is a second thing to keep in agreement with the first.
+ *
+ * **It is a component with two routes, and that is Astro's special case rather than ours**
+ * (phases.md 8.11b). Every other page on this site is one file under `src/pages/[...locale]/`
+ * that emits both locales. The 404 cannot be: Astro's dev server answers an unmatched path
+ * with the route it finds at **`src/pages/404.astro` specifically**, and a rest-parameter
+ * route that merely *produces* `/404` is not it - measured, after eight of 8.9f's approved
+ * assertions went red against Astro's own default 404 page. The build was fine either way,
+ * which is what makes it worth writing down: the failure was only ever visible under
+ * `astro dev`, which is where every Gate C happens. So `src/pages/404.astro` is static and
+ * `src/pages/[...locale]/404.astro` emits the prefixed locales only, and both render this.
+ *
+ * **There is no `/500`.** `astro.config.mjs` is `output: 'static'`, so no origin can
+ * fail; `functions/api/waitlist.ts` never returns 5xx by design and is fetched rather
+ * than navigated to; and Cloudflare Pages has no `500.html` convention. The owner
+ * accepted that finding at Gate A (option A) rather than ship a page nothing can reach.
+ */
+import Base from '../layouts/Base.astro';
+import BloomField from './BloomField.astro';
+import Button from './primitives/Button.astro';
+import { catalogue } from '../i18n';
+const t = catalogue(Astro.currentLocale);
+---
+
+<Base title={t.ui.meta.notFound.title} description={t.ui.meta.notFound.description}>
+  {
+    /*
+    The one thing taken from superlist's 404 verbatim, because it is simply correct: a
+    page that exists to say "this is not a page" must never enter an index.
+  */
+  }
+  <meta slot="head" name="robots" content="noindex" />
+
+  <section class="not-found">
+    <div class="atmosphere">
+      <BloomField act="cta" intensity="ambient" />
+    </div>
+
+    <div class="inner">
+      <p class="eyebrow">{t.ui.notFound.eyebrow}</p>
+      <h1>{t.ui.notFound.headline}</h1>
+      <p class="lede">{t.ui.notFound.lede}</p>
+      <div class="action">
+        <Button href="/">{t.ui.notFound.action}</Button>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /*
+   * `/waitlist`'s block, and deliberately the same one: a one-screen route left-aligned
+   * at the top of a full-height viewport reads as a page that failed to finish loading.
+   * The fixed header still owes its clearance, hence the asymmetric padding.
+   *
+   * `min-height` rather than `height`, so the footer sits below the fold on a short
+   * window instead of being crushed into it - which is the difference between chrome that
+   * is the recovery and chrome that is decoration.
+   */
+  .not-found {
+    position: relative;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    padding: calc(var(--spacing-24) + var(--spacing-8)) var(--gutter) var(--spacing-24);
+  }
+
+  .atmosphere {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    /* The site's one bloom mask - see `waitlist.astro` and `PricingHero.astro`. */
+    -webkit-mask-image: radial-gradient(72% 58% at 50% 52%, #000 0%, transparent 74%);
+    mask-image: radial-gradient(72% 58% at 50% 52%, #000 0%, transparent 74%);
+  }
+
+  .inner {
+    width: 100%;
+    max-width: var(--content-max);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+
+  /* The eyebrow every other section on the site opens with - carrying the numeral. */
+  .eyebrow {
+    margin: 0;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-plum-300);
+  }
+
+  h1 {
+    max-width: var(--measure-display);
+    margin: 0;
+    font-size: var(--text-2xl);
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    color: var(--color-white);
+  }
+
+  .lede {
+    max-width: var(--measure);
+    margin: 0 0 var(--spacing-6);
+    font-size: var(--text-lg);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+  }
+
+  .action {
+    display: flex;
+    align-items: flex-start;
+  }
+</style>

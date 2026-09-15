@@ -1,0 +1,350 @@
+---
+/**
+ * Reading-measure lab - the Gate C change round for 8.9c (owner: *"the measure prose width
+ * is way too narrow, it looks pretty small when looking at a 1440p screen"*).
+ *
+ * This route was the Gate A card-treatment comparison. That question is settled - variant
+ * A, the cover carrying its own line - so it is reused for the question actually open
+ * rather than a second lab route being added and both forgotten at 8.13.
+ *
+ * ---
+ *
+ * **A defect first, because it is half the complaint.**
+ *
+ * `.masthead` and `.prose` in `Document.astro` both cap at `max-width: var(--measure-prose)`,
+ * which is `30em` - and `em` resolves against *each element's own* font size. The masthead
+ * inherits 16px; the prose sets `--text-body`, which is 18px at 1440. So one token produces
+ * **480px for the title block and 540px for the body**: the largest type on the page wraps
+ * in the narrowest column on it, which is why an article `h1` breaks to three lines where
+ * the paragraphs under it run to two.
+ *
+ * That ambiguity is not theoretical - the first version of this very page hit it. Bands
+ * declared in `em` resolved against the band's own font size and every label was wrong by
+ * 11%. So the bands below are declared in **pixels**, and each one's character count is
+ * measured in the browser at runtime rather than calculated here.
+ *
+ * ---
+ *
+ * **Then the choice, which is two levers and not one.**
+ *
+ * "Too narrow" and "looks small" can be answered by widening the column, by raising the
+ * type, or by both, and they are genuinely different outcomes: widening alone puts more
+ * characters on a line, raising the type alone puts the same characters on a bigger line.
+ * The classic comfortable band for continuous prose is 45–75 characters, with about 80 the
+ * point where the eye starts losing the start of the next line - so a band that gets wider
+ * without getting bigger runs out of road, and one that does both does not.
+ *
+ * **`--measure-prose` is a site token, not a blog one.** `/privacy`, `/terms` and `/support`
+ * are the same `Document.astro` and are frozen behind 8.9b's Gate C, so whatever wins
+ * repaints them too. Asked, not assumed.
+ */
+import Base from '../../layouts/Base.astro';
+import BloomField from '../../components/BloomField.astro';
+
+interface Band {
+  readonly id: string;
+  readonly label: string;
+  /** The column, in px at 1440. Pixels, not `em` - see the header. */
+  readonly width: number;
+  /** Body size in px. 18 is what the site sets at 1440 today. */
+  readonly size: number;
+  readonly note: string;
+}
+
+const BANDS: readonly Band[] = [
+  {
+    id: 'a',
+    label: 'A - today',
+    width: 540,
+    size: 18,
+    note: 'What the site does now, and what you called too narrow. Note the title above it is narrower still at 480px - that is the bug, and it is fixed in every band including this one.',
+  },
+  {
+    id: 'b',
+    label: 'B - wider column only',
+    width: 620,
+    size: 18,
+    note: 'The column grows, the type does not. More words per line at the same size.',
+  },
+  {
+    id: 'c',
+    label: 'C - bigger type only',
+    width: 600,
+    size: 20,
+    note: 'The type grows and the column grows with it, so the line holds the same number of characters. This is the one that answers “looks small” without touching how much you read per line.',
+  },
+  {
+    id: 'd',
+    label: 'D - both',
+    width: 700,
+    size: 20,
+    note: 'My recommendation. Bigger type and a wider column, still inside the comfortable range.',
+  },
+];
+---
+
+<Base
+  title="Reading measure - Sonaru"
+  description="Four reading-column treatments on the same article, for the 8.9c change round."
+>
+  <div class="page">
+    <div class="atmosphere">
+      <BloomField act="hero" intensity="ambient" />
+    </div>
+
+    <header class="intro">
+      <p class="kicker">8.9c · Gate C change round</p>
+      <h1>How wide, and how big?</h1>
+      <p>
+        The same article four ways at 1440. Every character count in the labels is measured in the
+        browser from Satoshi's own advance widths - not calculated, because calculating it is what
+        got the site to 63 characters while a document claimed 68.
+      </p>
+      <p>
+        <strong>A bug is fixed in all four.</strong> The title block and the body were capping at the
+        same <code>30em</code> against different font sizes - 480px and 540px - so the biggest type on
+        the page was wrapping in the narrowest column. Every band caps both at one pixel width, which
+        is why even band A looks a little wider than the live page.
+      </p>
+      <p>
+        <strong>Two levers, not one.</strong> B widens the column. C raises the type and lets the column
+        follow, keeping the same words per line. D does both. Comfortable reading runs to about 80 characters
+        a line; past that the eye starts losing its place returning to the left edge.
+      </p>
+      <p class="warn">
+        Whatever wins applies to <code>/privacy</code>, <code>/terms</code> and
+        <code>/support</code> as well - same layout, and their appearance is frozen behind 8.9b. Say if
+        you want the blog to diverge instead.
+      </p>
+    </header>
+
+    {
+      BANDS.map((band) => (
+        <section class="band" style={`--band-width:${band.width}px; --band-size:${band.size}px`}>
+          <p class="label">
+            <strong>{band.label}</strong>{' '}
+            <span class="px" data-measure={band.id}>
+              measuring…
+            </span>{' '}
+            <span class="note">{band.note}</span>
+          </p>
+
+          <div class="sample">
+            <p class="eyebrow">Blog</p>
+            <h2 class="title">Mirroring MusicBrainz so a release cannot go missing</h2>
+            <p class="lede">
+              Completeness is a claim, and a claim needs a mechanism. Ours is a full local mirror,
+              reconciled nightly, that answers “did anything come out?” without asking anyone’s API
+              for permission.
+            </p>
+            <p class="meta">Engineering 28 August 2026 · 2 min read</p>
+            <div class="prose">
+              <p>
+                The previous post argues that completeness is the product. This one is about what
+                that costs, because a promise you cannot enforce is a marketing line.
+              </p>
+              <h3>Why not just call the API</h3>
+              <p>
+                Every music metadata service has an API, and every one of them is shaped for the
+                question “tell me about this thing I already know about”. They are not shaped for
+                “tell me everything that changed since Tuesday across four hundred artists”.
+              </p>
+              <p>
+                Ask that question through a public API and you inherit its rate limits, its
+                pagination, its retry semantics and its outages - and you inherit them at exactly
+                the moment you care most, which is Friday morning when everything releases at once.
+                Worse, you inherit its silence: a request that returns 200 with fewer results than
+                it should is indistinguishable from one that is correct.
+              </p>
+            </div>
+          </div>
+        </section>
+      ))
+    }
+  </div>
+</Base>
+
+<script>
+  /*
+   * The character count, measured rather than claimed.
+   *
+   * A canvas laid out with the paragraph's own computed font gives Satoshi's real average
+   * advance, which is the only honest way to turn a pixel width into a character count.
+   * `ch` cannot do it - that is the whole subject of `docs/adr-0002`: `1ch` is the width of
+   * a digit, and Satoshi's digit is about 63% wider than its average letter, which is how
+   * `68ch` became a 111-character line nobody noticed.
+   *
+   * Dev-only, on a route deleted when this round is approved.
+   */
+  const ALPHABET = 'abcdefghijklmnopqrstuvwxyz ';
+
+  for (const band of document.querySelectorAll<HTMLElement>('.band')) {
+    const paragraph = band.querySelector('.prose p');
+    const target = band.querySelector<HTMLElement>('[data-measure]');
+    if (paragraph === null || target === null) continue;
+
+    const style = getComputedStyle(paragraph);
+    const context = document.createElement('canvas').getContext('2d');
+    if (context === null) continue;
+
+    context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    const average = context.measureText(ALPHABET).width / ALPHABET.length;
+    const width = paragraph.getBoundingClientRect().width;
+    target.textContent = `${style.fontSize} type · ${Math.round(width)}px · ${Math.round(width / average)} characters`;
+  }
+</script>
+
+<style>
+  .page {
+    position: relative;
+    z-index: 1;
+    padding: var(--spacing-32) var(--gutter) var(--spacing-48);
+    max-width: var(--content-max);
+    margin-inline: auto;
+  }
+
+  .atmosphere {
+    position: absolute;
+    top: 0;
+    left: calc(50% - 50vw);
+    width: 100vw;
+    height: 100svh;
+    z-index: -1;
+    pointer-events: none;
+    -webkit-mask-image: radial-gradient(72% 58% at 30% var(--spacing-48), #000 0%, transparent 74%);
+    mask-image: radial-gradient(72% 58% at 30% var(--spacing-48), #000 0%, transparent 74%);
+  }
+
+  .intro {
+    max-width: 700px;
+  }
+
+  .kicker {
+    margin: 0;
+    font-size: var(--text-xs);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-plum-300);
+  }
+
+  .intro h1 {
+    margin: var(--spacing-4) 0 0;
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    color: var(--color-white);
+  }
+
+  .intro p {
+    margin: var(--spacing-6) 0 0;
+    font-size: var(--text-body);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+  }
+
+  .warn {
+    color: var(--color-plum-300);
+  }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.9em;
+    color: var(--color-plum-300);
+  }
+
+  .band {
+    margin-top: var(--spacing-32);
+    padding-top: var(--spacing-8);
+    border-top: 1px solid var(--color-ink-700);
+  }
+
+  .label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--spacing-4);
+    margin: 0 0 var(--spacing-12);
+    font-size: var(--text-sm);
+    color: var(--color-mute-400);
+  }
+
+  .label strong {
+    font-size: var(--text-lg);
+    color: var(--color-white);
+  }
+
+  .px {
+    color: var(--color-plum-300);
+  }
+
+  .note {
+    flex-basis: 100%;
+    max-width: 700px;
+  }
+
+  /*
+   * The fix under test: **one pixel width for the whole column.**
+   *
+   * A length, not an `em`, so the title block and the body cannot resolve it against two
+   * different font sizes and land 60px apart - which is exactly what `Document.astro` does
+   * today and what the first draft of this page reproduced by accident.
+   */
+  .sample {
+    width: min(var(--band-width), 100%);
+  }
+
+  .eyebrow {
+    margin: 0;
+    font-size: var(--text-xs);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-plum-300);
+  }
+
+  .title {
+    margin: var(--spacing-4) 0 0;
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    color: var(--color-white);
+    text-wrap: balance;
+  }
+
+  .lede {
+    margin: var(--spacing-6) 0 0;
+    /* Scales with the band's body size, the way `--text-lg` scales with the ramp. */
+    font-size: calc(var(--band-size) * 1.22);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+  }
+
+  .meta {
+    margin: var(--spacing-8) 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-mute-400);
+  }
+
+  .prose {
+    margin-top: var(--spacing-8);
+    font-size: var(--band-size);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+  }
+
+  .prose p {
+    margin: 0 0 var(--spacing-6);
+  }
+
+  .prose h3 {
+    margin: var(--spacing-12) 0 var(--spacing-4);
+    font-size: var(--text-xl);
+    font-weight: 700;
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    color: var(--color-white);
+  }
+</style>

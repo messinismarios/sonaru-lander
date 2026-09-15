@@ -1,0 +1,78 @@
+---
+/**
+ * The page's closing ask, on phones - phases.md 8.14c (owner, Gate C round 1 on act four).
+ *
+ * **Below `md` only.** On desktop the ask rises inside `Notify.astro`'s pin, on its scrubbed
+ * close, and that composition is frozen. At phone width the owner took it out of that
+ * section entirely and asked for "a normal, static section after the phone one": nothing
+ * pinned, nothing driven by scroll, nothing to wait for - the claim, the line under it and
+ * the button, arriving as ordinary content.
+ *
+ * `display: none` above the breakpoint, which also takes it out of the accessibility tree,
+ * so desktop never announces the claim twice. Likewise `Notify.astro` hides its own CTA
+ * below the breakpoint.
+ *
+ * **No bloom** (owner, Gate C round 3: "I don't want the background to be the glows"). The
+ * section sits on the page's solid ground; nothing here moves.
+ */
+import Button from '../primitives/Button.astro';
+import { catalogue } from '../../i18n';
+
+const t = catalogue(Astro.currentLocale);
+---
+
+<section class="closing">
+  <div class="ask">
+    <h2 class="headline">{t.home.claim}</h2>
+    <p class="sub">{t.home.notify.ctaSub}</p>
+    <Button href="/waitlist">{t.home.notify.ctaAction}</Button>
+  </div>
+</section>
+
+<style>
+  .closing {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    .closing {
+      position: relative;
+      display: grid;
+      place-items: center;
+      /* A short top so the claim sits close under the cut phone (closing round, owner). */
+      padding-block: var(--spacing-8) var(--spacing-24);
+      padding-inline: var(--gutter);
+      overflow-x: clip;
+      background: var(--color-ink-950);
+    }
+
+    .ask {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--spacing-4);
+      text-align: center;
+    }
+
+    /* The same type as the pinned ask it replaces on this width (`Notify.astro`'s `.cta`). */
+    .headline {
+      margin: 0;
+      font-size: var(--text-3xl);
+      font-weight: 700;
+      line-height: var(--leading-display);
+      letter-spacing: var(--tracking-display);
+      color: var(--color-white);
+      text-wrap: balance;
+      max-width: var(--measure-display);
+    }
+
+    .sub {
+      margin: 0;
+      font-size: var(--text-lg);
+      line-height: var(--leading-body);
+      color: var(--color-mute-200);
+      max-width: var(--measure-tight);
+    }
+  }
+</style>

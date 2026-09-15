@@ -1,0 +1,157 @@
+---
+/**
+ * `/blog` - the index.
+ *
+ * One centred column of cards, newest first. That shape is superlist.com's, measured at
+ * 8.9c's Gate A: one 600px column, four posts, 100px between them, and a card carrying
+ * four things and no more. What is refused there is the page heading - superlist's `h1` is
+ * the word "Blog" at **10px**, and gsap.com's is the same word at **101px**. Ours is the
+ * masthead the rest of the site uses: an eyebrow, a title that says something, and a lede.
+ *
+ * No motion, no islands, no animated layer - the covers are files. `phases.md` 8.9c.
+ */
+import Base from '../../../layouts/Base.astro';
+import BloomField from '../../../components/BloomField.astro';
+import PostCard from '../../../components/blog/PostCard.astro';
+import { publishedPosts } from '../../../lib/posts';
+import { catalogue } from '../../../i18n';
+import type { GetStaticPaths } from 'astro';
+import { localePaths } from '../../../i18n/routing';
+
+/*
+ * The route in both locales from one file - phases.md 8.11b. `undefined` is the default
+ * locale, which is what leaves it unprefixed.
+ */
+export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
+
+const t = catalogue(Astro.currentLocale);
+
+const posts = await publishedPosts();
+---
+
+<Base title={t.ui.meta.blog.title} description={t.ui.meta.blog.description}>
+  <link
+    slot="head"
+    rel="alternate"
+    type="application/rss+xml"
+    title={t.ui.blog.feedTitle}
+    href="/blog/rss.xml"
+  />
+
+  <div class="page">
+    <div class="atmosphere">
+      <BloomField act="hero" intensity="ambient" />
+    </div>
+
+    <header class="masthead">
+      <p class="eyebrow">{t.ui.blog.eyebrow}</p>
+      <h1>{t.ui.blog.headline}</h1>
+      <p class="lede">{t.ui.blog.lede}</p>
+    </header>
+
+    <ol class="index">
+      {
+        posts.map((post, i) => (
+          <li>
+            <PostCard post={post} priority={i === 0} />
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</Base>
+
+<style>
+  /*
+   * The masthead, the bloom anchor and the atmosphere mask are `Document.astro`'s,
+   * to the value.
+   *
+   * Not a copy for its own sake: 8.9b settled where the light sits on a reading page -
+   * anchored to the title, full-bleed so it cannot meet the content box's edge, masked so
+   * it dies inside the frame instead of ending on a horizontal line - and an index that
+   * placed it anywhere else would be the same page with the light in the wrong place. The
+   * one difference is the column, which is wider here because a card is not a paragraph.
+   */
+  .page {
+    --page-inset: max(0px, (100vw - var(--content-max)) / 2);
+    --column-width: min(var(--measure-prose), 100vw - 2 * var(--page-inset) - 2 * var(--gutter));
+    --bloom-x: calc(var(--page-inset) + var(--gutter) + var(--column-width) / 2);
+    --bloom-y: var(--spacing-48);
+
+    position: relative;
+    z-index: 1;
+    padding: var(--spacing-32) var(--gutter) var(--spacing-24);
+    max-width: var(--content-max);
+    margin-inline: auto;
+  }
+
+  .atmosphere {
+    position: absolute;
+    top: 0;
+    left: calc(50% - 50vw);
+    width: 100vw;
+    height: 100svh;
+    z-index: -1;
+    pointer-events: none;
+    -webkit-mask-image: radial-gradient(
+      72% 58% at var(--bloom-x) var(--bloom-y),
+      #000 0%,
+      transparent 74%
+    );
+    mask-image: radial-gradient(72% 58% at var(--bloom-x) var(--bloom-y), #000 0%, transparent 74%);
+  }
+
+  .atmosphere :global(.bloom) {
+    transform: translateX(calc(var(--bloom-x) - 50%));
+  }
+
+  .masthead {
+    max-width: var(--measure-prose);
+  }
+
+  .eyebrow {
+    margin: 0;
+    font-size: var(--text-xs);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-plum-300);
+  }
+
+  h1 {
+    margin: var(--spacing-4) 0 0;
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    color: var(--color-white);
+    text-wrap: balance;
+  }
+
+  .lede {
+    margin: var(--spacing-6) 0 0;
+    max-width: var(--measure-prose);
+    font-size: var(--text-prose-lede);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+  }
+
+  /*
+   * `--measure-prose`, the same column the articles read in.
+   *
+   * It was a standalone 640px, chosen when the reading column was 540 and a card at that
+   * width read as cramped. The Gate C change round made the reading column 700, which
+   * turned that reasoning inside out: cards narrower than the prose they link to is the
+   * index disagreeing with the article about how wide the blog is. One column now, and it
+   * follows the reading size at every viewport rather than sitting at a number chosen
+   * against a width that no longer exists.
+   */
+  .index {
+    list-style: none;
+    margin: var(--spacing-24) 0 0;
+    padding: 0;
+    max-width: var(--measure-prose);
+    display: grid;
+    gap: var(--spacing-24);
+  }
+</style>

@@ -1,0 +1,88 @@
+---
+/**
+ * The Sonaru mark - an S that is also a sonar wave.
+ *
+ * **Construction (rev 5).** Rev 2's construction, unchanged: two tangent circles on a
+ * horizontal axis, so the S stays level and the curl stays outward.
+ *
+ * The one lever is **r2**, the second bowl's radius. Tangency puts its centre at
+ * `cx + r1 + r2`, so shrinking r2 pulls the tail *left* and makes it smaller, narrowing
+ * the mark from the right. Two earlier attempts to get this moved the wrong thing: rev 3
+ * spiralled the terminal inward, and rev 4 tilted the axis, which lifted the tail up
+ * rather than drawing it in.
+ *
+ * **The sonar is concentric with the C and crosses it.** `sonarOffset` is 0 and
+ * `sonarRadius` (20) is *larger* than `radius` (12), so the wavefront is a wider arc on
+ * the same centre and its inner edge passes through the S's stroke: `minGap` returns
+ * **−1.75**. That is paired with `sonarOpacity: 0.34` - at the 0.85 this file shipped with
+ * earlier the overlap read as a bar drawn across the mark, and at 0.34 it reads as a wave
+ * passing behind it.
+ *
+ * This paragraph described the opposite until 8.10c - a smaller arc set further left and
+ * clearing the C, which is what the mark looked like before the owner supplied the final
+ * parameter block on 2026-09-08. It was corrected when `/brand` came to document the
+ * construction, because the chapter reads its figures from this file's geometry and could
+ * not be right while the file's own header said the reverse.
+ *
+ * **The viewBox is fitted per variant**, computed from the sampled extents of both paths
+ * plus half the stroke. A fixed `0 0 100 100` box clipped the sonar's left edge and the
+ * tail's right edge at every size - invisible in isolation, obvious in a row.
+ *
+ * **Final since 2026-09-08**, when the owner declared it so and supplied the parameter
+ * block in `PRESET`. It is exact circular arcs with no optical correction - joins
+ * unteased, stroke unmodulated where the curve tightens, terminals uncut - and that is
+ * now a description rather than a caveat: declaring the mark final **retired** that list
+ * instead of completing it (`design-system.md` §9.5). Do not reopen it as cleanup.
+ */
+
+import { PRESET, sPath, sonarPath, fitViewBox } from './mark-geometry';
+
+interface Props {
+  /** Rendered size in px. The mark is square. */
+  readonly size?: number;
+  /** Give it a title to expose it to assistive tech; omit for decorative use. */
+  readonly title?: string | undefined;
+  readonly class?: string | undefined;
+}
+
+const { size = 48, title, class: className } = Astro.props;
+
+const s = sPath(PRESET);
+const sonar = sonarPath(PRESET);
+const viewBox = fitViewBox(PRESET);
+const labelled = title !== undefined;
+---
+
+<svg
+  class:list={['mark', className]}
+  viewBox={viewBox}
+  width={size}
+  height={size}
+  role={labelled ? 'img' : 'presentation'}
+  aria-hidden={labelled ? undefined : 'true'}
+>
+  {labelled && <title>{title}</title>}
+  <g fill="none" stroke-linecap="round">
+    <path class="sonar" d={sonar} stroke-width={PRESET.sonarStroke} opacity={PRESET.sonarOpacity}
+    ></path>
+    <path d={s} stroke="currentColor" stroke-width={PRESET.stroke}></path>
+  </g>
+</svg>
+
+<style>
+  .mark {
+    display: block;
+    color: var(--color-white);
+    flex: none;
+  }
+
+  /*
+   * The wave is the coloured element (owner, Gate C rev 13). The brand colour had been on
+   * the `i` of the logotype; moving it here puts it on the part of the identity that
+   * *means* something - the sonar return - rather than on a letter that happens to have a
+   * dot. The S stays white and reads as the letter; the wave reads as the signal.
+   */
+  .sonar {
+    stroke: var(--color-plum-300);
+  }
+</style>

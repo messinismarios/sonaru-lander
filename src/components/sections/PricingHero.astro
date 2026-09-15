@@ -1,0 +1,126 @@
+---
+/**
+ * The pricing page's opening band - phases.md 8.7, rebuilt at Gate C rev 3.
+ *
+ * **The giant word is gone, and the reason is worth keeping.** Rev 1 and rev 2 opened on
+ * `Pricing` set at up to 256px, taken from superlist.com/pricing, where the page's only
+ * ornament is an enormous wordmark (`reference-study.md` §the pricing page). Twice
+ * rejected by the owner, finally: *"The title does not work. It's too big, nothing shows
+ * on smaller screens."* That is exactly right, and the measurement backs it - at 1489px
+ * the word alone consumed the whole fold, leaving one four-line lede and a toggle just
+ * peeking in at the bottom. Both cards, and therefore every price, were below it.
+ *
+ * The take was wrong at the root rather than mis-tuned. superlist can spend a screen on a
+ * label because their pricing sits three cards wide and short; ours is two tall cards and
+ * a toggle. **A page whose job is to answer "what does it cost" cannot open on a screen
+ * that does not contain a number.**
+ *
+ * So the ornament is the sentence, not a word. `Pricing` drops to an eyebrow - the same
+ * small uppercase label `SectionHeader` gives every other section on the site - and the
+ * `h1` becomes the actual claim, at `--text-2xl`, the act-headline step the home page's
+ * four acts already use. Two things follow: the page reads as the same site rather than a
+ * poster attached to it, and the type scale is one already proven from 390 to 1440, which
+ * is the half of the old version that could not be fixed by choosing a smaller number.
+ *
+ * **The heading structure survived the rewrite intact**, which was the one thing worth
+ * keeping from the original concept. `reference-study.md` marked superlist's own outline
+ * "Don't take" - their `h1` is a 10px eyebrow and the giant word is not a heading at all.
+ * Ours is the opposite in both halves: the eyebrow is a `<p>`, and the `h1` is the claim.
+ *
+ * Nothing here animates. `acceptance-criteria.md` line 43 forbids an animation-dependent
+ * LCP element, and this band is above the fold by construction.
+ */
+import BloomField from '../BloomField.astro';
+import { catalogue } from '../../i18n';
+
+const t = catalogue(Astro.currentLocale);
+---
+
+<section class="pricing-hero">
+  <div class="atmosphere">
+    <BloomField act="hero" intensity="ambient" />
+  </div>
+
+  <div class="inner">
+    <p class="eyebrow">{t.pricing.hero.eyebrow}</p>
+    <h1>{t.pricing.hero.headline}</h1>
+    <p class="lede">{t.pricing.hero.lede}</p>
+  </div>
+</section>
+
+<style>
+  /*
+   * A band, not a screen. The header is fixed and overlays the page, so the first section
+   * on any route owes it clearance; beyond that the padding is sized so the toggle and the
+   * top of both cards are inside the first viewport at 1440x900 - the constraint the
+   * previous two revisions failed.
+   */
+  .pricing-hero {
+    position: relative;
+    padding: calc(var(--spacing-24) + var(--spacing-8)) var(--gutter) var(--spacing-12);
+  }
+
+  .atmosphere {
+    position: absolute;
+    inset: 0;
+    /* Top-confined, like superlist's own atmosphere, which is hero-region only. */
+    bottom: -60%;
+    z-index: -1;
+    pointer-events: none;
+    /*
+     * Masked since 2026-09-08 (owner, after 8.9b's Gate C). Without it the field ends on
+     * a hard horizontal line at its own bottom edge - the defect 8.9b fixed for the
+     * documents, and this route is one of the two that never adopted the site's remedy
+     * for it. The gradient is `Hero.astro`'s and `Feed.astro`'s, character for character:
+     * the light is taken to zero *inside* the frame, so it dissolves into the ground
+     * rather than being cut. It sits on this section's own wrapper, not in `BloomField`,
+     * which four frozen acts share.
+     */
+    -webkit-mask-image: radial-gradient(72% 58% at 50% 52%, #000 0%, transparent 74%);
+    mask-image: radial-gradient(72% 58% at 50% 52%, #000 0%, transparent 74%);
+  }
+
+  .inner {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+
+  /* Matches SectionHeader's eyebrow exactly - it is the same thing, on a page whose
+   * heading happens to be an h1. */
+  .eyebrow {
+    margin: 0;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-plum-300);
+  }
+
+  h1 {
+    max-width: var(--measure-display);
+    margin: 0;
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--color-white);
+  }
+
+  .lede {
+    max-width: var(--measure);
+    margin: 0;
+    font-size: var(--text-lg);
+    line-height: 1.5;
+    color: var(--color-mute-200);
+  }
+
+  @media (max-width: 767px) {
+    .pricing-hero {
+      padding-top: calc(var(--spacing-16) + var(--spacing-8));
+      padding-bottom: var(--spacing-8);
+    }
+  }
+</style>

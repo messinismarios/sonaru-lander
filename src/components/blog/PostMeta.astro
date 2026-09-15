@@ -1,0 +1,117 @@
+---
+/**
+ * `Tag · 12 September 2026 · 6 min read`.
+ *
+ * The date-and-reading-time half is gsap.com's, taken at Gate A as the one thing worth
+ * having from a blog that otherwise dresses a post in author avatars, a table of contents
+ * and prev/next links. superlist.com prints a date alone; the reading time is the addition.
+ *
+ * **The tag is a link only in an article** (`linked`), never on an index card. A card's
+ * only link is its title - a tag link there would be a tab stop before the thing the
+ * visitor is trying to reach, and a second accessible name inside a card that already has
+ * one.
+ */
+import { dateLabel } from '../../lib/date';
+import type { Tag } from '../../data/tags';
+import { catalogue } from '../../i18n';
+
+interface Props {
+  readonly publishedAt: string;
+  readonly minutes: number;
+  readonly tags: readonly Tag[];
+  /** `true` renders the tags as links to their own pages. Articles only. */
+  readonly linked?: boolean;
+}
+
+const { publishedAt, minutes, tags, linked = false } = Astro.props;
+
+const t = catalogue(Astro.currentLocale);
+---
+
+<p class="meta">
+  {
+    tags.map((tag) =>
+      linked ? (
+        <a class="tag" href={`/blog/tags/${tag.slug}`}>
+          {t.ui.blog.tags[tag.slug].label}
+        </a>
+      ) : (
+        <span class="tag">{t.ui.blog.tags[tag.slug].label}</span>
+      ),
+    )
+  }{
+    /*
+    An explicit space, not the flex `gap`.
+
+    The gap is a layout property and puts nothing in the document, so without this the
+    line's text content reads `Engineering28 August 2026` - invisible on screen and wrong
+    everywhere text is taken rather than looked at: a screen reader, a copy-paste, a
+    search result. Caught by `tests/visual/inline-spacing.spec.ts`, which exists for
+    exactly this class of defect and found it here the first time it ran.
+  */
+  }{' '}
+  <time datetime={publishedAt}>{dateLabel(publishedAt)}</time>{' '}
+  <span aria-hidden="true">·</span>{' '}
+  <span>{minutes} min read</span>
+</p>
+
+<style>
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-2);
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-mute-400);
+  }
+
+  .tag {
+    margin-right: var(--spacing-2);
+    color: var(--color-plum-300);
+  }
+
+  /*
+   * The site's one link treatment - the underline as a transform, drawn from the left.
+   * `Link.astro` cannot be used here because it renders a block-level wrapper the meta
+   * row's flex layout would break, so the declarations are repeated and
+   * `tests/e2e/blog.spec.ts` asserts a linked tag computes to the same colour, decoration
+   * and underline geometry as a real `Link`. `Document.astro`'s prose links carry the
+   * same pairing for the same reason.
+   */
+  a.tag {
+    position: relative;
+    text-decoration: none;
+  }
+
+  a.tag::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: var(--spacing-2);
+    bottom: -2px;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur-2) var(--ease-out);
+  }
+
+  a.tag:hover::after,
+  a.tag:focus-visible::after {
+    transform: scaleX(1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    a.tag::after {
+      transition: none;
+      transform: scaleX(1);
+      opacity: 0.4;
+    }
+
+    a.tag:hover::after,
+    a.tag:focus-visible::after {
+      opacity: 1;
+    }
+  }
+</style>

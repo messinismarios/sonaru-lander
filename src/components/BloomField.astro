@@ -1,0 +1,346 @@
+---
+/**
+ * The bloom field - the atmosphere behind every act.
+ *
+ * Direction chosen by the owner at 8.1's Gate A (gate-log.md): overlapping CSS radial
+ * gradients, drifting. Picked over a painted static raster and over a turbulence-masked
+ * variant, both built and measured at `/blooms` before the gate.
+ *
+ * Reference: superlist.com's blurry-light background (`reference-study.md` §3). What we
+ * take is the *idea* - soft irregular colour fields behind content, changing temperature
+ * by section, feathered into the ground rather than edged. What we do differently is
+ * measured and deliberate: theirs is a single 321 KB PNG that never moves and never
+ * changes hue, ours is zero bytes, drifts, and takes every colour from `tokens.css`, so a
+ * new act is one attribute rather than a new asset.
+ *
+ * **Rebuilt at 8.2's Gate C rev 7 (owner): the field is three independent orbs, not one
+ * painted plate.** It was a single element carrying three baked-in gradient stops, which
+ * meant the only motion available to it was moving all three together - the owner's read
+ * was that this was too subtle to register and too plain to feel modern. Each light now
+ * orbits on its own period and direction, so they converge, overlap and separate without
+ * ever repeating the same arrangement; `mix-blend-mode: screen` is what makes an overlap
+ * *merge* into a brighter colour rather than one blob occluding another.
+ *
+ * **`--bloom-scroll`** (0–1) rotates and swells the whole field, so the atmosphere answers
+ * the visitor's scrolling on top of its own idle life. A section that wants that sets the
+ * property; anything that does not gets the idle field and nothing else.
+ *
+ * Drift and scroll are both composited `transform`s and the merge is `mix-blend-mode`, so
+ * nothing here touches layout or paint - which is exactly why `design-system.md` §6
+ * forbids animating `filter`, `width` or `box-shadow` in anything scrubbed. Cost is
+ * re-measured under 6x CPU throttle whenever this file changes.
+ */
+
+/** Each act owns a temperature, so the page changes as you scroll (design-system.md §2). */
+export type Act = 'hero' | 'problem' | 'feed' | 'notify' | 'cta';
+
+interface Props {
+  /** Which act's palette to wear. */
+  readonly act: Act;
+  /**
+   * How present the field is. `ambient` sits behind copy; `feature` is the strongest
+   * bloom moment on the page and is reserved for the hero and the final CTA.
+   */
+  readonly intensity?: 'ambient' | 'feature';
+  readonly class?: string | undefined;
+}
+
+const { act, intensity = 'ambient', class: className } = Astro.props;
+---
+
+<div
+  class:list={['bloom', className]}
+  data-bloom
+  data-act={act}
+  data-intensity={intensity}
+  aria-hidden="true"
+>
+  <div class="field">
+    <span class="orb a"><i></i></span>
+    <span class="orb b"><i></i></span>
+    <span class="orb c"><i></i></span>
+  </div>
+</div>
+
+<style>
+  .bloom {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    /* Purely decorative: it must never sit above content or catch a pointer. */
+    z-index: 0;
+  }
+
+  /*
+   * Rest states, set by `src/motion/bloom-rest.ts` on a route that calls it (8.14; the file
+   * has the measurements). A field nowhere near the viewport is hidden so its layers stop
+   * being drawn; any field is paused while the page scrolls, so its overlap is not blended
+   * afresh on every frame of it. Paused rather than removed, so the drift resumes from the
+   * pose it left.
+   */
+  .bloom[data-offscreen] .field,
+  .bloom[data-unlit] .field {
+    visibility: hidden;
+    will-change: auto;
+  }
+
+  .bloom[data-offscreen] .orb > i,
+  .bloom[data-unlit] .orb > i,
+  .bloom[data-scrolling] .orb > i {
+    animation-play-state: paused;
+  }
+
+  .bloom[data-offscreen] .orb > i,
+  .bloom[data-unlit] .orb > i {
+    will-change: auto;
+  }
+
+  /*
+   * `data-unlit` is the third rest state, set by a section's own timeline while the wrapper it
+   * places this field in is at opacity 0 (act two before its feed, act four's amber room after
+   * its close). The field is invisible either way; hidden, it is also not composited.
+   */
+
+  /*
+   * Per-act palettes. Three stops each, all from tokens.css - no hex literal appears
+   * here, which is what keeps the contrast validator authoritative over the whole site.
+   */
+  .bloom[data-act='hero'] {
+    --bloom-a: var(--color-bloom-magenta);
+    --bloom-b: var(--color-plum-500);
+    --bloom-c: var(--color-bloom-violet);
+  }
+  .bloom[data-act='problem'] {
+    --bloom-a: var(--color-bloom-violet);
+    --bloom-b: var(--color-plum-700);
+    --bloom-c: var(--color-plum-950);
+  }
+  .bloom[data-act='feed'] {
+    --bloom-a: var(--color-bloom-cyan);
+    --bloom-b: var(--color-bloom-violet);
+    --bloom-c: var(--color-plum-800);
+  }
+  /*
+   * Act three. Named `pro` until 2026-09-04, when the owner moved amber from the auto-add
+   * act to the notification act - a notification *is* an arrival, which is what amber
+   * already meant (`design-system.md` §2). The palette is unchanged; only the act it
+   * belongs to is. It had never been used, so nothing rendered differently.
+   */
+  .bloom[data-act='notify'] {
+    --bloom-a: var(--color-bloom-amber);
+    --bloom-b: var(--color-plum-600);
+    --bloom-c: var(--color-bloom-magenta);
+  }
+
+  /*
+   * Act four's close - the same three stops as `hero`, deliberately and not by accident.
+   * Gate A asks the page to end on the light it opened with, which is a decision worth
+   * being able to point at: a separate act name says "these are equal on purpose", where
+   * reusing `act="hero"` for the final CTA would leave a future change to the hero's
+   * palette silently repainting the close as well.
+   */
+  .bloom[data-act='cta'] {
+    --bloom-a: var(--color-bloom-magenta);
+    --bloom-b: var(--color-plum-500);
+    --bloom-c: var(--color-bloom-violet);
+  }
+
+  .bloom[data-intensity='ambient'] .field {
+    opacity: 0.62;
+  }
+  .bloom[data-intensity='feature'] .field {
+    opacity: 0.82;
+  }
+
+  /*
+   * How far through its section the visitor is, 0–1. Registered so it is typed and has a
+   * defined initial value: a route that never sets it still gets a correct static field.
+   */
+  @property --bloom-scroll {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+
+  /*
+   * The field carries the scroll response for all three orbs at once - rotating the
+   * container turns the whole constellation, which is what reads as the atmosphere
+   * *turning* rather than merely sliding. `isolation` keeps the orbs' blending inside the
+   * field so it can never lighten the page behind it.
+   *
+   * Inset -35% rather than -25%: rotating a rectangle by 30 degrees means it must be at
+   * least `cos30 + sin30` - about 1.37x - of the viewport in each axis to still cover it,
+   * and a tighter oversize lets a hard edge sweep into view mid-turn.
+   */
+  .field {
+    position: absolute;
+    inset: -35%;
+    isolation: isolate;
+    transform: translate3d(0, calc(var(--bloom-scroll) * -11%), 0)
+      rotate(calc(var(--bloom-scroll) * 30deg)) scale(calc(1 + var(--bloom-scroll) * 0.24));
+    will-change: transform;
+  }
+
+  /*
+   * Two elements per light, and the split is load-bearing. The wrapper is placed by its
+   * *centre* - `left`/`top` name where the light sits and `translate(-50%, -50%)` does the
+   * rest - while the inner element owns the orbit. One element cannot do both, because the
+   * centring translate and the animated transform are the same property, and the first
+   * attempt at this silently lost the centring and put two of the three lights outside the
+   * viewport entirely: the field is 1.7x the viewport, so only its middle 21–79% is ever
+   * on screen, and percentages read as if they were viewport coordinates are simply wrong.
+   */
+  .orb {
+    position: absolute;
+    width: 38%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+  }
+
+  /*
+   * `screen` is the whole reason these read as light. Two overlapping blobs at normal
+   * blending give you the nearer one; screened, they add to a brighter, hotter colour
+   * exactly where they cross - so the field has moving highlights that no single gradient
+   * plate can produce.
+   */
+  .orb > i {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    mix-blend-mode: screen;
+    will-change: transform;
+  }
+
+  /* Centres in field coordinates, chosen so all three sit in the visible middle band. */
+  .orb.a {
+    left: 36%;
+    top: 38%;
+  }
+  .orb.a > i {
+    background: radial-gradient(closest-side, var(--bloom-a) 0%, transparent 76%);
+    animation: orbit-a 25s linear infinite;
+  }
+
+  .orb.b {
+    width: 33%;
+    left: 63%;
+    top: 35%;
+  }
+  .orb.b > i {
+    background: radial-gradient(closest-side, var(--bloom-c) 0%, transparent 76%);
+    animation: orbit-b 34s linear infinite;
+  }
+
+  .orb.c {
+    width: 36%;
+    left: 49%;
+    top: 63%;
+  }
+  .orb.c > i {
+    background: radial-gradient(closest-side, var(--bloom-b) 0%, transparent 76%);
+    animation: orbit-c 43s linear infinite;
+  }
+
+  /*
+   * Three periods that do not divide into each other, two turning one way and one the
+   * other. The arrangement therefore does not visibly repeat - the field is never caught
+   * returning to a pose the eye has already seen, which is the difference between an
+   * animation and something that feels alive.
+   *
+   * `linear`, deliberately: an eased rotation stalls at the top of every cycle, and once
+   * you notice the stall you cannot stop seeing the loop. The swell carries the shape of
+   * the motion instead.
+   *
+   * The orbit radii were roughly halved at Gate C rev 8 and pulled in a further 30% at
+   * rev 9 (owner): the lights were carrying far enough out that the composition drifted
+   * lopsided and the field stopped reading as one atmosphere. They now stay near the
+   * centre and mostly change *how* they overlap rather than where they are, which is the
+   * part that was worth having. Periods were slowed 30% at rev 9 for the same reason -
+   * the field should be something you notice having changed, not something you watch.
+   */
+  @keyframes orbit-a {
+    0% {
+      transform: rotate(0deg) translateX(10%) scale(1);
+    }
+    50% {
+      transform: rotate(180deg) translateX(20%) scale(1.2);
+    }
+    100% {
+      transform: rotate(360deg) translateX(10%) scale(1);
+    }
+  }
+  @keyframes orbit-b {
+    0% {
+      transform: rotate(0deg) translateX(17%) scale(1.14);
+    }
+    50% {
+      transform: rotate(-180deg) translateX(8%) scale(0.9);
+    }
+    100% {
+      transform: rotate(-360deg) translateX(17%) scale(1.14);
+    }
+  }
+  @keyframes orbit-c {
+    0% {
+      transform: rotate(0deg) translateX(13%) scale(0.96);
+    }
+    50% {
+      transform: rotate(180deg) translateX(22%) scale(1.26);
+    }
+    100% {
+      transform: rotate(360deg) translateX(13%) scale(0.96);
+    }
+  }
+
+  /*
+   * design-system.md §5: "Bloom drift stops; blooms remain, static." Reduced motion is a
+   * designed state, not an absence - the atmosphere is the same, it simply holds still,
+   * with the orbs parked in a composed arrangement rather than wherever they happened to
+   * be. The scroll response goes too: it is motion the visitor did not ask for.
+   */
+  /* At `md` and up only since 8.14c round 8 (owner): below it, phones keep the full
+   * motion build under Reduce Motion. */
+  @media (prefers-reduced-motion: reduce) and (min-width: 768px) {
+    .field {
+      transform: none;
+      will-change: auto;
+    }
+
+    /*
+     * **Each orb by name, not `.orb > i`, and that is a bug fix rather than a style.**
+     *
+     * `animation: none` sat on `.orb > i` - specificity 0-1-1 - while the animation it was
+     * cancelling is declared on `.orb.a > i` at 0-2-1. The override lost, so the blooms
+     * went on drifting under reduced motion on every route of the site from 8.1 until
+     * 2026-09-08, while the `transform` declarations below (which do match at 0-2-1) were
+     * quietly overridden by the running animation. Measured before fixing: **18 running
+     * animations on `/` with the media feature matching**.
+     *
+     * Nothing failed, because the reduced-motion baselines were generated against the
+     * defect and then agreed with it - and `freeze()` paused the animations before every
+     * snapshot, so the suite never saw them move. Found while making the OG cover generator
+     * deterministic, not by a test.
+     *
+     * `design-system.md` §5 and the appearance approved at 8.1 both say this field is
+     * static under reduced motion. `review-gates.md` §4 covers the change: it restores an
+     * already-approved appearance rather than proposing a new one.
+     */
+    .orb.a > i,
+    .orb.b > i,
+    .orb.c > i {
+      animation: none;
+      will-change: auto;
+    }
+    .orb.a > i {
+      transform: translateX(30%) scale(1.1);
+    }
+    .orb.b > i {
+      transform: translateX(-18%) scale(1.02);
+    }
+    .orb.c > i {
+      transform: translateX(34%) scale(1.12);
+    }
+  }
+</style>

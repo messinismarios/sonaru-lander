@@ -1,0 +1,781 @@
+---
+/**
+ * The notification act - phases.md 8.5. Gate A approved 2026-09-04.
+ *
+ * **It is now the last act on the page, not the third.** The owner swapped it with the
+ * playlist act on 2026-09-04: the page reads better ending on the notification, so the
+ * final CTA came with the swap, since the CTA belongs to whatever section closes the page.
+ * Three things follow, and each of them is why this file differs from the 8.5 that was
+ * approved - the copy moved off the bottom of the frame and the phone below it, the
+ * section gained a scrubbed close, and it no longer inherits act two's device position.
+ *
+ * **The phone is a fixed object; the words take turns above it** (owner, Gate C rev 2).
+ * The device stands at `--device-top` with its top ~57% in frame and does not move or
+ * change size at any point in the section - the owner rejected the receding, shrinking
+ * phone the first close used. Everything else therefore lives in the band between the
+ * header and the phone: the claim occupies it, leaves on `--close-scene`, and the final
+ * CTA rises into it on `--close-cta`.
+ *
+ * **One idea: the phone is asleep, and then it isn't.** The device is on screen at exactly
+ * the size act two left it, its screen dark, the amber bloom at its lowest. It holds there
+ * through a beat that buys nothing. Then the notification arrives: the screen comes up and
+ * the bloom swells *with* it, as if cast by the phone, and the copy lands on the frame the
+ * banner settles.
+ *
+ * **The bloom is a light source here, not atmosphere** - the one thing that makes this
+ * section different from every other act. Everywhere else on the page a bloom sits behind
+ * the content as weather; here it is driven by the same signal as the screen coming up, so
+ * it reads as the room being lit by the phone. That is the idea the owner approved.
+ *
+ * **This is a second `<Device>`, not act two's carried across the boundary** (Gate B,
+ * flagged and approved). `design-system.md` §6 asks for one persistent element "where
+ * possible"; genuinely sharing one would mean restructuring both sections' pin
+ * architecture, and the hero↔act-one seam already cost three rounds of Gate C. It used to
+ * be pinned at act two's exit *geometry* so that the cut between the two was invisible -
+ * that continuity is gone with the reorder, because the playlist act now sits between them
+ * and there is nothing on screen to be continuous with. What survives is the **size**:
+ * `--device-end-h` scaled by `--device-settle-scale`, shared tokens rather than numbers
+ * written down twice, so it still reads as the same phone act two grew. **There is no
+ * growth phase at all**: this act is short and about one event, not about the device.
+ *
+ * **Amber does not close the page; magenta does.** The atmosphere carries two fields that
+ * cross-fade on the close - the amber room the phone lights, and the magenta
+ * `design-system.md` §2 reserves for "Hero, CTA" - so the site still ends on the light it
+ * opened with even though the act that ends it is no longer the magenta one.
+ *
+ * **The held beat is the owner's, and is not to be trimmed.** `.travel.sleep` drives
+ * nothing whatsoever. It was flagged at Gate A as the first thing that would be cut for
+ * pace and the owner kept it explicitly: it is the section's proof that the product is
+ * calm. Shortening it is a design change and needs its own gate.
+ *
+ * **Amber bloom** (`design-system.md` §2 - "warmth, arrival"), reassigned to this act from
+ * the old auto-add act by the owner: a notification *is* an arrival.
+ *
+ * References (`review-gates.md` §7): **revolut.com** for device continuity and for landing
+ * the claim on the frame the product state resolves; **gsap.com** for the pinned, scrubbed
+ * act; **superlist.com** for the restraint of moving exactly one thing per beat. The idea
+ * itself is an argued divergence - none of the three animates a push notification -
+ * recorded as such in `reference-study.md` §8 rather than back-filled with a citation.
+ *
+ * No tier or price appears anywhere in this section: notifications are not paywalled and
+ * ship in the beta (owner, 2026-09-04).
+ *
+ * **8.8 landed.** The waitlist form, its five states and the App Store badge live on
+ * `/waitlist`, a route the owner chose over a closing band here (Gate A, 2026-09-07). This
+ * button is now a navigation to it rather than the in-page anchor it was, which is the only
+ * thing 8.8 changed in this section - the approved composition is untouched.
+ */
+import BloomField from '../BloomField.astro';
+import Button from '../primitives/Button.astro';
+import Device from '../device/Device.astro';
+import LockScreen from '../device/LockScreen.astro';
+import { catalogue } from '../../i18n';
+
+const t = catalogue(Astro.currentLocale);
+---
+
+<section id="notify" class="notify" data-notify-stage>
+  <div class="atmosphere" data-notify-atmosphere>
+    <div class="room"><BloomField act="notify" intensity="feature" /></div>
+    {
+      /*
+      The second field is the page's closing light, and it is a *different* palette rather
+      than a brightening of the first. Amber is the phone lighting the room and belongs to
+      the notification; magenta is what `design-system.md` §2 assigns to "Hero, CTA", and
+      the site is meant to close on the light it opened with. So the two cross-fade on
+      `--notify-close`: the room goes out as the ask comes up. Both are radial gradients
+      with no blur behind them, so carrying two fields costs three more composited layers
+      and no paint work - measured, per `BloomField.astro`'s own note.
+
+      Each sits in a wrapper this file owns rather than taking a `class` prop, because the
+      masks and the cross-fade are this section's business and not the field's, and because
+      a scoped rule written here is guaranteed to select an element written here.
+    */
+    }
+    <div class="send-off"><BloomField act="cta" intensity="feature" /></div>
+  </div>
+
+  <div class="pin" data-notify-pin>
+    {
+      /*
+      The light the phone throws into the room.
+      
+      Separate from `BloomField` on purpose. The bloom field lays out three drifting orbs to
+      its own composition, which is right for an atmosphere but cannot express *this*: the
+      first build drove the field's opacity from the wake and got a large amber orb sitting
+      off to the left of the phone and a magenta one to the right - two coloured blobs that
+      happened to brighten, rather than a room being lit by a screen. Cast light has to come
+      from where the light source is, so it is its own radial, centred on the device, and the
+      field stays behind it as a low ambient bed.
+    */
+    }
+    <div class="cast" data-notify-cast></div>
+
+    <div class="copy" data-notify-copy>
+      <h2 class="headline">{t.home.notify.headline}</h2>
+      <p class="sub">{t.home.notify.sub}</p>
+    </div>
+
+    <div class="device-slot">
+      {/* Below `md` only: the cast light, carried by the phone because the phone moves. */}
+      <div class="halo"></div>
+      <Device>
+        <LockScreen />
+      </Device>
+    </div>
+
+    {
+      /*
+      Below `md` only: the distance between the phone's top and the copy's in flow, which is
+      what decides how early the copy comes up over it. `notify.ts` reads its position to
+      find where the phone would be unpinned. The class name avoids `notify`/`travel` for the
+      scoping reason noted below.
+    */
+    }
+    <div class="hold" data-notify-hold></div>
+
+    <div class="cta" data-notify-cta inert>
+      <h2 class="cta-headline">{t.home.claim}</h2>
+      <p class="cta-sub">{t.home.notify.ctaSub}</p>
+      <Button href="/waitlist">{t.home.notify.ctaAction}</Button>
+    </div>
+  </div>
+
+  <!--
+    Deliberately `sleep`/`wake`/`read`/`close`/`rest` and not `travel notify` - a modifier
+    class that collides with the section's own class is selected by the section's own rule,
+    because Astro scopes every element in a component with one shared `astro-cid`.
+    `Feed.astro` and `Hero.astro` both carry this warning and the bug that earned it.
+  -->
+  <div class="travel sleep" data-notify-sleep></div>
+  <div class="travel wake" data-notify-wake-track></div>
+  <div class="travel read" data-notify-read></div>
+  <div class="travel close" data-notify-close-track></div>
+  <div class="travel rest"></div>
+</section>
+
+<style>
+  /* How far the screen has come up, 0 asleep to 1 awake. Also drives the bloom. */
+  @property --notify-wake {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+
+  /*
+   * The banner's arrival, 0 (not there) to 1 (settled). A separate property from
+   * `--notify-wake` because the two are driven completely differently: the wake is scrubbed
+   * and continuous, the arrival is a tween that runs to completion. See `notify.ts`.
+   */
+  @property --notify-banner {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+
+  /*
+   * The close, 0 (the notification standing) to 1 (the CTA up). Scrubbed, unlike the other
+   * two: it is a change of composition rather than an event, and a composition change is
+   * exactly the thing a visitor should be able to hold halfway. Act four's own rule,
+   * inherited when the CTA moved here (owner, 2026-09-04).
+   */
+  @property --notify-close {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+
+  .notify {
+    position: relative;
+    /* Establishes a block formatting context so the travel spacers translate into real
+     * scrollable distance for the sticky pin, exactly as in `Hero.astro` and `Feed.astro`. */
+    display: flow-root;
+    /* Never `overflow: hidden` - it establishes a scroll container and silently breaks the
+     * sticky pin. `clip` does not. */
+    overflow-x: clip;
+    background: var(--color-ink-950);
+
+    /*
+     * Act two's exit *size*, read from the shared tokens rather than restated. Only the
+     * size survives the reorder: the phone used to be pinned at act two's exit position as
+     * well, so the cut between the two sections was invisible, but act three now sits after
+     * the playlist rather than immediately after act two and there is nothing left to be
+     * continuous with. Keeping the size is what makes it the same phone.
+     */
+    --end-h: var(--device-end-h);
+    --settle-scale: var(--device-settle-scale);
+    /* The phone's own rendered height - the slot is now sized directly rather than being
+     * `--end-h` tall and scaled inside its own box, because it sits in flow under the copy. */
+    --device-h: calc(var(--end-h) * var(--settle-scale));
+    /*
+     * Where the phone stands, and everything else is measured from it (owner, Gate C rev 2).
+     * The device sits low enough that only its top ~57% is in frame - 70svh of phone with
+     * its top edge at 60svh - and it **never moves or resizes again**, at any point in the
+     * section. That is the owner's instruction and it is the constraint the rest of this
+     * file answers to: the frame above the phone is the only room there is, so the copy and
+     * the final CTA both live in it and take turns.
+     */
+    --device-top: 60svh;
+    /*
+     * Both are centred in the band the header leaves above the phone - ~92px of header at
+     * 1440 and ~76px at 390 - which works out to the same two numbers at both widths, so
+     * neither needs a narrow override. The copy is 162px at 1440 and 148px at 390; the CTA
+     * is 234px and 218px. Recomputing them is a matter of re-centring in
+     * `--device-top` minus the header, not of taste.
+     */
+    --copy-top: 26svh;
+    --cta-top: 22svh;
+    /*
+     * **Superseded on desktop at 8.14** (owner: the copy sat "a bit too high up", and the ask
+     * should come down with it). Centring each block in the band left 130px or more of empty
+     * frame between the words and the phone on a typical laptop window. Both now stand on the
+     * phone instead - their bottom edge `--ask-gap` above `--device-top` - so the gap is one
+     * ordinary margin at every height. The two `top`s above survive only as the mobile
+     * block's reset values.
+     */
+    --ask-gap: var(--spacing-12);
+    /*
+     * The close swaps one for the other in that band, and the two cannot share one curve -
+     * a crossfade in place would put the ask on top of the claim for the middle third of
+     * the track. The scene goes quiet over the first 55% and the ask rises over the last
+     * 55%, overlapping by 10%: enough to read as one movement, not enough for two pieces of
+     * type to be legible in the same place at once.
+     *
+     * Named `--close-scene` and not `--close-device` since Gate C rev 2: the device is no
+     * longer one of the things it moves. What it takes out is the copy and the phone's cast
+     * light, which is the room going quiet before the ask.
+     */
+    --close-scene: clamp(0, calc(var(--notify-close) / 0.55), 1);
+    --close-cta: clamp(0, calc((var(--notify-close) - 0.45) / 0.55), 1);
+  }
+
+  /*
+   * Two stacked sticky layers with a negative margin, inside a very tall section - the
+   * arrangement `Feed.astro` documents, including the forced compositing layers that
+   * defend against the stray-dark-rectangle artifact reported on hardware-accelerated
+   * rendering over a tall sticky ancestor.
+   */
+  /*
+   * The overlap is a negative `margin-top` on `.pin`, not a negative `margin-bottom`
+   * here - `Feed.astro` carries the full account and the measurement. In short: a
+   * negative bottom margin on a sticky element extends its own constraint rectangle, so
+   * the layer stays stuck a full viewport past the pin it is supposed to travel with.
+   * Act two shipped that bug and the owner caught it at 8.5's Gate C; this section had
+   * copied the same arrangement and would have done the same thing at the page's foot.
+   */
+  .atmosphere {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    pointer-events: none;
+
+    /*
+     * No opacity of its own any more: the layer now carries two fields at two very
+     * different strengths, and one shared opacity here would have to be the louder of them.
+     * Each field owns its own instead.
+     */
+    isolation: isolate;
+    contain: paint;
+    transform: translateZ(0);
+  }
+
+  /*
+   * The room's ambient bed. Constant, and faint - every bit of *change* while the phone is
+   * on screen comes from `.cast`, which is centred on the device. Driving this from the
+   * wake as well was the second wrong turn in 8.5: the field lays its orbs out to its own
+   * composition, so brightening it lit an amber patch to the left of the device and a
+   * magenta one to the right, pulling the eye away from the one place the light is supposed
+   * to be coming from.
+   *
+   * Feathered into the ground - superlist's move, as on every other act. But **wider and
+   * pushed outward here**, and for a reason specific to this section: the bloom is the light
+   * the phone casts, so it has to be visible in the room *around* the device. The first pass
+   * reused act two's tighter mask, centred at 50% 54% - exactly where the phone stands - so
+   * the entire bloom rendered behind the device and the section's whole idea was invisible
+   * on screen. The hole in the middle is the phone's own footprint; what reads is the spill
+   * past its edges.
+   */
+  .room {
+    position: absolute;
+    inset: 0;
+    opacity: calc(0.1 * (1 - var(--notify-close)));
+    -webkit-mask-image: radial-gradient(96% 78% at 50% 58%, #000 0%, #000 26%, transparent 82%);
+    mask-image: radial-gradient(96% 78% at 50% 58%, #000 0%, #000 26%, transparent 82%);
+  }
+
+  /*
+   * The strongest bloom moment on the page, and the last thing on it. It starts at a real
+   * but low value rather than at nothing - `design-system.md` §5 keeps blooms present
+   * rather than switching them on.
+   *
+   * Its mask sits **high** since Gate C rev 2, tracking the CTA rather than the foot of the
+   * frame: the ask now rises into the band above the phone, and a send-off centred at 62%
+   * would have put the page's brightest light behind the device instead of behind the words
+   * it is lighting. It also stops well short of the bottom edge, which is the same call the
+   * playlist act's atmosphere makes and for the same reason - a light that leaves the frame
+   * through a straight edge stops reading as a light.
+   */
+  .send-off {
+    position: absolute;
+    inset: 0;
+    opacity: calc(0.06 + var(--notify-close) * 0.79);
+    /*
+     * Centred on the ask, which since 8.14 stands on the phone rather than at `--cta-top`
+     * (owner: the light comes down with the words). The ask's top is `--device-top` less
+     * the gap and its own ~13rem, and the light's core sat ~4svh below that top before, so
+     * it keeps that relation.
+     */
+    --send-off-y: calc(var(--device-top) - var(--ask-gap) - 13rem + 4svh);
+    -webkit-mask-image: radial-gradient(
+      118% 52% at 50% var(--send-off-y),
+      #000 0%,
+      #000 26%,
+      transparent 94%
+    );
+    mask-image: radial-gradient(
+      118% 52% at 50% var(--send-off-y),
+      #000 0%,
+      #000 26%,
+      transparent 94%
+    );
+  }
+
+  .pin {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    /* Pulls this layer back over `.atmosphere`, which keeps its own 100svh of flow. */
+    margin-top: -100svh;
+    z-index: 1;
+    overflow: hidden;
+    isolation: isolate;
+    contain: paint;
+    transform: translateZ(0);
+  }
+
+  /*
+   * The scroll budgets, in order.
+   *
+   * `sleep` is the held beat and drives nothing at all - `notify.ts` never reads it. It
+   * exists purely as scroll the visitor spends on a phone that does not move. `wake` and
+   * `close` are the two driven phases. `read` sits between them: the notification seen
+   * standing, before the page starts asking for anything. `rest` is the trailing hold, so
+   * the page's last frame is seen standing rather than arriving and leaving.
+   *
+   * 236svh of travel against a 100svh pin - 2124px at 1440x900, against act two's 2243px,
+   * so the page's longest section is still act two.
+   */
+  .travel.sleep {
+    height: 46svh;
+  }
+
+  .travel.wake {
+    height: 62svh;
+  }
+
+  .travel.read {
+    height: 42svh;
+  }
+
+  .travel.close {
+    height: 56svh;
+  }
+
+  .travel.rest {
+    height: 30svh;
+  }
+
+  /* Desktop has neither: see the mobile block at the end of this file. */
+  .halo,
+  .hold {
+    display: none;
+  }
+
+  /*
+   * Centred on the phone rather than on the frame: the device stands at the foot of the
+   * pin, and light that is supposed to be cast *by* it cannot be centred anywhere else. It
+   * follows the phone down to `--device-top` plus a little, so its core sits on the part of
+   * the screen that is actually lit rather than above it.
+   *
+   * It goes out on `--close-scene`. The phone no longer leaves - it stands there, lit, to
+   * the end of the page - but its *room* does, because the amber cast is what would
+   * otherwise still be washing up into the band the ask rises into.
+   */
+  .cast {
+    position: absolute;
+    left: 50%;
+    top: 78%;
+    width: min(170vw, 1500px);
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(
+      circle closest-side,
+      color-mix(in oklab, var(--color-bloom-amber) 88%, transparent) 0%,
+      color-mix(in oklab, var(--color-bloom-amber) 30%, transparent) 34%,
+      transparent 68%
+    );
+    /* The screen coming up and the room lighting are one signal - that is the whole idea
+     * of the section, and it is why this reads the wake rather than scroll position. */
+    opacity: calc(var(--notify-wake) * 0.55 * (1 - var(--close-scene)));
+  }
+
+  /*
+   * The phone stands at the foot of the frame and does not move again (owner, Gate C rev 2).
+   *
+   * It was previously higher and receded at the close - up and scaled to 0.44 - so that the
+   * ask could rise into the lower half. The owner rejected the resize outright: a phone
+   * that shrinks is a picture of a phone, and the size is the one thing tying this device
+   * to act two's. So it keeps act two's rendered size *and* keeps it for the whole section,
+   * and the composition moved around it instead: `--device-top` at 60svh leaves the top
+   * ~57% of the phone in frame, cropped by the pin's bottom edge, with the clock and the
+   * notification - the only two things on it a visitor has to read - well inside the crop.
+   *
+   * There is therefore no close transform here at all, and nothing above may assume the
+   * phone gets out of the way. Everything else in this pin lives in the band above
+   * `--device-top`; `notify.spec.ts` asserts both halves of that - the CTA clears the
+   * phone's top edge across the whole close, and the phone's rendered height never changes.
+   */
+  .device-slot {
+    position: absolute;
+    left: 50%;
+    top: var(--device-top);
+    height: var(--device-h);
+    aspect-ratio: 390 / 844;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /*
+   * The copy sits above the phone and is the section's claim. It arrives with the banner -
+   * one signal, so the claim and its proof cannot drift apart (act two's rule, and
+   * revolut.com's).
+   *
+   * It now *leaves* at the close rather than dimming and staying. With the phone standing
+   * still, the band above it is the only room in the pin and the ask needs all of it, so
+   * the two take turns: the claim goes out on `--close-scene`, the ask comes up on
+   * `--close-cta`. The reduced-motion branch at the bottom of this file is what keeps that
+   * from costing an RM visitor the section's words - it composes claim, ask and phone as
+   * one static frame instead.
+   */
+  .copy {
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    bottom: calc(100% - var(--device-top) + var(--ask-gap));
+    transform: translateX(-50%) translateY(calc((1 - var(--notify-banner)) * 12px));
+    width: min(100% - 2 * var(--gutter), var(--content-max));
+    text-align: center;
+    opacity: calc(var(--notify-banner) * (1 - var(--close-scene)));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-3);
+    /*
+     * Its opacity animates under a blurred `text-shadow`, which without a layer of its own
+     * is re-rastered on every frame of it - act two's copy measured 460ms of raster against
+     * 8ms promoted (`Feed.astro`). Promoted for the same reason.
+     */
+    will-change: transform, opacity;
+  }
+
+  .headline {
+    margin: 0;
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    color: var(--color-white);
+    text-wrap: balance;
+    max-width: var(--measure-display);
+
+    /*
+     * The copy overlaps the lit phone at narrow widths, so it carries act two's outro
+     * legibility shadow (Gate C rev 2 there) - the full three layers since 8.14 (owner: the
+     * single soft shadow did not read). Static, never animated.
+     */
+    text-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.85),
+      0 4px 20px rgba(0, 0, 0, 0.75),
+      0 0 48px rgba(0, 0, 0, 0.65);
+  }
+
+  .sub {
+    margin: 0;
+    font-size: var(--text-body);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+    /*
+     * `--measure-tight` (15.8em) broke this into four short lines under a two-line headline
+     * that is much wider than them, which read as a narrow column hanging off a wide one.
+     * A touch wider gives two or three lines that sit under the headline's own width.
+     */
+    max-width: 26em;
+    text-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.85),
+      0 4px 20px rgba(0, 0, 0, 0.75),
+      0 0 48px rgba(0, 0, 0, 0.65);
+  }
+
+  /*
+   * The close. It rises into the band the claim has just left - above the phone, never
+   * across it. The phone is a fixed object in the lower half of every frame in this
+   * section, so there is nowhere else for it to go, and that is the point: the ask is made
+   * over a lit phone that is still showing the notification, not over an empty screen.
+   */
+  .cta {
+    position: absolute;
+    z-index: 3;
+    inset-inline: 0;
+    bottom: calc(100% - var(--device-top) + var(--ask-gap));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-4);
+    padding-inline: var(--gutter);
+    text-align: center;
+    opacity: var(--close-cta);
+    transform: translateY(calc((1 - var(--close-cta)) * 44px));
+  }
+
+  /*
+   * An `<a>` at opacity 0 is still clickable and still in the tab order, so the CTA ships
+   * with `inert` in the HTML and `notify.ts` removes it once the close has actually begun.
+   * It has to be an attribute rather than CSS: `pointer-events` would leave the link
+   * focusable, and `visibility` cannot be driven from a number the way opacity can. The
+   * reduced-motion branch, which never scrubs anything, clears it immediately.
+   *
+   * With JavaScript off this CTA stays inert, which is correct rather than a regression: it
+   * also stays at opacity 0, since every scrubbed signal on this route sits at its
+   * `@property` initial value. `Header.astro`'s "Join the waitlist" is the conversion path
+   * that survives with no script at all, and it is fixed to the viewport throughout.
+   */
+  .cta[inert] {
+    pointer-events: none;
+  }
+
+  .cta-headline {
+    margin: 0;
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    color: var(--color-white);
+    text-wrap: balance;
+    max-width: var(--measure-display);
+  }
+
+  .cta-sub {
+    margin: 0;
+    font-size: var(--text-lg);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+    /* Twice `--measure-tight` since 8.14 (owner: "too narrow" - it ran to three short lines
+     * under a one-line headline). */
+    max-width: calc(2 * var(--measure-tight));
+    /* At the wider measure the last word fell to a line of its own at 1691px. */
+    text-wrap: pretty;
+  }
+
+  /*
+   * Narrow needs no geometry of its own any more. The phone is the same 70svh of height at
+   * both widths, the header's no-go band is ~10svh at 1440 and ~9svh at 390, and the copy
+   * and CTA scale with the type - so centring each in the band above `--device-top` lands
+   * on the same two svh values at both. The previous per-width `top`s were compensating for
+   * a composition that has since been rebuilt around the phone.
+   */
+
+  /*
+   * Reduced motion is a designed frame, not a disabled section (`design-system.md` §5).
+   * `notify.ts` rests it on `--notify-wake: 1`, `--notify-banner: 1` and
+   * `--notify-close: 1` - the screen up, the notification there, the CTA up - and the one
+   * thing that must not carry over from the full build is the dim on the copy and the
+   * phone, because the act's whole argument would then be something the visitor is asked to
+   * squint at. Here the two simply coexist at full strength. The device keeps its close
+   * transform: without it the phone would sit on top of the CTA rather than above it.
+   */
+  /* At `md` and up only since 8.14c round 8 (owner): below it, phones keep the full
+   * motion build under Reduce Motion. */
+  @media (prefers-reduced-motion: reduce) and (min-width: 768px) {
+    /*
+     * The claim and the ask cannot take turns in a frame that never moves, so reduced
+     * motion gets its own arrangement of the same three things rather than a snapshot of
+     * the last one: the claim at the top, the ask under it, the phone standing at the foot
+     * with the notification on it. It is the only frame an RM visitor sees, and it is now a
+     * more complete one than the scrubbed close - which is what `design-system.md` §5 means
+     * by a designed state rather than a disabled one.
+     *
+     * These two `top`s are the one place in this file that is not derived from
+     * `--device-top`; they are the band above it, split. Measured clearance to the phone's
+     * top edge is 27px at 1440 and 27px at 390.
+     */
+    .copy {
+      top: 11svh;
+      bottom: auto;
+      opacity: var(--notify-banner);
+    }
+
+    .cta {
+      top: 31svh;
+      bottom: auto;
+    }
+  }
+
+  /*
+   * Below `md`: only the phone is pinned (owner, 8.14c Gate C rounds 1 and 2). `.pin` stops
+   * being the sticky frame and becomes an ordinary tall column, and the phone is the sticky
+   * element. The pinned ask is removed - `Closing.astro` is its own section after this one.
+   *
+   * **The sequence** (round 3): the phone scrolls in first, and the copy enters the screen
+   * behind it once 40% of the phone is in view - before it is halfway. The phone pins once 70%
+   * of it is on screen and the copy keeps rising *over* it, never pinned itself. The screen
+   * wakes while the copy crosses, and the notification lands at the moment the copy's bottom
+   * reaches the phone's top edge (`notify.ts`); the phone lets go once the copy has cleared
+   * that edge by `--release-gap`, and the two leave together. The section ends 60% of the
+   * way down the phone, cutting it there.
+   *
+   * **How the release is timed, with no JavaScript.** A sticky element stays stuck until its
+   * *margin* box reaches the end of its containing block. The copy is the last thing in
+   * `.pin`, so the end of the block is the copy's bottom edge; a negative bottom margin of the
+   * phone's height plus the gap puts the phone's margin-box bottom exactly `--release-gap`
+   * above its own top edge, which is therefore where the copy's bottom sits when it lets go.
+   * The same margin pulls the `.hold` up under the phone in flow, and the hold is sized so the
+   * copy starts 40% of the phone's height below the phone's top. `.pin`'s bottom padding puts
+   * the section's end 60% down the phone at release, and the section clips what overhangs it.
+   * (`CLAUDE.md`'s warning about negative bottom margins on sticky layers is this effect, used
+   * on purpose here.)
+   *
+   * After the reduced-motion block on purpose, so it wins at this width in both modes: the
+   * reduced frame's absolute `top`s belong to the pinned composition this width no longer
+   * has. Under reduced motion `notify.ts` rests the screen lit.
+   */
+  @media (max-width: 767px) {
+    .notify {
+      --release-gap: var(--spacing-16);
+      /* Round 3: the section cuts the phone rather than ending under it. `clip`, never
+       * `hidden`, for the sticky phone's sake. */
+      overflow-y: clip;
+    }
+
+    /* The budget lives in `.hold` inside `.pin` now, not in spacers beside it. */
+    .travel.sleep,
+    .travel.wake,
+    .travel.read,
+    .travel.close,
+    .travel.rest {
+      height: 0;
+    }
+
+    .pin {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      height: auto;
+      /* 0 since 8.14c round 7 (owner: closer to the playlist, whose own bottom padding is the
+       * gap now). */
+      padding-top: 0;
+      padding-bottom: calc(0.6 * var(--device-h) + var(--release-gap));
+      /* `clip` on x only, never `hidden`: a scroll container would un-pin the phone, and
+       * `contain: paint` clips just as surely, so both are dropped. The halo is wider than
+       * the screen, which is what the horizontal clip is for. */
+      overflow: visible;
+      overflow-x: clip;
+      contain: none;
+    }
+
+    /* The frame-anchored cast light assumes a 100svh pin. The halo replaces it. */
+    .cast {
+      display: none;
+    }
+
+    /* After the beats, over the phone. Plain content: never faded, never moved by script. */
+    .copy {
+      order: 1;
+      position: relative;
+      left: auto;
+      top: auto;
+      bottom: auto;
+      width: auto;
+      padding-inline: var(--gutter);
+      transform: none;
+      opacity: 1;
+      will-change: auto;
+    }
+
+    /* The section's own phone size, as it was before this width had a branch. Pinned with
+     * 70% of it on screen. */
+    .device-slot {
+      position: sticky;
+      top: calc(100svh - 0.7 * var(--device-h));
+      left: auto;
+      flex: none;
+      height: var(--device-h);
+      margin: 0 auto calc(-1 * (var(--device-h) + var(--release-gap)));
+      transform: none;
+    }
+
+    /* `.cast`, centred on the phone it is cast by. Same light, same signal. */
+    .halo {
+      /* Bigger and brighter than `.cast` (round 4, owner: "barely visible on mobile"), then
+       * brought back halfway at round 5: 170vw / 0.55 / an 88%-30% core before, 240vw / 1 /
+       * 100%-50% at round 4, the middle of the two at round 5, and 20% smaller at round 6
+       * with its brightness unchanged. */
+      --halo-w: 164vw;
+      display: block;
+      position: absolute;
+      left: 50%;
+      top: 55%;
+      z-index: -1;
+      width: var(--halo-w);
+      aspect-ratio: 1;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      background: radial-gradient(
+        circle closest-side,
+        color-mix(in oklab, var(--color-bloom-amber) 94%, transparent) 0%,
+        color-mix(in oklab, var(--color-bloom-amber) 40%, transparent) 35%,
+        transparent 69%
+      );
+      opacity: calc(var(--notify-wake) * 0.775);
+      /*
+       * Faded out above the section's cut (60% down the phone), so the light does not end on
+       * the section's straight bottom edge. The halo's top edge is
+       * `0.55 * --device-h - --halo-w / 2` in the phone's coordinates, hence the offsets.
+       */
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        #000 calc(var(--halo-w) / 2 - 0.25 * var(--device-h)),
+        transparent calc(var(--halo-w) / 2 + 0.05 * var(--device-h))
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        #000 calc(var(--halo-w) / 2 - 0.25 * var(--device-h)),
+        transparent calc(var(--halo-w) / 2 + 0.05 * var(--device-h))
+      );
+    }
+
+    /*
+     * The asleep screen starts half lit rather than black (8.14c round 6, owner: "make the
+     * phone mockup start from a higher opacity"). `LockScreen`'s `.off` layer is shared with
+     * desktop's frozen act, so it is overridden here, anchored under this section's own
+     * `.device-slot`, and still reaches 0 at the wake's peak.
+     */
+    .device-slot :global(.off) {
+      opacity: calc(0.5 * (1 - var(--notify-wake)));
+    }
+
+    /* Puts the copy's top 40% of the phone's height below the phone's top, once the phone's
+     * negative margin has pulled it up: the copy enters the screen with 40% of the phone in view. */
+    .hold {
+      display: block;
+      flex: none;
+      height: calc(0.4 * var(--device-h) + var(--release-gap));
+    }
+
+    .cta {
+      display: none;
+    }
+  }
+</style>

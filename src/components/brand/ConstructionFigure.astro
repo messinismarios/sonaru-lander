@@ -1,0 +1,212 @@
+---
+/**
+ * One figure from the construction chapter - the mark with its geometry drawn over it.
+ *
+ * **Every coordinate here is computed from `mark-geometry.ts`, and that is the chapter's
+ * whole claim.** `/brand` documents how the mark is built; a figure that restated `38` and
+ * `50` as literals would become a diagram of a mark we used to have the day either number
+ * moved, and nothing would fail. `guides()` was added to that module at 8.10c for exactly
+ * this - `CX` and `CY` are private, so a centre line could not otherwise be drawn.
+ *
+ * **The viewBox is fitted to the guides, not to the mark.** `fitViewBox` frames what the
+ * paths paint, and a construction circle is a full circle where the stroke is an arc - the
+ * tail circle in particular extends well past the ink. Reusing the mark's own box silently
+ * clipped two of the three figures, which is the same failure `fitViewBox`'s header
+ * describes: an SVG crops without warning.
+ *
+ * The mark itself is drawn by the same `sPath`/`sonarPath` the shipped component uses, at
+ * the same stroke widths, so the figure is the mark with annotation over it rather than a
+ * redrawing of it.
+ */
+import { PRESET, sPath, sonarPath, guides, minGap } from './mark-geometry';
+
+interface Props {
+  /**
+   * Which step of the construction to draw.
+   *
+   * - `bowls` - the two tangent circles the S runs round, and the tangent point where it
+   *   reverses its bend.
+   * - `sonar` - the wavefront's circle, concentric with the C and larger than it.
+   * - `overlap` - the two edges `minGap` compares, and the fact that they cross.
+   */
+  readonly step: 'bowls' | 'sonar' | 'overlap';
+  /** Names the figure for assistive tech. The caption is separate and visible. */
+  readonly title: string;
+  readonly class?: string | undefined;
+}
+
+const { step, title, class: className } = Astro.props;
+
+const g = guides(PRESET);
+const s = sPath(PRESET);
+const sonar = sonarPath(PRESET);
+const gap = minGap(PRESET);
+
+/**
+ * A box that contains every circle this figure draws, padded by half the heaviest stroke.
+ *
+ * Computed from the guides rather than from the paths - see the header. The padding also
+ * has to clear the edge circles in the `overlap` step, which sit outside the sonar.
+ */
+const circles = [g.bowl, g.tail, g.sonar, { cx: g.bowl.cx, cy: g.bowl.cy, r: g.edges.bowlOuter }];
+const pad = Math.max(PRESET.stroke, PRESET.sonarStroke) / 2 + 2;
+const minX = Math.min(...circles.map((c) => c.cx - c.r)) - pad;
+const maxX = Math.max(...circles.map((c) => c.cx + c.r)) + pad;
+const minY = Math.min(...circles.map((c) => c.cy - c.r)) - pad;
+const maxY = Math.max(...circles.map((c) => c.cy + c.r)) + pad;
+const width = maxX - minX;
+const height = maxY - minY;
+const side = Math.max(width, height);
+const viewBox = `${minX - (side - width) / 2} ${minY - (side - height) / 2} ${side} ${side}`;
+
+/** Guide strokes scale with the drawing, so they stay hairlines at any rendered size. */
+const hair = side / 260;
+---
+
+<svg class:list={['figure', className]} viewBox={viewBox} role="img" aria-label={title}>
+  {
+    /*
+    **The mark is underneath, and that ordering is the figure's whole legibility.** Drawn
+    over the guides at its shipped stroke widths - 9.5 and 10 units against a radius of 12
+    - it is by far the heaviest ink in the frame and simply hides them: the first version
+    of this figure put the construction behind a solid mark and the circles were invisible.
+    It is the same paths at the same widths, painted first and dimmed, so the diagram is
+    the mark with its geometry over it rather than a redrawing of either.
+  */
+  }
+  <g class="mark" fill="none" stroke-linecap="round">
+    <path class="wave" d={sonar} stroke-width={PRESET.sonarStroke} opacity={PRESET.sonarOpacity}
+    ></path>
+    <path d={s} stroke-width={PRESET.stroke}></path>
+  </g>
+
+  <g class="guides" fill="none" stroke-width={hair}>
+    {
+      step === 'bowls' && (
+        <>
+          <circle class="guide" cx={g.bowl.cx} cy={g.bowl.cy} r={g.bowl.r} />
+          <circle class="guide" cx={g.tail.cx} cy={g.tail.cy} r={g.tail.r} />
+          {/* The axis both centres sit on - the reason the S stays level. */}
+          <line class="axis" x1={minX} y1={g.bowl.cy} x2={maxX} y2={g.bowl.cy} />
+          <line class="radius" x1={g.bowl.cx} y1={g.bowl.cy} x2={g.tangent[0]} y2={g.tangent[1]} />
+          <line class="radius" x1={g.tail.cx} y1={g.tail.cy} x2={g.tangent[0]} y2={g.tangent[1]} />
+        </>
+      )
+    }
+    {
+      step === 'sonar' && (
+        <>
+          <circle class="guide" cx={g.bowl.cx} cy={g.bowl.cy} r={g.bowl.r} />
+          <circle class="guide accent" cx={g.sonar.cx} cy={g.sonar.cy} r={g.sonar.r} />
+          <line class="axis" x1={minX} y1={g.bowl.cy} x2={maxX} y2={g.bowl.cy} />
+          {/* One centre, two radii - which is what "concentric" means and what it costs. */}
+          <line
+            class="radius"
+            x1={g.bowl.cx}
+            y1={g.bowl.cy}
+            x2={g.bowl.cx}
+            y2={g.bowl.cy - g.bowl.r}
+          />
+          <line
+            class="radius accent"
+            x1={g.sonar.cx}
+            y1={g.sonar.cy}
+            x2={g.sonar.cx}
+            y2={g.sonar.cy - g.sonar.r}
+          />
+        </>
+      )
+    }
+    {
+      step === 'overlap' && (
+        <>
+          {/* The two edges minGap compares: the C's outer ink and the wave's inner ink. */}
+          <circle class="guide" cx={g.bowl.cx} cy={g.bowl.cy} r={g.edges.bowlOuter} />
+          <circle class="guide accent" cx={g.sonar.cx} cy={g.sonar.cy} r={g.edges.sonarUnner} />
+          <line class="axis" x1={minX} y1={g.bowl.cy} x2={maxX} y2={g.bowl.cy} />
+          {/*
+            The overlap itself, on the axis where it is widest to read: from the wave's
+            inner edge to the C's outer edge. It is drawn only because `gap` is negative -
+            if the preset ever went back to a clearance this band would invert, so it is
+            derived rather than positioned.
+          */}
+          <line
+            class="overlap"
+            x1={g.sonar.cx - g.edges.sonarUnner}
+            y1={g.bowl.cy}
+            x2={g.bowl.cx - g.edges.bowlOuter}
+            y2={g.bowl.cy}
+            stroke-width={hair * 3}
+          />
+        </>
+      )
+    }
+    {
+      (step === 'bowls' || step === 'sonar') && (
+        <>
+          <circle class="dot" cx={g.bowl.cx} cy={g.bowl.cy} r={hair * 2} />
+          {step === 'bowls' && <circle class="dot" cx={g.tail.cx} cy={g.tail.cy} r={hair * 2} />}
+          {step === 'bowls' && (
+            <circle class="dot accent" cx={g.tangent[0]} cy={g.tangent[1]} r={hair * 2.5} />
+          )}
+        </>
+      )
+    }
+  </g>
+
+  <title>
+    {title}{step === 'overlap' ? ` - the wave crosses the S by ${Math.abs(gap).toFixed(2)}` : ''}
+  </title>
+</svg>
+
+<style>
+  .figure {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /*
+   * The guides are deliberately on the `tracked` side of the contrast table - they are
+   * drawing, not text, and `--color-ink-700` is what src/lib/contrast.ts declares for a
+   * line nobody reads. The labels that go with them are in the caption, in prose colour.
+   */
+  .guide {
+    stroke: var(--color-mute-200);
+  }
+
+  .axis {
+    stroke: var(--color-ink-700);
+  }
+
+  .radius {
+    stroke: var(--color-mute-400);
+  }
+
+  .accent {
+    stroke: var(--color-plum-300);
+  }
+
+  .dot {
+    fill: var(--color-mute-400);
+    stroke: none;
+  }
+
+  .dot.accent {
+    fill: var(--color-plum-300);
+  }
+
+  .overlap {
+    stroke: var(--color-plum-300);
+    stroke-linecap: butt;
+  }
+
+  .mark {
+    stroke: var(--color-white);
+    opacity: 0.22;
+  }
+
+  .mark .wave {
+    stroke: var(--color-plum-300);
+  }
+</style>

@@ -1,0 +1,188 @@
+---
+/**
+ * The feed - the web mirror of `SonaruFeatures/Feed/FeedView.swift`.
+ *
+ * The app's feed is a vertical `ScrollView` of `ReleasePlayerCard`s, each pinned to
+ * exactly one screen by `.containerRelativeFrame(.vertical)` and snapped one at a time by
+ * `.scrollTargetBehavior(.paging)`. That is reproduced here as a column track translated
+ * by exactly one screen height per advance, so the site is showing the gesture the app
+ * actually has. (The owner corrected `reference-study.md` on this at 8.2's Gate A; the
+ * study had read it as a pager rather than a scrolling feed. See CORRECTION 4.)
+ *
+ * The tint layers sit *outside* the track, because in the app the colour belongs to the
+ * background behind the feed rather than to the card: `FeedView.updateActiveColor` hands
+ * the new release's colour to a `BackgroundController` that owns the whole screen's
+ * ground. Crossfading pre-rendered layers keeps the change on `opacity` - composited, and
+ * cheaper than tweening a gradient.
+ *
+ * Every release's colour arrives as data, exactly as it does in the app, where the feed
+ * payload carries `releaseColor` per release. Ours is derived from the artwork at build
+ * time by `npm run showcase`; neither client computes it.
+ */
+import ReleaseCard from './ReleaseCard.astro';
+import { getFeedReleases, getShowcaseArtists } from './showcase';
+
+const artworkFiles = import.meta.glob<{ default: ImageMetadata }>(
+  '/src/assets/showcase/releases/*.{jpg,jpeg,png,webp,avif}',
+  { eager: true },
+);
+
+const photoFiles = import.meta.glob<{ default: ImageMetadata }>(
+  '/src/assets/showcase/artists/*.{jpg,jpeg,png,webp,avif}',
+  { eager: true },
+);
+
+/**
+ * Each release's artist photograph, by `artistId`.
+ *
+ * The card's chip is the app's artist chip, and in the app it carries the artist's picture.
+ * It was a blank white disc here for as long as the showcase had no artist photography at
+ * all; act one's field brought some in, and this is the lookup that lets a card use it.
+ *
+ * An artist with no photograph yet resolves to `undefined` and the chip keeps the disc, so
+ * the set of releases and the set of photographs can fill in independently - see the
+ * collection's README.
+ */
+const artists = await getShowcaseArtists();
+const artistPhotos = new Map<string, ImageMetadata>();
+
+for (const artist of artists) {
+  if (artist.data.photo === null) continue;
+  const path = `/src/assets/showcase/artists/${artist.data.photo}`;
+  const file = photoFiles[path];
+  if (!file) {
+    throw new Error(
+      `showcase artist "${artist.id}" names ${artist.data.photo}, which is not in src/assets/showcase/artists/`,
+    );
+  }
+  artistPhotos.set(artist.id, file.default);
+}
+
+const knownArtists = new Set(artists.map((artist) => artist.id));
+
+/** Newest first, from the one module that owns which three these are. */
+const releases = await getFeedReleases();
+
+/** The count the app's bottom label shows. Fixture data - see the collection's README. */
+const UNSEEN_COUNT = 96;
+
+const cards = releases.map((release, index) => {
+  const path = `/src/assets/showcase/releases/${release.data.artwork}`;
+  const file = artworkFiles[path];
+  if (!file) {
+    throw new Error(
+      `showcase release "${release.id}" names ${release.data.artwork}, which is not in src/assets/showcase/releases/`,
+    );
+  }
+  if (!knownArtists.has(release.data.artistId)) {
+    throw new Error(
+      `showcase release "${release.id}" names artist "${release.data.artistId}", which is not in artists.json`,
+    );
+  }
+  return {
+    ...release.data,
+    key: release.id,
+    artworkImage: file.default,
+    artistPhoto: artistPhotos.get(release.data.artistId),
+    // The app shows the running count on every card until the last unseen one; our final
+    // card hands off to the discovery page instead.
+    unseenCount: index === releases.length - 1 ? null : UNSEEN_COUNT,
+  };
+});
+---
+
+<div class="feed">
+  {
+    cards.map((card, index) => (
+      <div class="tint" data-tint style={`opacity: ${index === 0 ? 1 : 0}; --tint: ${card.tint}`} />
+    ))
+  }
+
+  <div class="track" data-feed-track>
+    {
+      cards.map((card, index) => (
+        <ReleaseCard
+          artist={card.artist}
+          artistPhoto={card.artistPhoto}
+          title={card.title}
+          kind={card.kind}
+          releaseDate={card.releaseDate}
+          duration={card.duration}
+          artwork={card.artworkImage}
+          unseenCount={card.unseenCount}
+          isFirst={index === 0}
+        />
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  .feed {
+    position: absolute;
+    inset: 0;
+  }
+
+  /*
+   * The screen's ground: the release's own colour at the artwork, falling away to black -
+   * **one gradient covering the whole screen, which is what `ReleaseBackground.swift` is**.
+   *
+   * The app draws exactly this and nothing else:
+   *
+   *     RadialGradient(colors: [accentColor, SonaruColor.gradientBottom],
+   *                    center: UnitPoint(x: 0.5, y: 0.4),
+   *                    startRadius: 0, endRadius: 1000)
+   *
+   * `accentColor` is the release's `releaseColor`, handed over by
+   * `FeedView.updateActiveColor`; `gradientBottom` is black; `endRadius: 1000` is 2.56x the
+   * width of a 390pt screen, so the colour reaches every corner and the screen reads as
+   * *being* the release's colour rather than as having a glow on it. Ours is the same
+   * figure in the screen's own units - `Device.astro` opens a container-query context, so
+   * `256cqw` follows the device at any scale the way every other dimension on these screens
+   * does.
+   *
+   * **This replaced a two-layer version on 2026-09-11** (owner: the tint should reach the
+   * background gradient, as the app does). That version put the tint in a radial that died
+   * out by 72% over an untinted `plum-950 → ink-950` base, so the release's colour was a
+   * glow behind the cover and the rest of the screen stayed plum whatever was playing.
+   * Measured at the time: the ground above the artwork painted `#260e16` on the tinted
+   * build against `#2f011e` on the untinted one - a real difference, and far too small to
+   * read as the screen changing colour between releases.
+   *
+   * The centre stays at **50% / 32.5%**, not the app's 40%: that is where the artwork
+   * actually sits on this screen, measured at 8.2's Gate C rev 9, and it is what makes the
+   * light read as coming off the cover rather than from the status bar. The app's own 0.4
+   * is the same intent against a different layout.
+   *
+   * `--color-ink-950` rather than a literal black, because no hex is allowed outside
+   * `tokens.css`; it is `#0b0a0b`, which is the app's black to within a rounding error.
+   *
+   * `--tint` has a fallback, and it is the colour this screen wore while the tint was
+   * switched off: a release reaching this layer without one is a manifest the Zod schema
+   * should have rejected, and the failure mode should be the previous design rather than a
+   * black screen.
+   */
+  .tint {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(
+      circle 256cqw at 50% 32.5%,
+      var(--tint, var(--color-plum-900)) 0%,
+      var(--color-ink-950) 100%
+    );
+    will-change: opacity;
+  }
+
+  .track {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    /* Declared here rather than relying on a var() fallback, so the property always
+     * resolves: the timeline only sets it on the first advance, and until then a
+     * fallback-only reference is a token that resolves to nothing. */
+    --feed-y: 0%;
+    transform: translate3d(0, var(--feed-y), 0);
+    will-change: transform;
+  }
+</style>

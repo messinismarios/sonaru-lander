@@ -1,0 +1,238 @@
+/*
+ * tokens.css - the single source of truth for colour, type, space and motion.
+ *
+ * design-system.md §2: "Every token is a CSS custom property in one file; no hex
+ * literal appears in a component." The contrast validator (scripts/check-contrast.mjs)
+ * parses THIS file, so a token added here is automatically covered by CI.
+ *
+ * The @theme block below is what Tailwind 4 reads, so a token declared once here is
+ * simultaneously a CSS custom property and a Tailwind utility. There is no second
+ * config to keep in sync.
+ *
+ * Typeface, ground and display metrics were chosen by the owner at the 8.1 gate
+ * (gate-log.md): Satoshi, the app's plum gradient, and 1.05 / -0.03em.
+ */
+
+@import 'tailwindcss';
+@import './fonts.css';
+
+/*
+ * `@theme static` - not plain `@theme`. Tailwind emits a theme variable only when
+ * something references it, so under plain `@theme` a declared token silently resolves to
+ * an empty string until first used. That contradicts this file's whole premise, and it
+ * cost real breakage: `--spacing-*` evaporated and every `padding: var(--spacing-6)` on
+ * /specimen and /blooms computed to 0px. `static` emits the full set, always.
+ * tests/visual/tokens.spec.ts asserts every referenced token actually resolves.
+ */
+@theme static {
+  /* --- Ink: ground and text (design-system.md §2) --- */
+  --color-ink-950: #0b0a0b;
+  --color-ink-900: #121013;
+  --color-ink-800: #1b181c;
+  --color-ink-700: #2a262c;
+  /* Nudged up from #8a8290 (design-system.md §2's proposal) because the approved plum
+   * ground is lighter than the near-black it assumed: the original scored 4.46:1 on
+   * --plum-900, just under AA. The contrast validator caught it. */
+  --color-mute-400: #8e8694;
+  --color-mute-200: #c9c4cc;
+  --color-white: #fafafa;
+
+  /* --- Plum ramp: the brand, derived from #43002B --- *
+   * --plum-900 is the brand *ground* at ~1.2:1 - it carries no text, border or icon.
+   * Interactive colour climbs the ramp in the same hue until it is legible.
+   */
+  --color-plum-950: #240017;
+  --color-plum-900: #43002b;
+  --color-plum-800: #61053f;
+  --color-plum-700: #8d0b5e;
+  /* The upper ramp is deliberately desaturated. Climbing #43002B's hue at full chroma
+   * produces hot pink - bright enough to pass contrast, but it stops reading as the
+   * brand. Holding the hue at 322 and cutting saturation keeps the wine character while
+   * still clearing AA, which is what these four are for. */
+  --color-plum-600: #a83d80;
+  --color-plum-500: #c25596;
+  --color-plum-400: #d67ab2;
+  --color-plum-300: #edaad0;
+
+  /* --- The app's own ground stops (sonaru-frontend-ios Theme.swift) --- *
+   * Reproduced exactly so the site and the app share one ground, not two that
+   * resemble each other. --ground-mid is Theme.swift's gradientMiddle.
+   */
+  --color-ground-mid: #14000d;
+
+  /* --- Blooms: the blurry lights, one or two owned per act --- */
+  --color-bloom-magenta: #d6187f;
+  --color-bloom-violet: #6e3bff;
+  --color-bloom-cyan: #14c8c0;
+  --color-bloom-amber: #ff9a3d;
+
+  /* --- Type (design-system.md §3) --- */
+  --font-sans: 'Satoshi', 'Satoshi Fallback', system-ui, sans-serif;
+  /* The logotype. Outfit, chosen over Satoshi and three other rounder candidates, subset
+   * to the six letters of the word. Falls back to the site face rather than a system font,
+   * so a failed load degrades to something still recognisably Sonaru. */
+  --font-logotype: 'Sonaru Logotype', 'Satoshi', 'Satoshi Fallback', sans-serif;
+
+  /* --- Fluid type scale --- *
+   * clamp() throughout, so size grows continuously with the viewport and never jumps at
+   * a breakpoint (design-system.md §3). Every step is expressed against 390px as the
+   * floor and 1440px as the ceiling, which are the two widths every act is designed at.
+   */
+  --text-xs: 0.6875rem; /* 11px - eyebrows, labels. Fixed: it must not shrink further. */
+  --text-sm: 0.875rem; /* 14px - meta, captions */
+  --text-base: 1rem; /* 16px - UI */
+  --text-body: clamp(1rem, 0.94rem + 0.25vw, 1.125rem); /* 16 -> 18px - reading copy */
+  --text-lg: clamp(1.125rem, 1.03rem + 0.38vw, 1.375rem); /* 18 -> 22px - lede */
+  --text-xl: clamp(1.375rem, 1.14rem + 0.95vw, 1.75rem); /* 22 -> 28px - card titles */
+  --text-2xl: clamp(1.75rem, 1.27rem + 1.9vw, 2.75rem); /* 28 -> 44px - act headlines */
+  --text-3xl: clamp(2.5rem, 1.2rem + 5.2vw, 5.25rem); /* 40 -> 84px - hero */
+
+  /*
+   * The reading pair - added at 8.9c's Gate C change round (owner, band D).
+   *
+   * **Separate from `--text-body` on purpose.** The complaint was that a long document
+   * reads small at 1440, and the obvious fix - raising `--text-body`'s ceiling - would
+   * have repainted the hero, all four acts, `/pricing`, `/waitlist` and the footer, every
+   * one of which is frozen behind its own Gate C. A page of continuous prose and a line of
+   * copy beside a device are different typographic problems and now have different tokens.
+   *
+   * 16px at 390 rising to **20px at 1440**, where `--text-body` stops at 18. The lede is
+   * the same 1.22 ratio the site's own ramp already uses between `--text-body` and
+   * `--text-lg`, so the reading pair is the existing relationship at a larger size rather
+   * than a new one.
+   *
+   * `--measure-prose` is derived from this, which is what keeps the character count
+   * constant while the size changes. See the measure block below.
+   */
+  --text-prose: clamp(1rem, 0.907rem + 0.382vw, 1.25rem); /* 16 -> 20px - reading copy */
+  --text-prose-lede: calc(var(--text-prose) * 1.22); /* 19.5 -> 24.4px - a document's lede */
+
+  /* --- Motion (design-system.md §5) --- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* --- Space: 4px base, scale 4 8 12 16 24 32 48 64 96 128 192 (design-system.md §4).
+   * `--spacing` drives Tailwind's dynamic utilities; the named steps are the scale the
+   * hand-written CSS uses, and every step number is its value in quarters of 16px. --- */
+  --spacing: 4px;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-24: 96px;
+  --spacing-32: 128px;
+  --spacing-48: 192px;
+
+  /* --- Breakpoints (design-system.md §4) --- */
+  --breakpoint-sm: 480px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* --- The ground, APPROVED at the 8.1 gate --- *
+   * The iOS app grounds every screen in this gradient (Theme.swift: gradientBottom ->
+   * gradientMiddle -> gradientTop). The site inherits it rather than approximating it
+   * with near-black, so the two read as one product.
+   *
+   * --ground-solid is the flat colour to paint behind the gradient and to hand to
+   * <meta name="theme-color">; --ground-top is the plum the gradient resolves to and
+   * is the worst case the contrast validator scores text against.
+   */
+  --ground-solid: var(--color-ink-950);
+  --ground-top: var(--color-plum-900);
+  --ground: linear-gradient(
+    to top,
+    #000000 0%,
+    var(--color-ground-mid) 46%,
+    var(--color-plum-900) 100%
+  );
+
+  /* --- Display metrics, APPROVED at the 8.1 gate --- */
+  --leading-display: 1.05;
+  --tracking-display: -0.03em;
+  --leading-body: 1.6;
+
+  /* --- Motion durations (design-system.md §5) --- */
+  --dur-1: 150ms;
+  --dur-2: 300ms;
+  --dur-3: 600ms;
+  --dur-4: 1000ms;
+
+  /*
+   * --- The device's shared geometry (design-system.md §6) ---
+   *
+   * Act two grows the phone to `--device-end-h` and its outro settles it to
+   * `--device-settle-scale` of that. Act three opens on a phone that must be *exactly* the
+   * size act two left, or the section boundary reads as a jump cut - so both numbers live
+   * here rather than being written down twice. They were act-two-local constants until
+   * act three needed to agree with them (8.5 Gate B); the values are unchanged, and act
+   * two's approved snapshots are what proves it.
+   *
+   * `--device-settle-scale` is expressed as a ratio of `--device-end-h`, not an absolute
+   * height, so it holds whichever term of the `min()` wins at a given viewport.
+   */
+  --device-end-h: min(88svh, 195vw);
+  --device-settle-scale: 0.795;
+
+  /* --- Grid and measure (design-system.md §4) --- */
+  --content-max: 1200px;
+  /* Full-bleed acts still align their copy to the same column as everything else. */
+  --gutter: var(--spacing-6);
+  /* Reading measure. In `em`, never `ch` - see docs/adr-0002-no-ch-for-measure.md. */
+  --measure: 48.8em;
+  --measure-tight: 15.8em;
+  --measure-display: 12.9em;
+  /*
+   * The reading measure, for a document rather than a lede - added at 8.9b's Gate B and
+   * **rewritten at 8.9c's Gate C change round** (owner: *"the measure prose width is way
+   * too narrow, it looks pretty small when looking at a 1440p screen"*, band D).
+   *
+   * `--measure` above is **111 characters** at `--text-body`, not the 68 its `68ch` origin
+   * reads like: `1ch` is the advance of the digit `0`, and Satoshi's digit is ~63% wider
+   * than its average letter. ADR 0002 converted that arithmetic faithfully while fixing
+   * layout shift, so the overshoot came across intact. It is invisible on the two- and
+   * three-line ledes `--measure` actually caps, and those are frozen behind their own
+   * gates, so it stays as it is.
+   *
+   * ---
+   *
+   * **`--measure-prose` is a length now, and that is a bug fix, not a style change.**
+   *
+   * It was `30em`, and `em` resolves against *each element's own* font size. `Document.astro`
+   * caps its masthead and its prose with the same token, but the masthead inherits 16px and
+   * the prose sets its own size - so one declaration produced **480px for the title block
+   * and 540px for the body**, and the largest type on the page wrapped in the narrowest
+   * column on it. That is why an article `h1` broke to three lines while the paragraphs
+   * under it ran to two. Multiplying the reading size by a unitless number gives a length
+   * that cannot be re-resolved, so every element capped by it lands on the same pixel.
+   *
+   * **The count is still the point**, and which count is a real question. 35 x the reading
+   * size is 700px at 1440, 610px at 768, viewport-capped at 390 - a constant measure rather
+   * than a constant width. That measure is **73 characters against an even a–z probe and
+   * ~80 against the paragraph's own text**, and the second is the honest one, because
+   * English weights letters toward the narrow end. `tests/e2e/legal.spec.ts` uses the real
+   * text and is the number to trust; by it the old 540px column was 68, which is exactly
+   * what `docs/adr-0002` recorded, so that figure was right and the a–z probe is what was
+   * misleading. 80 sits at the top of the comfortable band rather than inside it - the
+   * owner chose this width by looking at it, with that stated.
+   */
+  --measure-prose: calc(35 * var(--text-prose));
+  /*
+   * What is allowed out of the reading column: code blocks and figures.
+   *
+   * A line of SQL is not prose and neither is a picture, and at the reading measure the
+   * MusicBrainz post's query was cut mid-word with only a scrollbar to say so. One width
+   * for both, derived from the same reading size so the relationship holds at every
+   * viewport instead of only at the one it was chosen on.
+   */
+  --measure-wide: calc(41 * var(--text-prose));
+}

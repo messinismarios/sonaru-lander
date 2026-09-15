@@ -1,0 +1,831 @@
+---
+/**
+ * Act two - phases.md 8.4, "the promise": the chronological feed.
+ *
+ * **The device mechanism moved here from the hero** (owner, 2026-09-03), mechanically
+ * unchanged: sticky, grows on scroll, feed advances one release per further scroll - see
+ * `promise.ts`.
+ *
+ * **There is no hand-off cover, and growth happens on the way in (owner, 2026-09-03).**
+ * The section used to open under a `.blackout` layer that faded off over ~200px, which is
+ * what read as the phone fading in slowly; the device is now simply visible, at full
+ * opacity, from the first frame it is on screen. Growth no longer costs the pin any
+ * scroll either: it runs across the section's *approach* - starting as the section (and
+ * so the phone) comes into the viewport, finishing exactly when the section's top reaches
+ * the viewport's top and the pin engages. `promise.ts` drives `--feed-p` from
+ * `observeScrollProgress`'s `entry`, not from its `progress`, which is what makes that
+ * possible; the pin's own scroll now belongs entirely to the feed, its rest and the outro.
+ *
+ * **The device rests near the top from frame one** (owner, 2026-09-03, revised from an
+ * initial pass that rested it low with a lot of empty space above it): `--rest-top` and
+ * `--end-top` (the grown, centred position) are both ~6svh, so growth is almost entirely
+ * a scale change rather than a rise - there is nowhere for whitespace to hide.
+ *
+ * **The cyan atmosphere waits for the first advance** (owner, 2026-09-03): it does not
+ * exist in the hero's version of this mechanism at all, and appearing from frame one read
+ * as arriving too early. `--feed-atmosphere` ramps 0→1 across the *first* feed advance
+ * only (`promise.ts`), then stays lit - "after the first feed item has been scrolled".
+ *
+ * **The outro (owner, 2026-09-03, keeping what first shipped as a bug):** after the feed's
+ * trailing rest, the device settles smaller (70vh - `--settle-scale`, a ratio of `--end-h`
+ * the same way `--rest-scale` already is) while staying on screen, and the section's own
+ * copy fades in beneath it with a fixed 20svh gap to the bottom of the viewport - both
+ * still inside the one sticky pin, not a separate unpinned block below it.
+ *
+ * **`FEED_LIMIT` raised from 2 to 3** (owner, 2026-09-03) - `showcase.ts` owns the count,
+ * shared with `Problem.astro`'s independent chip call.
+ *
+ * **Cyan bloom** (`design-system.md` §2, "clarity/order") via `BloomField act="feed"`,
+ * already defined at 8.1 and unused until now.
+ *
+ * **`#feed` is act one's CTA target** (owner, 2026-09-03). "See how it works" now lives on
+ * `Problem.astro` and points here, at the full-screen phone. The anchor lands on the
+ * section's top, which - since growth is driven by the *approach* - is exactly the moment
+ * the phone reaches full size, so the jump arrives on a composed frame rather than mid-tween.
+ *
+ * No device mockup elsewhere claims to *be* the app (`design-system.md` §6) - this
+ * section is where that claim now lives exclusively, since the hero no longer makes it.
+ */
+import BloomField from '../BloomField.astro';
+import Device from '../device/Device.astro';
+import FeedScreen from '../device/FeedScreen.astro';
+import { getFeedReleases } from '../device/showcase';
+
+/**
+ * How many times the feed advances, and therefore how much scroll the feed track is
+ * given. Read from the same module the feed renders from, so the number of releases on
+ * screen and the scroll allocated to them cannot disagree.
+ */
+const showcase = await getFeedReleases();
+const advances = showcase.length - 1;
+
+/**
+ * The chronology stamps beside the phone - one per release, split so the day can be set at
+ * display scale with the month and year small beneath it (`Gate A`, option A, approved by
+ * the owner 2026-09-03). `en-GB` and `UTC` match `ReleaseCard.astro` exactly, so the stamp
+ * and the date inside the phone can never disagree about what day a release came out.
+ */
+const stamps = showcase.map((release) => {
+  const at = new Date(`${release.data.releaseDate}T00:00:00Z`);
+  return {
+    day: new Intl.DateTimeFormat('en-GB', { day: '2-digit', timeZone: 'UTC' }).format(at),
+    month: new Intl.DateTimeFormat('en-GB', { month: 'short', timeZone: 'UTC' }).format(at),
+    year: new Intl.DateTimeFormat('en-GB', { year: 'numeric', timeZone: 'UTC' }).format(at),
+  };
+});
+
+import { catalogue } from '../../i18n';
+
+const t = catalogue(Astro.currentLocale);
+---
+
+<section id="feed" class="feed" data-feed-stage style={`--advances: ${advances}`}>
+  <div class="atmosphere">
+    <BloomField act="feed" intensity="feature" />
+  </div>
+
+  <div class="pin" data-feed-pin>
+    {
+      /*
+      Act two's decorative anchor (Gate A option A, owner 2026-09-03): the release's own date
+      set at display scale in the margin beside the phone, swapping as the feed pages.
+
+      `reference-study.md` §3 - superlist's pricing page, where "the page's decorative anchor
+      is display type itself" and the fun "comes entirely from scale, colour, and typographic
+      wit". Deliberately *not* their execution: no italic, no crossing glyph, and it is a
+      real fact about the release rather than a wordmark.
+
+      Alternates margins, and each one swipes: in from below, out towards the top (owner,
+      2026-09-04). Both are `promise.ts`'s `renderStamps` - the same paged position the feed
+      itself rides, so the date in the margin and the release on screen cannot disagree.
+
+      `aria-hidden`, and this is the honest call rather than a convenience: it restates a date
+      the device already shows, so `design-system.md` §6's rule that a screen reader must never
+      have to walk a fake app applies to it exactly as it does to the phone.
+
+      Hidden below 1024px, where the phone leaves no margin to put it in.
+    */
+    }
+    <div class="chronology" aria-hidden="true">
+      {
+        stamps.map((stamp, index) => (
+          /*
+           * `--i` is the stamp's place in the list, used only below `md`, where the dates
+           * are a plain column laid out down the section at a fixed step rather than one
+           * crossfading element (8.14c Gate C, owner: "completely normally placed and
+           * scrolled - not animated, as if there's no js to them ... like a calendar").
+           * The opacity below is the desktop build's starting state and is overridden at
+           * that width.
+           */
+          <span class="stamp" data-stamp style={`--i: ${index}; opacity: ${index === 0 ? 1 : 0}`}>
+            <span class="day">{stamp.day}</span>
+            <span class="rest">
+              <span class="month">{stamp.month}</span> <span class="year">{stamp.year}</span>
+            </span>
+          </span>
+        ))
+      }
+    </div>
+
+    <div class="device-slot">
+      <Device>
+        <FeedScreen />
+      </Device>
+    </div>
+
+    <div class="copy">
+      <h2 class="headline">{t.home.feed.headline}</h2>
+      <p class="sub">{t.home.feed.sub}</p>
+    </div>
+  </div>
+
+  <!--
+    Deliberately `releases`, not `feed`: Astro scopes this component's styles by adding one
+    shared `astro-cid` to *every* element in it, so a modifier class that happens to match
+    the section's own class is selected by the section's own rule. As `travel feed` this
+    spacer picked up `.feed`'s `background` and `position: relative` and became a
+    1152px-tall opaque black block sitting in flow above the sticky `.atmosphere` - the
+    slab the owner saw scrolling past behind the phone (2026-09-03).
+  -->
+  <!--
+    8.14c: the scroll the phone spends moving aside, before a single release advances.
+    Zero-height at every width from 768 up, where the phone does not move aside at all -
+    the element is inert on desktop rather than conditional, so both branches read the same
+    spacers and nothing has to know which one is running.
+  -->
+  <div class="travel shift" data-feed-shift></div>
+  <div class="travel releases" data-feed-feed-travel></div>
+  <div class="travel rest" data-feed-rest></div>
+  <div class="travel settle" data-feed-settle></div>
+  <!--
+    The outro's trailing hold (owner, 2026-09-03): the total after the feed is unchanged,
+    but the settle now finishes inside the first two-thirds of it and this spacer is the
+    rest, so the composition is seen standing rather than arriving and immediately leaving.
+    It carries no hook of its own and `promise.ts` never reads it - `settleProgress` is
+    measured against `.travel.settle` alone and simply clamps at 1 across this one.
+  -->
+  <div class="travel outro-hold"></div>
+</section>
+
+<style>
+  @property --feed-p {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+
+  /* The outro's own progress, 0 (still full size, feed just ended) to 1 (settled). */
+  @property --feed-settle {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+
+  /* How lit the cyan atmosphere is, 0 to 1 - ramps in only once the whole feed has
+   * finished advancing. */
+  @property --feed-atmosphere {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+
+  /*
+   * 8.14c, mobile only. How far the phone has moved aside: 0 centred and full size, 1
+   * shrunk and pushed right with 30% of it past the edge, the dates standing in the space
+   * it left. It rises across `.travel.shift`, holds through every advance, and is brought
+   * back down by `--feed-return` - one signal for "the phone is out of the way", so the
+   * dates cannot be lit while the phone is centred over them.
+   */
+  @property --feed-aside {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+
+  /* The close: the phone coming back to the middle and the copy arriving under it. */
+  @property --feed-return {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+
+  .feed {
+    position: relative;
+    display: flow-root;
+    overflow-x: clip;
+    background: var(--color-ink-950);
+    --end-h: var(--device-end-h);
+    --rest-scale: 0.659;
+    --advance: 64svh;
+    --rest-top: 6svh;
+    /* 70vh against an 88svh end - same "express it as the ratio" discipline as
+     * `--rest-scale`, so it holds whichever term of `--end-h`'s `min()` wins. Shared with
+     * act three since 8.5's Gate B: act three opens on the phone at exactly the size this
+     * section leaves it, so the two must read one number, not two equal ones. */
+    --settle-scale: var(--device-settle-scale);
+  }
+
+  /*
+   * `.atmosphere` and `.pin` are two stacked `position: sticky` layers with
+   * a negative margin, inside a section that is thousands of pixels tall. Each gets its
+   * own forced, correctly-bounded compositing layer (`transform: translateZ(0)` +
+   * `contain: paint`) - a defensive measure against a reported rendering artifact (a stray
+   * dark/black rectangle, and dimming bleeding onto fixed page chrome above these layers)
+   * that could not be reproduced in either Chromium or WebKit via Playwright, so is
+   * suspected to be a GPU-compositing tiling bug specific to hardware-accelerated
+   * rendering on a very tall sticky ancestor. `isolation: isolate` on each also guarantees
+   * their stacking (and any blend mode inside `.atmosphere`) cannot affect anything
+   * outside their own box, including the fixed header.
+   */
+  /*
+   * **The overlap is a negative `margin-top` on `.pin`, not a negative `margin-bottom`
+   * here** (owner, 8.5's Gate C). A sticky element's constraint rectangle is its
+   * containing block inset by the element's *own* margins, so `margin-bottom: -100svh`
+   * on this layer pushed the bottom of that rectangle a full viewport *below* the
+   * section - and the atmosphere therefore stayed stuck to the screen for 900px after
+   * `.pin` had released and scrolled away, riding over the top of act three. Measured at
+   * 1440x900: at 300px past the release the pin was at -300 and this layer was still at
+   * 0. Moving the same negative margin to the next sibling's top gives the identical flow
+   * position and the identical overlap while leaving both constraint rectangles equal to
+   * the section, so the two layers now release on the same pixel (verified: delta 0 at
+   * the release and at every offset past it).
+   */
+  .atmosphere {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    pointer-events: none;
+    opacity: calc(0.55 * var(--feed-atmosphere));
+    -webkit-mask-image: radial-gradient(72% 58% at 50% 52%, #000 0%, transparent 74%);
+    mask-image: radial-gradient(72% 58% at 50% 52%, #000 0%, transparent 74%);
+    isolation: isolate;
+    contain: paint;
+    transform: translateZ(0);
+  }
+
+  .pin {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    /* Pulls this layer back over `.atmosphere`, which now keeps its own 100svh of flow.
+     * See the note there for why the negative margin lives on this side of the pair. */
+    margin-top: -100svh;
+    z-index: 1;
+    overflow: hidden;
+    isolation: isolate;
+    contain: paint;
+    transform: translateZ(0);
+  }
+
+  .travel.releases {
+    height: calc(var(--advances) * var(--advance));
+  }
+
+  /* A trailing hold on the last release, so it is seen at rest rather than only in
+   * passing - same reasoning as the hero's own former `.travel.rest`. Shortened from
+   * `1.12` at rev 24 to lend the settle its own room; see below. */
+  .travel.rest {
+    height: calc(var(--advance) * 0.8);
+  }
+
+  /*
+   * Rev 24 (owner: the outro copy "still seems to appear too abruptly"). The onset curve
+   * was already near-flat, so the remaining abruptness was simply distance: 32svh is not
+   * much scroll for a full arrival. The settle grows to 52svh and the trailing hold on the
+   * last release gives back the same ~20svh, so the total after the feed is unchanged -
+   * 51 + 52 + 18 against the previous 72 + 32 + 18. Lengthening the settle rather than
+   * decoupling the copy from it keeps the device's shrink and the copy's arrival on one
+   * signal, which is what stops them drifting apart.
+   */
+  .travel.settle {
+    height: 52svh;
+  }
+
+  .travel.outro-hold {
+    height: 18svh;
+  }
+
+  .device-slot {
+    position: absolute;
+    left: 50%;
+    top: var(--rest-top);
+    height: var(--end-h);
+    aspect-ratio: 390 / 844;
+    --end-top: calc((100svh - var(--end-h)) / 2);
+    transform-origin: 50% 0;
+    pointer-events: none;
+    /* Always fully opaque (owner, 2026-09-03) - the device never fades, and nothing covers
+     * it any more either: it is simply on screen, growing, from the first frame of the
+     * section's approach. */
+    /* Growth (`--feed-p`) and the outro (`--feed-settle`) are two separate, sequential
+     * multipliers on the same scale - growth never has to know the outro exists, and vice
+     * versa. Position (`top`) does not change for the outro: shrinking in place, top held
+     * fixed, is what reads as "pushed up" without an extra translate to keep in sync. */
+    transform: translateX(-50%) translateY(calc((var(--end-top) - var(--rest-top)) * var(--feed-p)))
+      scale(
+        calc(
+          (var(--rest-scale) + (1 - var(--rest-scale)) * var(--feed-p)) *
+            (1 - var(--feed-settle) * (1 - var(--settle-scale)))
+        )
+      );
+    will-change: transform;
+  }
+
+  /*
+   * The stamps are stacked in one place and crossfaded, rather than laid out in a column
+   * and slid: `promise.ts` already owns a paged, threshold-driven position for the feed and
+   * drives these from that same number, so they can never drift out of step with the
+   * release actually on screen. A second scroll mapping is exactly how they would.
+   *
+   * Appears with the phone (`--feed-p`) and leaves with the outro (`--feed-settle`), so it
+   * never competes with the copy that lands over the device at the end.
+   */
+  .chronology {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: calc(var(--feed-p) * (1 - var(--feed-settle)));
+  }
+
+  /*
+   * Each stamp fills one margin beside the phone and alternates which one (owner,
+   * 2026-09-04). The width is the margin itself - half the pin, less half the grown
+   * device's own width, which its `--end-h` and the 390/844 aspect give exactly - so the
+   * stamp can never overlap the phone at any viewport.
+   *
+   * `nth-child` rather than an index written into the markup: the alternation is a fact
+   * about position in the list, and the list is the only thing that decides it.
+   */
+  .stamp {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: calc(50% - var(--end-h) * 0.5 * 390 / 844);
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: var(--spacing-1);
+    color: var(--color-plum-500);
+    /* `transform` as well as `opacity` now: the swipe below is scrubbed, and this element
+     * is repainted on every frame of an advance without it. */
+    will-change: opacity, transform;
+  }
+
+  .stamp:nth-child(odd) {
+    left: 0;
+  }
+
+  .stamp:nth-child(even) {
+    right: 0;
+  }
+
+  .day {
+    font-size: clamp(3.5rem, 7vw, 7rem);
+    line-height: 0.9;
+    letter-spacing: var(--tracking-display);
+    font-weight: 700;
+    /* Quiet enough to read as atmosphere behind the product rather than as a second
+     * headline competing with the one that arrives at the end. */
+    opacity: 0.32;
+  }
+
+  .rest {
+    font-size: var(--text-sm);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-mute-200);
+    opacity: 0.5;
+  }
+
+  @media (max-width: 1023px) {
+    .chronology {
+      display: none;
+    }
+  }
+
+  .copy {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 20svh;
+    z-index: 2;
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+    display: grid;
+    gap: var(--spacing-4);
+    justify-items: center;
+    text-align: center;
+    /*
+     * Smoothstep, not the raw signal (owner, 2026-09-03: the text "fades in way too
+     * suddenly. It's like it pops"). `--feed-settle` is flat 0 through the whole feed and
+     * its rest and then starts climbing linearly, so the copy went from absent to visibly
+     * present within a few pixels of scroll - the abruptness was in the onset, not the
+     * length. Rev 24 goes further still, to smootherstep (`6t⁵ − 15t⁴ + 10t³`), whose first
+     * *two* derivatives vanish at each end - the copy leaves and reaches full presence with
+     * no detectable moment of starting. Written out rather than eased in JS because both
+     * properties below must ride the identical curve; a second, separately-eased signal is
+     * how the fade and the drift would desynchronise.
+     */
+    --settle-ease: calc(
+      var(--feed-settle) * var(--feed-settle) * var(--feed-settle) *
+        (var(--feed-settle) * (var(--feed-settle) * 6 - 15) + 10)
+    );
+    opacity: var(--settle-ease);
+    transform: translateY(calc((1 - var(--settle-ease)) * var(--spacing-4)));
+    /*
+     * The outro lands this copy *on top of* the settled device - by design, but the phone's
+     * own track title and transport controls sit exactly where the headline crosses it, and
+     * white-on-plum against white-on-black gave the two nothing to separate them (owner,
+     * 2026-09-03). Three stacked shadows rather than one: a tight dark edge that keeps the
+     * letterforms crisp against the screen's lit areas, and two progressively wider, softer
+     * pools that darken the artwork behind the whole line so it reads as a layer above the
+     * device rather than printed onto it.
+     *
+     * `text-shadow`, not a scrim behind `.copy`: a rectangle of darkness would cut a visible
+     * edge across the phone, which is the exact artifact this section just spent a round
+     * removing. Inherited from `.copy` so the headline and sub-line cannot drift apart. It
+     * is static - `design-system.md` §6 bans *animating* a shadow in a scrubbed timeline,
+     * and nothing here animates it; only the element's own opacity moves.
+     */
+    text-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.85),
+      0 4px 20px rgba(0, 0, 0, 0.75),
+      0 0 48px rgba(0, 0, 0, 0.65);
+    /*
+     * **Load-bearing, and measured.** Without it this element is re-rastered on every frame
+     * of the outro, because its `opacity` is animating and a blurred `text-shadow` over
+     * display type is expensive to paint - a trace across the outro at 1512×945 @2x put
+     * `RasterTask` at **460ms with the shadow against 5ms without**, which is what the owner
+     * reported as the site lagging the moment the text appears (2026-09-03). Promoting the
+     * element paints the shadow once into its own layer and leaves `opacity` and `transform`
+     * as compositor-only work: the same trace then reads **8ms**. The frame-cadence probes
+     * that ran first showed a clean 60fps in every variant and found nothing - raster does
+     * not block the main thread's rAF here, so only the trace exposed it.
+     */
+    will-change: transform;
+  }
+
+  .headline {
+    margin: 0;
+    max-width: var(--measure-display);
+    font-size: var(--text-3xl);
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    font-weight: 700;
+    color: var(--color-white);
+    text-wrap: balance;
+  }
+
+  .sub {
+    margin: 0;
+    max-width: var(--measure);
+    font-size: var(--text-lg);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+    text-wrap: pretty;
+  }
+
+  /*
+   * The designed reduced-motion composition (acceptance-criteria.md §4): no travel, no
+   * cover - the device settles straight to its outro size and the copy is simply present
+   * beneath it.
+   */
+  /* At `md` and up only since 8.14c round 8 (owner): below it, phones keep the full
+   * motion build under Reduce Motion. */
+  @media (prefers-reduced-motion: reduce) and (min-width: 768px) {
+    .feed {
+      --advance: 0svh;
+    }
+
+    .travel.settle,
+    .travel.outro-hold {
+      height: 0svh;
+    }
+
+    .pin {
+      position: relative;
+      height: 100svh;
+      /* `.atmosphere` is taken out of flow below, so there is no longer 100svh of
+       * sibling above this to pull back over. */
+      margin-top: 0;
+    }
+
+    .atmosphere {
+      position: absolute;
+      inset: 0;
+      height: auto;
+    }
+
+    .device-slot {
+      will-change: auto;
+    }
+  }
+
+  /*
+   * 8.14c: below `md` the pin is gone, and the composition inside it is rebuilt rather
+   * than merely unpinned (Gate C, owner). Two things change and they are the same change:
+   * **the copy comes off the phone's screen, and the phone stops resizing.**
+   *
+   * Everything above this block is absolutely positioned inside a viewport-height pin,
+   * because at 1440 that is a deliberate outro - the copy lands *over* a device the scrub
+   * has already shrunk to `--settle-scale`, with a triple `text-shadow` earning its
+   * legibility. None of that survives at 390: the phone is nearly the whole frame, so the
+   * same overlay put the headline across the track title and the transport controls.
+   *
+   * So the pin becomes an ordinary column - phone, then copy beneath it - and the device
+   * is sized for a viewport it has to share. `--mobile-device-h` is 60svh against the
+   * `min(88svh, 195vw)` of `--device-end-h`, which resolves to ~743px here and leaves
+   * nothing for the words.
+   *
+   * `--feed-settle` is therefore driven to 0 rather than 1 (`promise.ts`): the shrink
+   * existed to make room for copy that is no longer there to need it.
+   */
+  /*
+   * 8.14c Gate C, round 2 - **only the phone is pinned** (owner), and that one sentence is
+   * the whole structure. Above `md` the entire `.pin` is the sticky element and everything
+   * inside it is pinned together. Here the phone itself is sticky and `.pin` is an ordinary
+   * tall block, so the dates and the copy are plain flow content scrolling past it with no
+   * JavaScript touching them at all - "as if there's no js to them ... like a calendar".
+   *
+   * What that buys, beyond matching the brief: the dates cannot drift out of step with the
+   * release on screen by being mis-timed, because they are not timed. `promise.ts` reads
+   * which date is level with the phone and asks the feed for that release, so the column is
+   * the source of truth and the feed follows it.
+   */
+  @media (max-width: 767px) {
+    .feed {
+      /*
+       * Room between act one and the phone (owner, round 3: "too close to the previous
+       * section, double the margin"). Act one ends with ~124px of its own empty lower half
+       * below its CTA and the phone began immediately after it, so this is that perceived
+       * margin doubled, then halved at round 4 and halved again at round 5 (owner, both
+       * times: "cut the top padding by 50%").
+       *
+       * It is deliberately **not** the 300px that used to sit here. That read as "a huge
+       * gap" when it was a margin painting the page's plum ground between two ink-950
+       * sections; as padding inside this section it is simply dark, and the distance that
+       * felt wrong before was the colour, not entirely the length.
+       *
+       * Removed outright at 8.14c round 5 (owner: "no margin on the top so it's closer to
+       * the copy").
+       */
+      padding-top: 0;
+
+      /*
+       * Bigger in both states (owner, round 2) - was 60svh, and shrinking barely at all
+       * when it goes aside. `--device-end-h` (~743px here) is a phone with nothing beside
+       * it, which is what this width cannot afford.
+       *
+       * **Sized from the width, capped by the height** (round 5). It was 78svh, so its width
+       * - and with it the whitespace left of the aside phone, `100vw - 0.9 * width` - followed
+       * the screen's *height*: 28% of the width on a 412x915 phone, which the owner approved,
+       * but 42% on a 375x667 one. 80vw wide is exactly the 412x915 composition on every
+       * phone. The 90svh cap is what stops a short, wide screen pushing the phone under the
+       * header and off the bottom edge; below that aspect the whitespace grows again, but
+       * from 34% at 375x667 rather than 42%.
+       */
+      --mobile-device-h: min(calc(80vw * 844 / 390), 90svh);
+      --phone-w: calc(var(--mobile-device-h) * 390 / 844);
+      /* Round 4 (owner): the phone no longer shrinks at all when it goes aside. Kept as a
+       * token rather than deleted because the geometry below is expressed in terms of it. */
+      --aside-scale: 1;
+
+      /* How much of the phone ends up past the right edge - 30% at round 1, cut to 10% at
+       * round 4 so less of the screen is whitespace. */
+      --aside-fraction: 0.1;
+
+      /* The move that puts exactly `--aside-fraction` of the phone past the right edge. Its
+       * centre starts at 50vw and must land at `100vw - (0.5 - f) * w`. Derived from the
+       * fraction rather than dialled in, so changing the overhang is one number and the
+       * date column below follows it automatically. */
+      --aside-x: calc(50vw - (0.5 - var(--aside-fraction)) * var(--phone-w) * var(--aside-scale));
+
+      /* Where the phone's left edge lands once aside - what the date column butts against. */
+      --phone-left: calc(100vw - (1 - var(--aside-fraction)) * var(--phone-w) * var(--aside-scale));
+
+      /* The scroll the phone spends moving aside once it has pinned. */
+      --aside-span: 34svh;
+
+      /* One release per step down the date column - the section's own scroll rhythm. 62svh
+       * until the closing round (owner: the second swipe "even earlier ... so that the third
+       * feed item is visible for a lot longer"). */
+      --date-step: 40svh;
+      /* What one date block occupies, measured - the calendar rule spans the gap between
+       * two of them, so it needs to know. */
+      --stamp-h: 46px;
+      /*
+       * Where the first date sits, in the pin's coordinates. The pager advances once the
+       * phone's centre is `0.5 + HYSTERESIS` (0.56) of a step past a date's centre, and the
+       * phone's centre is half its height below its top, which is `stuck` px down the pin.
+       * Closing round (owner): the first date's centre sits that threshold short of the
+       * phone's centre at the end of the move, which is also how `promise.ts` reads the move's
+       * length back. (The first swipe itself left this position at 8.14 - it now starts 10% into
+       * the move - but every later swipe is still timed from this column.) (It used to be `50svh + --aside-span`, which assumed the phone's centre sat
+       * at mid-screen in the pin's coordinates and put the first swipe ~0.56 of a step plus
+       * ~116px after the move.) `promise.ts` derives the aside span back from this position.
+       */
+      --date-start: calc(
+        var(--mobile-device-h) / 2 + var(--aside-span) - 0.56 * var(--date-step) - var(--stamp-h) /
+          2
+      );
+
+      /*
+       * The copy's own room, cut to a fifth at round 3 (owner: both paddings around "every
+       * release" are "too big ... cut the paddings to 20%"). Measured before and after
+       * rather than dialled by eye: 219px above the copy became 44, and 300px below it
+       * became 60 - then doubled to 120 at round 4 (owner: "double the bottom padding of
+       * the section").
+       */
+      --copy-gap-above: 44px;
+      /* 0 since 8.14c round 7 (owner: closer to the playlist, whose own top padding is the
+       * gap now). */
+      --copy-gap-below: 0px;
+
+      /* The scroll after the last date that belongs to the copy alone. The phone's own
+       * bottom margin is this, which is what unpins it before the copy arrives. */
+      --copy-zone: calc(var(--copy-gap-above) + var(--copy-h) + var(--copy-gap-below));
+
+      /* What the headline and lede occupy at this width - measured, and only used to place
+       * what sits after them. */
+      --copy-h: 257px;
+
+      /* The block the phone is sticky within: every date, then the copy's own room. Held at
+       * exactly the length it had before the closing round moved the swipes earlier
+       * (`50svh + 34svh + 2 * 62svh + 40svh`), so the scroll they gave up is the third
+       * release's to keep. */
+      --pin-h: calc(248svh + var(--copy-zone));
+    }
+
+    /* The budget lives in `.pin`'s own height now, not in spacers beside it. */
+    .travel.shift,
+    .travel.releases,
+    .travel.rest,
+    .travel.settle,
+    .travel.outro-hold {
+      height: 0;
+    }
+
+    .pin {
+      position: relative;
+      height: var(--pin-h);
+      /* `clip`, never `hidden`: `hidden` establishes a scroll container and a sticky child
+       * positions against its nearest scrollport, which would silently un-pin the phone.
+       * The clip itself is load-bearing horizontally - 30% of the phone is outside. */
+      overflow: clip;
+      display: block;
+    }
+
+    .device-slot {
+      /* The phone, and only the phone. It is in ordinary flow until its top reaches the
+       * offset that centres it, and pins itself there - never sticky from the start. */
+      position: sticky;
+      top: calc((100svh - var(--mobile-device-h)) / 2);
+      left: auto;
+      height: var(--mobile-device-h);
+      margin-inline: auto;
+      /*
+       * **This is what makes the phone let go before the copy arrives**, and it is 8.5's
+       * Gate C finding used on purpose rather than tripped over: a sticky element's
+       * constraint rectangle is its containing block inset by the element's *own* margins,
+       * so a bottom margin ends its pin that much earlier. Without it the phone stays stuck
+       * to the end of `.pin` and the headline scrolls up across it.
+       *
+       * The copy is authored to start below this, so the two never share the frame.
+       */
+      margin-bottom: var(--copy-zone);
+      transform-origin: 50% 50%;
+      transform: translateX(calc(var(--feed-aside) * var(--aside-x)))
+        scale(calc(1 - var(--feed-aside) * (1 - var(--aside-scale))));
+    }
+
+    /*
+     * The dates: a plain column down the left, laid out by index, never touched after
+     * paint. All of them on the left rather than desktop's odd/even alternation between
+     * two margins - there is only one margin here.
+     */
+    /*
+     * Round 5 (owner): the column fades with the phone's own move rather than standing
+     * through it. `--feed-aside` is already exactly that signal - 0 while the phone is
+     * centred over where the dates sit, 1 once it is fully right, and back to 0 as it flips
+     * back - so the dates are at full strength only while there is room for them, and the
+     * overlap at both ends resolves itself.
+     *
+     * This is the one thing on the column that is driven: the dates' *positions* are still
+     * plain CSS and still never touched, which is what "like a calendar" asked for.
+     */
+    .chronology {
+      display: block;
+      /*
+       * Cubed, not the raw signal. Both the fade and the phone's move ride `--feed-aside`,
+       * so a linear opacity has the dates already at 0.7 while the phone is still crossing
+       * the space they occupy - which is the overlap this fade is here to remove. Cubing
+       * holds them back until the phone is most of the way clear and still reaches exactly
+       * 1 at the end of the move, which is what "opacity 1 when the phone is fully to the
+       * right" asks for. Written out rather than eased in JS for the same reason
+       * `--settle-ease` above is: the value has to be a pure function of the signal.
+       */
+      opacity: calc(var(--feed-aside) * var(--feed-aside) * var(--feed-aside));
+      inset: 0;
+    }
+
+    /* Month over year, so the block is narrower than the phone's margin (owner, round 5). */
+    .rest {
+      display: grid;
+      justify-items: end;
+      gap: 2px;
+      line-height: 1.15;
+    }
+
+    /*
+     * Round 4 (owner): the column is **right-aligned against the phone**, not against the
+     * screen - it sits at the right-hand edge of the whitespace the phone leaves, so the
+     * dates touch it. `--phone-left` is derived from the same overhang fraction the phone
+     * moves by, so the column tracks the phone rather than restating its position.
+     */
+    .stamp,
+    .stamp:nth-child(odd),
+    .stamp:nth-child(even) {
+      left: auto;
+      right: calc(100vw - var(--phone-left) + var(--spacing-8));
+      top: calc(var(--date-start) + var(--i) * var(--date-step));
+      bottom: auto;
+      width: auto;
+      align-content: start;
+      justify-items: end;
+      text-align: right;
+      /* Beats `renderStamps`' inline styles, which this branch never calls - the column is
+       * static, so a stamp must not inherit the crossfade's hidden state. */
+      opacity: 1 !important;
+      transform: none !important;
+      will-change: auto;
+    }
+
+    /*
+     * The calendar rule (owner, round 3: "a vertical line between each date"). One segment
+     * per gap rather than a single spine behind the whole column, so the line reads as
+     * joining one date to the next rather than running behind the type. The last date has
+     * none - there is nothing after it to join to.
+     *
+     * Its length is the step less the space the date itself occupies, and it fades at both
+     * ends so it meets the type without butting into it.
+     */
+    .stamp:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: calc(100% + var(--spacing-3));
+      width: 1px;
+      height: calc(var(--date-step) - var(--stamp-h) - var(--spacing-6));
+      background: linear-gradient(
+        to bottom,
+        transparent,
+        var(--color-mute-400) 12%,
+        var(--color-mute-400) 88%,
+        transparent
+      );
+      opacity: 0.5;
+    }
+
+    .day {
+      /* "A lot smaller" (owner, round 2): this is a date in a column, not the decorative
+       * anchor it is at 1440, where it fills half a pin. */
+      font-size: var(--text-2xl);
+      opacity: 0.55;
+    }
+
+    .rest {
+      font-size: var(--text-xs);
+    }
+
+    /*
+     * The copy: placed after the last date and simply scrolled to, with no fade and no
+     * signal of its own (owner, round 2). It sits inside `.pin` but `.pin` is in normal
+     * flow at this width, so "inside the pinned element" no longer means "pinned".
+     */
+    /*
+     * The bloom (owner, round 3: the orbs are "way too small and spread out, similar to how
+     * the hero section was which we fixed"). Same fix, same reasoning: the scale lands on
+     * each `.orb` **in place**, never on the field around them - growing the parent moves
+     * every orb further from centre, which is the opposite of bunching. `translate(-50%,
+     * -50%)` is the orb's own base transform and has to be restated, since `transform` is
+     * one property.
+     *
+     * Scoped through `.atmosphere`, so it cannot reach a `.orb` anywhere else on the site -
+     * `BloomField` is shared with three frozen acts and is not touched here.
+     */
+    .atmosphere :global(.orb) {
+      transform: translate(-50%, -50%) scale(2.2);
+    }
+
+    .copy {
+      /* Below where the phone lets go, so the two never share a frame. */
+      top: calc(var(--pin-h) - var(--copy-zone) + var(--copy-gap-above));
+      bottom: auto;
+      opacity: 1;
+      transform: none;
+      text-shadow: none;
+      will-change: auto;
+    }
+  }
+</style>

@@ -1,0 +1,148 @@
+---
+/**
+ * One post on the index.
+ *
+ * **The cover is a generated PNG, not this component rendering `PostCover`.** That is
+ * deliberate and it is what makes "the cover is the social card" literally true rather
+ * than approximately: the card shows the same file a link preview shows. It also means the
+ * index has **no animated layer at all** - three live `BloomField`s on one page would have
+ * been its entire motion cost, and generating the cover deletes it.
+ *
+ * **The card's only link is its title**, with a `::after` overlay making the whole card
+ * clickable. Wrapping the card in one anchor is the obvious construction and it gives the
+ * link an accessible name made of the cover's alt, the tag, the date, the reading time,
+ * the title and the excerpt - a sentence nobody can listen to. The overlay costs one
+ * pseudo-element and leaves the link named "Release tracking is broken, and nobody says so
+ * out loud".
+ *
+ * The cover's `alt` is **the hook**, because after Gate A's amendment the hook is a line
+ * that exists nowhere else on the page. An empty alt here would drop content.
+ */
+import PostMeta from './PostMeta.astro';
+import type { Post } from '../../lib/posts';
+
+interface Props {
+  readonly post: Post;
+  /**
+   * `true` on the first card only. The cover is the index's LCP element, so it loads
+   * eagerly at high priority while every other cover waits - `acceptance-criteria.md` §3.
+   */
+  readonly priority?: boolean;
+}
+
+const { post, priority = false } = Astro.props;
+const { data } = post.entry;
+---
+
+<article class="card">
+  <img
+    class="cover"
+    src={`/og/${post.slug}-640.jpg`}
+    srcset={`/og/${post.slug}-640.jpg 640w, /og/${post.slug}.jpg 1200w`}
+    sizes="(min-width: 720px) 640px, 100vw"
+    width="1200"
+    height="600"
+    alt={data.hook}
+    loading={priority ? 'eager' : 'lazy'}
+    decoding={priority ? 'sync' : 'async'}
+    fetchpriority={priority ? 'high' : 'auto'}
+  />
+  <PostMeta publishedAt={data.publishedAt} minutes={post.minutes} tags={post.tags} />
+  <h2 class="title"><a href={post.href}><span>{data.title}</span></a></h2>
+  <p class="excerpt">{data.lede}</p>
+</article>
+
+<style>
+  .card {
+    position: relative;
+  }
+
+  /*
+   * `aspect-ratio` beside the intrinsic `width`/`height` attributes, so the box is the
+   * right shape before the file arrives and the index cannot shift. CLS is budgeted at 0
+   * for this route and this is the whole of how.
+   */
+  .cover {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2 / 1;
+    border-radius: 14px;
+    margin-bottom: var(--spacing-6);
+    background: var(--color-plum-950);
+  }
+
+  .title {
+    margin: var(--spacing-3) 0 0;
+    font-size: var(--text-xl);
+    font-weight: 700;
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    color: var(--color-white);
+    text-wrap: balance;
+  }
+
+  .title a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /*
+   * The overlay that makes the whole card clickable without renaming the link.
+   *
+   * **The anchor is deliberately not positioned**, so this resolves against `.card`
+   * rather than against the text. That is also why the title's underline lives on an
+   * inner `<span>`: it needs a positioned box of its own, and the anchor cannot be one
+   * without collapsing the overlay onto the words.
+   */
+  .title a::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+  }
+
+  .title a span {
+    position: relative;
+  }
+
+  /* The site's one link treatment, drawn under the title. */
+  .title a span::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -4px;
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur-2) var(--ease-out);
+  }
+
+  .title a:hover span::after,
+  .title a:focus-visible span::after {
+    transform: scaleX(1);
+  }
+
+  .excerpt {
+    margin: var(--spacing-3) 0 0;
+    max-width: var(--measure-prose);
+    font-size: var(--text-prose);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .title a span::after {
+      transition: none;
+      transform: scaleX(1);
+      opacity: 0.4;
+    }
+
+    .title a:hover span::after,
+    .title a:focus-visible span::after {
+      opacity: 1;
+    }
+  }
+</style>

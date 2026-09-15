@@ -1,0 +1,392 @@
+---
+/**
+ * Base layout. Deliberately minimal at this stage - the real head (OG tags, JSON-LD,
+ * hreflang, the preloaded display cut) lands with the pages in 8.2 and the SEO work in
+ * 8.9. What it does own now is the token import, so no page can render without it.
+ */
+import '../styles/tokens.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { APP_STORE_APP_ID } from '../config/launch';
+import { catalogue, hasCatalogue, DEFAULT_LOCALE, PUBLISHED_LOCALES, type Locale } from '../i18n';
+import { localePath, splitLocale } from '../i18n/routing';
+
+interface Props {
+  readonly title: string;
+  readonly description: string;
+  /**
+   * The route's social card. Defaults to the site card, which is the whole point: a route
+   * cannot ship without one by forgetting to pass anything.
+   *
+   * Only `/blog/[slug]` overrides it, with the cover 8.9c generates from the post's own
+   * frontmatter. Everything else shares one picture and varies the title - the rule both
+   * reference sites were measured following at 8.10a's Gate A.
+   */
+  readonly ogImage?: string | undefined;
+  /** `article` on a post, `website` everywhere else. */
+  readonly ogType?: 'website' | 'article' | undefined;
+}
+
+const { title, description, ogImage = '/og/site.jpg', ogType = 'website' } = Astro.props;
+
+/*
+ * Absolute, because a scraper does not resolve relative URLs - a relative `og:image` is a
+ * card that silently does not render, which is the one failure mode nobody sees from
+ * inside the site. `astro.config.mjs` sets `site`, so `Astro.site` is always defined here.
+ *
+ * **The trailing slash is stripped deliberately.** `astro.config.mjs` leaves
+ * `trailingSlash` at its default of `'ignore'`, so `/pricing` and `/pricing/` both serve
+ * the page and `Astro.url.pathname` returns whichever was asked for - which would make the
+ * canonical URL a function of how a visitor happened to arrive. A canonical tag that
+ * disagrees with itself between two requests for the same page is worse than none at all,
+ * because it is what a search engine deduplicates on. The root keeps its slash.
+ */
+const { locale, path } = splitLocale(Astro.url.pathname);
+
+/*
+ * **The one rule from 8.11b's Gate A, and every other line here is derived from it.**
+ *
+ * A locale with no catalogue is not a language this site speaks yet, so a page rendered
+ * under it is *the English page at a second address* - and it says exactly that rather than
+ * pretending: the canonical points at the English twin, no alternate is claimed for a
+ * language that is not on the page, and `<main lang>` names the language the body is
+ * actually in so a screen reader switches voice at the content and back to the chrome.
+ *
+ * The owner chose this over a 404 at Gate A, having been told the cost. **`lang` on `<main>`
+ * is the whole of the mitigation**, and it is on `<main>` rather than on the `<article>` the
+ * gate named because `<main>` is the element every route has - an article is a thing only
+ * the blog and the legal documents own, and the rule has to hold on `/pricing` too.
+ *
+ * At 8.11b this is every `/es/` page. At 8.11c it is none of them. Nothing here changes on
+ * that day: `hasCatalogue('es')` starts answering `true` and the whole tree follows.
+ */
+const bodyLocale: Locale = hasCatalogue(locale) ? locale : DEFAULT_LOCALE;
+const isMirror = bodyLocale !== locale;
+
+const canonical = new URL(localePath(bodyLocale, path), Astro.site).href;
+
+/*
+ * `hreflang` for the locales that have words, plus `x-default` on English - `tech-stack.md`
+ * §10, and deliberately not superlist's regional `es-ES`: a regional code tells a search
+ * engine the page is for readers *in Spain*, which is narrower than the audience.
+ *
+ * **A locale is listed only once it is real, and only once it is published** - the second
+ * half is 8.11e, and a withheld locale fails the first test today anyway. hreflang pointing
+ * at a page that is really
+ * the English one is the single hreflang error Search Console reports loudly, and it would
+ * be the state of the entire site between 8.11b and 8.11c.
+ */
+const alternates = PUBLISHED_LOCALES.filter((candidate) => hasCatalogue(candidate)).map(
+  (candidate) => ({
+    hreflang: candidate,
+    href: new URL(localePath(candidate, path), Astro.site).href,
+  }),
+);
+const xDefault = new URL(localePath(DEFAULT_LOCALE, path), Astro.site).href;
+
+const cardUrl = new URL(ogImage, Astro.site).href;
+
+const t = catalogue(Astro.currentLocale);
+/*
+ * `<html lang>` was hardcoded `en` before 8.11a. It is the document's own statement of what
+ * language it is in - a Spanish page that still says `lang="en"` is read aloud by a screen
+ * reader in an English voice, which is the failure a visitor notices first and a test notices
+ * never.
+ *
+ * **It is the locale of the address, not of the body, and `og:locale` no longer follows it**
+ * (8.11b Gate C rev 4). On a mirror page the chrome really is Spanish-addressed, so `<html>`
+ * says `es` and `<main lang="en">` below corrects the voice at the body. A share card quotes
+ * the body, so it is tagged from `bodyLocale` - see the note at the tag itself.
+ */
+const lang = locale;
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#0b0a0b" />
+    {
+      /*
+      Apple's Smart App Banner. It renders only once there is an App Store id to render,
+      which there is not: the app is unpublished, `APP_STORE_APP_ID` is null, and a
+      plausible-looking number here would advertise somebody else's app. 8.8 built the
+      banner and the flag; 8.13 supplies the number.
+    */
+    }
+    {
+      APP_STORE_APP_ID !== null && (
+        <meta name="apple-itunes-app" content={`app-id=${APP_STORE_APP_ID}`} />
+      )
+    }
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link
+      rel="preload"
+      href="/fonts/satoshi-subset.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    {
+      /*
+      The logotype too, since both faces moved to `font-display: block` (8.14, see
+      `fonts.css`): the header's wordmark is on every route and waits for this file before it
+      paints. 2 KB, so preloading it costs less than the round trip it saves.
+    */
+    }
+    <link
+      rel="preload"
+      href="/fonts/logotype-subset.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    {
+      /*
+      The social card, on every route - phases.md 8.10a.
+
+      **This block is here rather than in the pages because of what it replaced.** Before
+      8.10a exactly three routes emitted an `og:image`, all of them blog posts, and the
+      other twelve unfurled bare - including `/` and `/waitlist`, the two routes whose job
+      is conversion. Each page emitting its own tags is what allowed that: a route was
+      complete without them and nothing said otherwise.
+
+      Emitted from `title` and `description`, which every route already passes, so the
+      system needed no new copy anywhere. `ogImage` defaults, so a new route is covered by
+      existing before it is covered by remembering.
+
+      **`twitter:card` and nothing else in that namespace.** X reads the `og:` tags when
+      the `twitter:` equivalents are absent, so `twitter:title` and friends would be four
+      more strings saying what four strings above them already say. Both reference sites
+      duplicate them; that is theirs to maintain.
+    */
+    }
+    <link rel="canonical" href={canonical} />
+    {alternates.map((alt) => <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />)}
+    <link rel="alternate" hreflang="x-default" href={xDefault} />
+    <meta property="og:site_name" content="Sonaru" />
+    {
+      /*
+      **`og:locale` names the language of the words, not of the chrome** - owner, 8.11b Gate C
+      rev 4. It is `bodyLocale` and not `lang`, and on a mirror page those differ.
+
+      A share card is a quotation of the page's *content*: the title and description in it are
+      the body's, so the locale beside them has to be the body's too, or the card tells Slack,
+      iMessage and every social scraper that an English paragraph is Spanish. It was the last
+      tag on an `/es/` page still claiming a language the page does not speak - the canonical,
+      the alternates, the sitemap and `<main lang>` had all already been settled the other way,
+      and this one was left following `<html lang>` because that is what it had always done.
+
+      It becomes moot at 8.11c, when the two values converge for every page.
+    */
+    }
+    <meta property="og:locale" content={bodyLocale} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={cardUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="600" />
+    {
+      /*
+      The one accessibility gain in this unit, and it is not cosmetic: a social client
+      reading the card aloud currently has nothing to read. The description is already
+      written for a stranger, which is exactly what alt text on a link preview is for.
+    */
+    }
+    <meta property="og:image:alt" content={description} />
+    <meta name="twitter:card" content="summary_large_image" />
+    {
+      /*
+      Everything a route needs in the head that this layout cannot know:
+      `article:published_time` on a post, `BlogPosting` JSON-LD, the feed's
+      `<link rel="alternate">`, `/404`'s `noindex`. Added at 8.9c.
+
+      A slot rather than props, because the alternative is a `Props` interface that grows
+      a field per route and a layout that has to know what a blog post is. The card left
+      this slot at 8.10a for the opposite reason: it is the one thing every route needs,
+      so it belongs where no route can forget it.
+    */
+    }
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip" href="#main">{t.ui.skipToContent}</a>
+    <Header />
+    <main id="main" lang={isMirror ? bodyLocale : undefined}>
+      <slot />
+    </main>
+    {
+      /*
+      Every route, including `/waitlist` - where the header drops its action but the page
+      still needs a way out, and where 8.8's form owes its fine print a privacy link.
+      Outside <main> so it lands in the `contentinfo` landmark rather than inside `main`,
+      which is also what keeps the skip link's target the content and not the whole page.
+    */
+    }
+    <Footer />
+  </body>
+</html>
+
+<style is:global>
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    /* The ground is the app's gradient (Theme.swift), approved at the 8.1 gate. It is
+     * painted on <html> and fixed to the viewport, so it reads as one continuous field
+     * behind the whole document rather than repeating per section. */
+    background: var(--ground-solid);
+    background-image: var(--ground);
+    background-attachment: fixed;
+    /* In-page anchors travel rather than jump - the hero's `#how` lands on a scroll
+     * position mid-section, and arriving there instantly loses the growth it took to
+     * get there. */
+    scroll-behavior: smooth;
+  }
+
+  /* At `md` and up only since 8.14c round 8 (owner): below it, phones keep the full
+   * motion build under Reduce Motion. */
+  @media (prefers-reduced-motion: reduce) and (min-width: 768px) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  /*
+   * **iOS never fixes the ground** (8.14c round 8). Every iOS browser is WebKit, which treats
+   * `background-attachment: fixed` as `scroll` - so the gradient above was stretched across
+   * the whole document (6,649px on `/` at 390x844) instead of one viewport, and the hero sat
+   * in its plum end. Measured by forcing `scroll` in Chromium with the blooms hidden: the
+   * foot of the hero went from rgb(10,2,7) to rgb(60,2,40). Devtools supports `fixed`, which
+   * is why the hero looked right there and too bright on the owner's phone.
+   *
+   * **On touch devices the ground is one screen tall and scrolls with the page.** The first
+   * fix painted it on a `position: fixed` layer instead, which looked right but turned the
+   * area around the phone's notch plum on every page: iOS Safari 26 colours that area from
+   * the fixed element at the top edge, and - tested in the iOS 26 simulator - reads it once
+   * at load and ignores every later change, so it could not be made to fade with scroll.
+   * With no fixed layer the notch takes the page's black again, which the owner chose. The
+   * first screen - the hero on `/` - is the same gradient over the same height as before;
+   * below it the ground is `--ground-solid`, and the plum scrolls away with the page rather
+   * than staying pinned to the top of the viewport.
+   *
+   * Scoped to touch devices, so desktop - and every frozen baseline and the printed PDF -
+   * keeps the fixed rule above.
+   */
+  @media (hover: none) and (pointer: coarse) {
+    html {
+      background-attachment: scroll;
+      background-size: 100% 100svh;
+      background-repeat: no-repeat;
+    }
+  }
+
+  /*
+   * Dither over the ground.
+   *
+   * The ground is a three-stop gradient across the whole viewport, and 8-bit colour
+   * cannot express it smoothly: adjacent bands differ by a single level, which the eye
+   * exaggerates into hard horizontal lines. Measured on the hero at 1440x900, the
+   * contours land around y=488/545/594/618 - and they are still there with the bloom
+   * switched off entirely, but a fifth as strong with the gradient switched off, which is
+   * what identifies the gradient rather than the lights as the source.
+   *
+   * A pinch of noise breaks the contours by pushing neighbouring pixels either side of
+   * the quantisation boundary. `feTurbulence` generates it in the browser, so it is a
+   * data URI rather than an asset - no extra request, and nothing to keep in sync. It is
+   * fixed to the viewport so it never slides against the ground it is smoothing, and it
+   * is the first thing in <body> so every section paints over it.
+   *
+   * Note for 8.12: the CSP needs `img-src` to allow `data:` for this.
+   */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    /* Swept and measured: 0.045 broke the contours but lifted the ground from rgb(17,0,11)
+     * to rgb(24,6,18) - visibly lighter, and green off zero desaturates the plum. 0.012
+     * scatters the contours just as well for a lift of about two levels. */
+    opacity: 0.012;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  body {
+    margin: 0;
+    /*
+     * **No page on this site scrolls sideways.** Owner's rule, given at 8.10b's Gate C.
+     *
+     * The cause is `100vw`, which is the viewport *including* a classic scrollbar, while
+     * the space a page actually has is `clientWidth`, which excludes it. Every full-bleed
+     * atmosphere on the site is `width: 100vw; left: calc(50% - 50vw)` - correct to the
+     * pixel with macOS's overlay scrollbars, and about 15px too wide on Windows, on Linux,
+     * and on a Mac with a mouse attached, which is when the owner saw it. It was invisible
+     * here for exactly that reason: measured at every width from 320 to 1600, this machine
+     * reports zero overflow, because its scrollbars take no space.
+     *
+     * `clip`, never `hidden`. `overflow: hidden` establishes a scroll container, and a
+     * sticky element positions against its nearest scrollport - so `hidden` here would
+     * silently break every pinned section on the home route. `clip` does not, which is the
+     * rule `CLAUDE.md` already states for pinned sections and the reason this line is safe
+     * to apply to the whole site at once.
+     *
+     * It is a floor, not a licence: the widths in `press.astro` were changed at the same
+     * time so nothing on that page relies on being clipped, and the remaining `100vw`
+     * layers - `Document.astro`, `blog/index`, `blog/tags/[tag]` - are frozen behind their
+     * own Gate C and carried to 8.12 to be fixed at the source.
+     */
+    overflow-x: clip;
+    background: transparent;
+    color: var(--color-mute-200);
+    font-family: var(--font-sans);
+    font-synthesis-weight: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-plum-400);
+    outline-offset: 3px;
+  }
+
+  /*
+   * The skip link (design-system.md §9). Off-screen until focused rather than
+   * display:none, which would take it out of the tab order and defeat the point.
+   */
+  .skip {
+    position: absolute;
+    top: var(--spacing-2);
+    left: var(--spacing-2);
+    z-index: 100;
+    padding: var(--spacing-3) var(--spacing-4);
+    border-radius: 999px;
+    background: var(--color-ink-900);
+    border: 1px solid var(--color-plum-500);
+    color: var(--color-white);
+    font-size: var(--text-base);
+    font-weight: 600;
+    text-decoration: none;
+    transform: translateY(-200%);
+    /*
+     * Transparent until focused as well as moved off the top (owner, 8.14). A translate alone
+     * parks the pill just above the page, and iOS's rubber-band overscroll at the top of the
+     * page pulls exactly that strip into view. Opacity rather than `visibility` or
+     * `display`, both of which would take it out of the tab order.
+     */
+    opacity: 0;
+  }
+  .skip:focus-visible {
+    transform: translateY(0);
+    opacity: 1;
+  }
+</style>

@@ -1,0 +1,629 @@
+---
+/**
+ * The auto-add act - phases.md 8.6, "auto-add, alongside your services".
+ * Gate A approved 2026-09-04 at rev 2; Gate B approved 2026-09-04.
+ *
+ * **It is now the third act, not the last, and it no longer carries the final CTA.** The
+ * owner swapped it with the notification act on 2026-09-04 because the page reads better
+ * ending on the notification, and the CTA belongs to whichever section closes the page. So
+ * the scrubbed close went with it, and what is left is one beat: a release lands in a
+ * playlist that is visibly not ours.
+ *
+ * **One idea, and it is an absence.** A playlist rendered at web scale - already
+ * populated, idle, a list that existed before you got here - receives the release act
+ * three announced. The rows below it move down to make room. That is the only thing that
+ * happens: no phone, no cursor, no tap, no Sonaru chrome in the frame. Rev 1 proposed a
+ * third device beat and the owner rejected the device outright, and the reframe that came
+ * out of the rejection is the reason this file looks the way it does: **auto-add is the
+ * feature that happens while you are not looking at your phone**, so a phone on screen was
+ * arguing against the idea it was there to show.
+ *
+ * **It is also the objection-handling beat.** The visitor's real question is "do I have to
+ * leave the thing I already pay for", and the answer is no. Watching the row land in a
+ * playlist that is visibly *not ours* answers that by showing it, which is why 8.6's first
+ * two bullets are one beat here rather than two.
+ *
+ * **Standing failure condition (Gate A): if this could be mistaken for a Spotify
+ * screenshot it fails on that ground alone**, however well it animates. Hence the guard
+ * that shapes the whole markup below - there is no playlist name, no track count, no play
+ * control, no service mark and no service colour anywhere in the frame. A row is a cover,
+ * a title, an artist and a duration on our ground, in Satoshi, at our spacing. The frame
+ * around the list is deliberately empty: the page's own headline is the only thing that
+ * names what this is, and it arrives after the row does.
+ *
+ * **Spotify and Apple Music appear as words, never as logos** (owner, Gate A). Both
+ * companies restrict marks that imply a partnership we do not have, and at full page scale
+ * their logos are what would tip this from "your playlist" into a mockup of their product.
+ *
+ * **The list is `aria-hidden`.** The showcase rows are a depiction, not content - and that
+ * is *more* true since the manifest carries real releases rather than invented ones, since
+ * the playlist they are shown sitting in still does not exist. `design-system.md` §6 makes
+ * that call for the device mockup; it is made here directly, for the same reason, rather
+ * than inherited by analogy - a screen reader must not be walked through a playlist that
+ * does not exist. The headline and sub-line beside it carry the meaning, and the duration
+ * column is the only thing lost.
+ *
+ * **Magenta**, at a constant strength. The palette was assigned here (`design-system.md`
+ * §2 - "Hero, CTA") when this act ended the page; the notification act closes it now and
+ * carries the magenta *swell*, while this section keeps the same three stops as a steady
+ * ground. **Flagged for the owner**: whether the act that no longer ends the page should
+ * still wear the closing palette is a decision they have not been asked, and changing it is
+ * one attribute.
+ *
+ * References (`review-gates.md` §7): **superlist.com** for moving one thing per beat and
+ * for letting a list do a list's job at full page scale rather than inside a frame;
+ * **gsap.com** for the pinned scrub and for releasing the pin into a full-bleed close;
+ * **revolut.com** for landing the claim on the frame the product state resolves. Showing a
+ * feature by showing *only its consequence* is an argued divergence, recorded in
+ * `reference-study.md` §8.
+ *
+ * No tier language. The copy describes free behaviour only - one playlist per connected
+ * service. Per-genre rules are Pro and do not appear.
+ *
+ * The choreography is `../../motion/timelines/playlist.ts`. Nothing here animates itself;
+ * every moving part reads a custom property that file is the only writer of.
+ */
+import { Image } from 'astro:assets';
+import BloomField from '../BloomField.astro';
+import { getAnnouncedRelease, getShowcaseReleases } from '../device/showcase';
+
+const artworkFiles = import.meta.glob<{ default: ImageMetadata }>(
+  '/src/assets/showcase/releases/*.{jpg,jpeg,png,webp,avif}',
+  { eager: true },
+);
+
+/**
+ * The arriving row is the manifest's `announced` release - the one act three's notification
+ * announces and act two keeps in its feed - so the page's spine is one release end to end:
+ * missed, listed, announced, filed. Everything else in the manifest is already in the list.
+ *
+ * **Not `[0]`, the newest** (owner, 2026-09-11). Those were the same release while the
+ * manifest's dates were staged; real dates made the newest a different album, and only act
+ * two was to follow them. `showcase.ts` owns the choice, so this section and the lock
+ * screen cannot land and announce two different releases.
+ *
+ * The residents are not filtered further. This section wants *every* release it can get - a
+ * playlist is the one place on the page where more rows is simply a fuller list - and the
+ * viewport's own `--rows-visible` is what decides how many are in frame.
+ */
+const arriving = await getAnnouncedRelease();
+const existing = (await getShowcaseReleases()).filter((release) => release.id !== arriving.id);
+
+if (existing.length === 0) {
+  throw new Error('Playlist: the showcase manifest does not carry enough releases for act four');
+}
+
+/** `mm:ss`, the only number in a row. Not a progress bar, not a track index - a duration. */
+function runtime(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+function toRow(release: (typeof existing)[number]) {
+  const path = `/src/assets/showcase/releases/${release.data.artwork}`;
+  const file = artworkFiles[path];
+  if (!file) {
+    throw new Error(
+      `Playlist: showcase release "${release.id}" names ${release.data.artwork}, which is not in src/assets/showcase/releases/`,
+    );
+  }
+  return {
+    key: release.id,
+    artist: release.data.artist,
+    title: release.data.title,
+    artwork: file.default,
+    length: runtime(release.data.duration),
+  };
+}
+
+const landing = toRow(arriving);
+const settled = existing.map(toRow);
+
+import { catalogue } from '../../i18n';
+
+const t = catalogue(Astro.currentLocale);
+---
+
+<section id="playlist" class="playlist" data-playlist-stage>
+  <div class="atmosphere" data-playlist-atmosphere>
+    <BloomField class="bloom-crop" act="cta" intensity="feature" />
+  </div>
+
+  <div class="pin" data-playlist-pin>
+    <div class="stage" data-playlist-stack>
+      <div class="copy" data-playlist-copy>
+        <h2 class="headline">{t.home.playlist.headline}</h2>
+        <p class="sub">{t.home.playlist.sub}</p>
+      </div>
+
+      {
+        /*
+        The list. Two groups, because the arrival has to be composited: `.settled` translates
+        down by exactly one row height and `.landing` fades up into the slot that opens above
+        it. Animating a height instead would reflow the whole column on every frame of the
+        tween, which is what `CLAUDE.md` bans and what `design-system.md` §6 means by
+        "transform and opacity only".
+      */
+      }
+      <div class="viewport" aria-hidden="true">
+        <div class="rows">
+          <div class="landing" data-playlist-landing>
+            <div class="row">
+              <Image class="cover" src={landing.artwork} alt="" width={112} height={112} />
+              <span class="text">
+                <span class="title">{landing.title}</span>
+                <span class="artist">{landing.artist}</span>
+              </span>
+              <span class="length">{landing.length}</span>
+            </div>
+          </div>
+
+          <div class="settled" data-playlist-settled>
+            {
+              settled.map((row) => (
+                <div class="row">
+                  <Image class="cover" src={row.artwork} alt="" width={112} height={112} />
+                  <span class="text">
+                    <span class="title">{row.title}</span>
+                    <span class="artist">{row.artist}</span>
+                  </span>
+                  <span class="length">{row.length}</span>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--
+    Deliberately `idle`/`arrive`/`rest` and not `travel playlist` - a modifier class that
+    collides with the section's own class is selected by the section's own rule, because
+    Astro scopes every element in a component with one shared `astro-cid`. `Feed.astro`,
+    `Hero.astro` and `Notify.astro` all carry this warning and the bug that earned it.
+  -->
+  <div class="travel idle" data-playlist-idle></div>
+  <div class="travel arrive" data-playlist-arrive></div>
+  <div class="travel rest"></div>
+</section>
+
+<style>
+  /*
+   * The arrival, 0 (not there) to 1 (landed). A threshold-triggered tween that always runs
+   * to completion - never scrubbed. Act three's structural rule, reused: a release either
+   * landed in the playlist or it did not, and a scrubbed version lets a visitor park the
+   * row half-arrived, which is the one thing this section exists to deny. See
+   * `playlist.ts`.
+   */
+  @property --playlist-row {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+
+  .playlist {
+    position: relative;
+    /* Establishes a block formatting context so the travel spacers turn into real
+     * scrollable distance for the sticky pin, exactly as in the three acts before it. */
+    display: flow-root;
+    /* Never `overflow: hidden` - it establishes a scroll container and silently breaks the
+     * sticky pin. `clip` does not. */
+    overflow-x: clip;
+    background: var(--color-ink-950);
+
+    /*
+     * One row's height, and the single number the arrival's geometry is expressed in: the
+     * settled rows travel down by exactly this and the slot that opens above them is
+     * exactly this tall, so the two cannot disagree.
+     */
+    --row-h: clamp(64px, 8.4svh, 88px);
+    /*
+     * Fractional on purpose. A list that ends on half a row reads as continuing past the
+     * frame; one that ends on a whole row reads as a list with five items in it, and the
+     * last row sliding out under the feather would then read as a deletion.
+     */
+    --rows-visible: 4.5;
+  }
+
+  /*
+   * Two stacked sticky layers overlapped by a negative margin - the arrangement `Feed.astro`
+   * documents, including the forced compositing layers that defend against the stray
+   * dark-rectangle artifact reported on hardware-accelerated rendering over a tall sticky
+   * ancestor.
+   *
+   * The overlap is a negative `margin-top` on `.pin`, **not** a negative `margin-bottom`
+   * here. A sticky element's constraint rectangle is its containing block inset by the
+   * element's own margins, so a negative bottom margin pushes that rectangle below the
+   * section and the layer stays screen-fixed after its pin has released - here it would
+   * hang magenta over the top of the notification act that now follows.
+   */
+  .atmosphere {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    pointer-events: none;
+    /*
+     * Constant now that the CTA has moved to the notification act. It used to swell to full
+     * strength across the close, because this section ended the page and the close was the
+     * page's strongest bloom moment; with nothing here to build to, a bloom that grew would
+     * be promising a climax the section no longer delivers. It sits at the value that
+     * swell used to *start* from, which is where the section's own frame was composed.
+     */
+    opacity: 0.45;
+    isolation: isolate;
+    contain: paint;
+    transform: translateZ(0);
+    /*
+     * Feathered into the ground - superlist's move, as on every other act - but held to
+     * the **upper two thirds of the frame** (owner, Gate C rev 2). The field used to be
+     * masked by an ellipse centred at 62% with an 88% radius, which reached 150svh: the
+     * orbs ran off the bottom edge and a light that leaves the frame through a straight
+     * edge stops reading as a light. The stencil now dies out by ~68svh, so every circle
+     * ends inside the frame. `.bloom-crop` lifts the constellation to match - masking
+     * alone would have deleted the third orb rather than moved it.
+     */
+    -webkit-mask-image: radial-gradient(122% 50% at 50% 26%, #000 0%, #000 22%, transparent 96%);
+    mask-image: radial-gradient(122% 50% at 50% 26%, #000 0%, #000 22%, transparent 96%);
+  }
+
+  /*
+   * The constellation, lifted so it sits inside the band the mask above leaves. `.bloom`
+   * is `inset: 0` of the atmosphere and clips its own orbs, so raising it moves all three
+   * lights together without touching `BloomField` itself - which matters, because that
+   * component is shared with four sections whose appearance is frozen behind their own
+   * Gate C. The unpainted strip this leaves at the bottom of the layer is inside the part
+   * the mask has already taken to zero.
+   */
+  .atmosphere :global(.bloom-crop) {
+    transform: translateY(-10%);
+  }
+
+  .pin {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    /* Pulls this layer back over `.atmosphere`, which keeps its own 100svh of flow. */
+    margin-top: -100svh;
+    z-index: 1;
+    isolation: isolate;
+    contain: paint;
+    transform: translateZ(0);
+  }
+
+  /*
+   * The scroll budgets, in order.
+   *
+   * `idle` drives nothing - `playlist.ts` never reads it. It is the scroll a visitor spends
+   * on a list that was already there and is not doing anything, which is what makes the
+   * arrival read as something happening *to* an existing playlist rather than as the
+   * section building itself. `arrive` carries the threshold. `rest` is the trailing hold,
+   * so the composition is seen standing rather than arriving and immediately leaving - act
+   * two's `.travel.rest`, the notification act's `.travel.read`.
+   *
+   * The 62svh `close` is gone with the CTA (owner, 2026-09-04). It drove nothing else: the
+   * whole of it existed to raise the CTA and dim the playlist behind it, and a scrubbed
+   * phase with nothing on the other end of it is just scroll a visitor pays for twice.
+   * `rest` picks up a little of the length so the section still ends on a held frame rather
+   * than handing straight over.
+   *
+   * 122svh of travel against a 100svh pin: 1098px at 1440x900, against act two's 2243px.
+   */
+  .travel.idle {
+    height: 30svh;
+  }
+
+  .travel.arrive {
+    height: 56svh;
+  }
+
+  .travel.rest {
+    height: 36svh;
+  }
+
+  /*
+   * The whole of the pin now: the copy and the list, and nothing else.
+   *
+   * It is **centred rather than top-anchored**. It used to sit at `top: 14svh` because the
+   * lower third of the frame was reserved for a CTA that has since moved to the
+   * notification act (owner, 2026-09-04) - with that gone, a stage still pinned to 14svh
+   * leaves a third of the frame empty under the list and reads as a composition that lost
+   * something. Centring is what the section is now: two things, in the middle of the frame.
+   *
+   * The padding is what keeps it clear of the fixed header (~92px at 1440, ~76px at 390,
+   * and always above everything). It is on the *box*, not on `top`, so the content centres
+   * within the space the header actually leaves rather than within the space it does not.
+   */
+  .stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-8);
+    padding-block: 14svh var(--spacing-8);
+    padding-inline: var(--gutter);
+  }
+
+  /*
+   * The copy rides the arrival's single signal, so the claim lands on the frame its proof
+   * settles - act two's rule, and revolut.com's, for the third time on this page. Before the
+   * row lands there is no copy on screen at all, which is what makes the list read as
+   * something that was already there rather than as the section introducing itself.
+   */
+  .copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-3);
+    text-align: center;
+    max-width: var(--content-max);
+    opacity: var(--playlist-row);
+    transform: translateY(calc((1 - var(--playlist-row)) * 12px));
+  }
+
+  .headline {
+    margin: 0;
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    color: var(--color-white);
+    text-wrap: balance;
+    max-width: var(--measure-display);
+  }
+
+  .sub {
+    margin: 0;
+    font-size: var(--text-body);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+    max-width: 30em;
+    text-wrap: pretty;
+  }
+
+  /*
+   * A fixed window onto the list. Its height never changes, so the arrival cannot reflow
+   * anything around it, and the bottom feather is what makes a row leaving the frame read as
+   * a list continuing rather than as a row being thrown away.
+   *
+   * `overflow: hidden` is safe *here* and nowhere near the pin: this element contains no
+   * sticky descendant, so the scroll container it establishes has nothing to break. The ban
+   * in `CLAUDE.md` is about ancestors of a sticky element.
+   */
+  .viewport {
+    position: relative;
+    width: min(100% - 2 * var(--gutter), 760px);
+    height: calc(var(--rows-visible) * var(--row-h));
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
+  }
+
+  .rows {
+    position: relative;
+    height: 100%;
+  }
+
+  /*
+   * The slot that opens above the list. It is always exactly one row tall and always sits
+   * immediately above the settled rows' resting position; only its opacity and a 12px settle
+   * are driven, so the row *arrives* rather than being revealed by a wipe.
+   */
+  .landing {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: var(--row-h);
+    opacity: var(--playlist-row);
+    transform: translateY(calc((1 - var(--playlist-row)) * -12px));
+  }
+
+  /*
+   * The arriving row is marked (owner, Gate C rev 2): without it the landing reads as the
+   * list scrolling by one rather than as one release being *put there*, which is the whole
+   * claim. A plum wash was chosen over an "Added" chip - a chip is a word to translate at
+   * 8.11 and a piece of product chrome in a list whose entire Gate A guard is that it has
+   * none. Tone says the same thing and says it in our colour.
+   *
+   * It fades to nothing at both ends rather than filling the row edge to edge. The list
+   * has no container around it, so a full-width block would put a hard rectangle on an
+   * otherwise unbounded list - the same edge the atmosphere is masked to avoid. It needs
+   * no signal of its own: `.landing` already carries `--playlist-row`, so the wash arrives
+   * with the row it marks and cannot drift from it.
+   */
+  .landing .row {
+    background-image: linear-gradient(
+      to right,
+      transparent 0%,
+      color-mix(in oklab, var(--color-plum-600) 20%, transparent) 9%,
+      color-mix(in oklab, var(--color-plum-600) 20%, transparent) 91%,
+      transparent 100%
+    );
+    border-top-color: color-mix(in oklab, var(--color-plum-400) 30%, transparent);
+  }
+
+  /*
+   * The rows that were already there, moving down by exactly one row to make room. One
+   * transform on one group - not a per-row animation - because they are not five things
+   * reacting, they are the list making space.
+   */
+  .settled {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    transform: translateY(calc(var(--playlist-row) * var(--row-h)));
+  }
+
+  /*
+   * A row: a cover, a title, an artist, a duration. Nothing else, ever. There is no play
+   * control, no track number, no context menu, no equaliser and no service mark, and that
+   * restraint is the Gate A failure condition rather than a matter of taste - see the file
+   * doc comment.
+   */
+  .row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    height: var(--row-h);
+    padding-inline: var(--spacing-2);
+    /*
+     * A hairline rather than a rule. Enough to say "these are separate items", not enough to
+     * turn the list into a table - and derived from a token, so no hex literal appears here.
+     */
+    border-top: 1px solid color-mix(in oklab, var(--color-white) 9%, transparent);
+  }
+
+  .cover {
+    flex: none;
+    width: calc(var(--row-h) - 2 * var(--spacing-3));
+    height: calc(var(--row-h) - 2 * var(--spacing-3));
+    border-radius: var(--spacing-2);
+    object-fit: cover;
+  }
+
+  .text {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--color-white);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .artist {
+    font-size: var(--text-sm);
+    line-height: 1.3;
+    color: var(--color-mute-400);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .length {
+    flex: none;
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-mute-400);
+  }
+
+  /*
+   * Narrow. The pin is 844px at 390 and now holds only the headline, the sub-line and the
+   * list, but the list still gives up a row and the rows still get shorter - the phone's
+   * frame is what constrains this, not what else is in it. The copy is not touched.
+   */
+  @media (max-width: 767px) {
+    .playlist {
+      --row-h: clamp(56px, 7.6svh, 72px);
+      --rows-visible: 3.5;
+    }
+
+    /* The header is ~76px here, and svh is a smaller pixel value, so this is more svh for
+     * the same clearance rather than a different decision. */
+    .stage {
+      padding-block: 15svh var(--spacing-6);
+      gap: var(--spacing-6);
+    }
+
+    /*
+     * The orbs are sized off the field's *width*, so a narrow viewport gets small circles
+     * in a tall frame - and once the mask stops them short of the bottom they read as two
+     * discrete discs rather than as weather. Scaling the whole layer up is what puts them
+     * back into overlap; it is the same constellation, seen closer.
+     */
+    .atmosphere :global(.bloom-crop) {
+      transform: translateY(-8%) scale(1.3);
+    }
+
+    /*
+     * No pin at this width (owner, 8.14c), and no screen-height frame either (round 2: "too
+     * much whitespace ... just some normal amount of padding"). The section is its content
+     * plus padding and scrolls past like any other; the row lands a quarter of the way in
+     * (`playlist.ts`). The atmosphere stops being a 100svh sticky layer the pin is pulled
+     * back over and simply fills the section behind it.
+     */
+    .atmosphere {
+      position: absolute;
+      inset: 0;
+      height: auto;
+    }
+
+    .pin {
+      position: relative;
+      height: auto;
+      margin-top: 0;
+    }
+
+    .stage {
+      position: relative;
+      inset: auto;
+      /* Doubled at 8.14c round 6 (owner: "a bit larger"). */
+      padding-block: var(--spacing-48);
+    }
+
+    /* Always there at this width (round 2); only the row arrives. */
+    .copy {
+      opacity: 1;
+      transform: none;
+    }
+
+    /*
+     * Unpinned, the section's top edge scrolls through the frame instead of meeting it once,
+     * and the top-weighted mask above still has the light at ~60% there - a straight edge
+     * cut through the bloom. Centred, the stencil reaches zero at both edges, and the field
+     * loses its lift to stay inside it.
+     */
+    .atmosphere {
+      -webkit-mask-image: radial-gradient(122% 46% at 50% 50%, #000 0%, #000 22%, transparent 96%);
+      mask-image: radial-gradient(122% 46% at 50% 50%, #000 0%, #000 22%, transparent 96%);
+    }
+
+    /*
+     * Closing round (owner): "a lot more warmer and brighter ... bigger and more bunched up
+     * like we did on the hero section". Warmer is the palette - amber and magenta rather than
+     * the magenta/plum/violet `cta` stops - set on each `.orb` so it wins over the field's own
+     * values by inheritance rather than by specificity, and without touching `BloomField`.
+     * Bunched is the hero's move: each orb scaled in place around its own anchor, where
+     * scaling the field would push them apart. So the layer's 1.3x scale goes.
+     *
+     * Round 5 (owner: "too bright and the balls are too large ... the middle of where it is
+     * and where it was"): opacity 0.9 → 0.675 (was 0.45 before round 4), orb scale 2.2 → 1.6
+     * (was 1). Round 6: opacity 40% lower again, 0.675 → 0.405.
+     */
+    .atmosphere {
+      opacity: 0.405;
+      /* The vertical radius stays under the section's half-height, so the stencil is at zero
+       * on its top and bottom edges even with the orbs this large. */
+      -webkit-mask-image: radial-gradient(140% 48% at 50% 50%, #000 0%, #000 26%, transparent 96%);
+      mask-image: radial-gradient(140% 48% at 50% 50%, #000 0%, #000 26%, transparent 96%);
+    }
+
+    .atmosphere :global(.bloom-crop) {
+      transform: none;
+    }
+
+    /* Two of the three lights amber, the one to the upper right magenta. */
+    .atmosphere :global(.orb) {
+      --bloom-a: var(--color-bloom-amber);
+      --bloom-b: var(--color-bloom-amber);
+      --bloom-c: var(--color-bloom-magenta);
+      transform: translate(-50%, -50%) scale(1.6);
+    }
+
+    .travel.idle,
+    .travel.arrive,
+    .travel.rest {
+      height: 0;
+    }
+  }
+</style>

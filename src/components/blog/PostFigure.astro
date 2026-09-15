@@ -1,0 +1,61 @@
+---
+/**
+ * A bounded frame for something a post shows rather than describes.
+ *
+ * **This exists because the first MDX post did not have it.** `BloomField` is written to
+ * be `inset: 0` of a positioned `.atmosphere` - every section on the site wraps it in one -
+ * so dropped straight into running prose it found the article as its containing block and
+ * rendered 1200x2521: the entire post repainted with the light it was supposed to be
+ * demonstrating. Nothing failed; it just quietly became the page's background.
+ *
+ * So an embed gets a frame with a size of its own. That is the whole component, and it is
+ * what makes MDX worth its dependency: a post can show the real thing at the size a
+ * figure should be, instead of a screenshot of it going stale.
+ *
+ * The caption is a `<figcaption>` because this is a figure, and the frame breaks the
+ * reading measure the same way and to the same width as a code block - a picture is not
+ * prose either.
+ */
+interface Props {
+  /** Described to a reader who cannot see it. Required: an unlabelled figure is decoration. */
+  readonly caption: string;
+  /** Frame height. The default suits an atmosphere; a device or a chart may want more. */
+  readonly height?: string;
+}
+
+const { caption, height = '260px' } = Astro.props;
+---
+
+<figure class="figure">
+  <div class="frame" style={`--figure-height:${height}`}>
+    <slot />
+  </div>
+  <figcaption>{caption}</figcaption>
+</figure>
+
+<style>
+  .figure {
+    /* The code block's width, so the site has one width for things that are not prose. */
+    width: min(var(--measure-wide), calc(100vw - 2 * var(--gutter)));
+    margin: 0 0 var(--spacing-6);
+  }
+
+  /*
+   * `position: relative` is the load-bearing line: it is what an absolutely-positioned
+   * child resolves against, and its absence is the defect this component was written for.
+   */
+  .frame {
+    position: relative;
+    height: var(--figure-height);
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid var(--color-ink-700);
+    background: var(--ground-solid);
+  }
+
+  figcaption {
+    margin-top: var(--spacing-3);
+    font-size: var(--text-sm);
+    color: var(--color-mute-400);
+  }
+</style>

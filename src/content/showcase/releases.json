@@ -1,0 +1,72 @@
+[
+  {
+    "id": "for-cryin-out-loud",
+    "artist": "FINNEAS",
+    "artistId": "finneas",
+    "title": "For Cryin' Out Loud!",
+    "kind": "album",
+    "releaseDate": "2024-10-04",
+    "duration": 2396,
+    "trackCount": 10,
+    "artwork": "forcryinoutloud.png",
+    "tint": "#2e2216",
+    "announced": false,
+    "credit": null
+  },
+  {
+    "id": "smile",
+    "artist": "Porter Robinson",
+    "artistId": "porter-robinson",
+    "title": "SMILE! :D",
+    "kind": "album",
+    "releaseDate": "2024-07-26",
+    "duration": 2403,
+    "trackCount": 10,
+    "artwork": "smile.jpg",
+    "tint": "#341010",
+    "announced": false,
+    "credit": null
+  },
+  {
+    "id": "hit-me-hard-and-soft",
+    "artist": "Billie Eilish",
+    "artistId": "billie-eilish",
+    "title": "HIT ME HARD AND SOFT",
+    "kind": "album",
+    "releaseDate": "2024-05-17",
+    "duration": 2625,
+    "trackCount": 10,
+    "artwork": "hitmehardandsoft.jpg",
+    "tint": "#132131",
+    "announced": false,
+    "credit": null
+  },
+  {
+    "id": "icymi",
+    "artist": "EDEN",
+    "artistId": "eden",
+    "title": "ICYMI",
+    "kind": "album",
+    "releaseDate": "2022-09-09",
+    "duration": 2328,
+    "trackCount": 11,
+    "artwork": "icymi.jpg",
+    "tint": "#3a3609",
+    "announced": true,
+    "credit": null
+  },
+  {
+    "id": "nectar",
+    "artist": "Joji",
+    "artistId": "joji",
+    "title": "Nectar",
+    "kind": "album",
+    "releaseDate": "2020-09-25",
+    "duration": 3195,
+    "trackCount": 18,
+    "artwork": "nectar.jpg",
+    "tint": "#2d1718",
+    "announced": false,
+    "credit": null
+  }
+]

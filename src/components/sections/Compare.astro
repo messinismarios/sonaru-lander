@@ -1,0 +1,222 @@
+---
+/**
+ * The full comparison - phases.md 8.7.
+ *
+ * Secondary to the cards, deliberately. A feature matrix as the *primary* layout was
+ * considered and rejected at Gate A: at five rows it reads enterprise-SaaS, which is the
+ * opposite of the "fun but not tacky" calibration the reference study set. It earns its
+ * place underneath, where someone who wants the line-by-line answer can get it.
+ *
+ * A real `<table>` with real header cells, because it is real tabular data - three
+ * columns, `scope` on both axes, so a screen reader announces "Auto-add, Pro, multiple
+ * playlists" rather than reading a grid of orphaned strings.
+ *
+ * Rows where `mission.md` says "Same" are marked rather than repeated: repeating the free
+ * text verbatim in the Pro column makes the two tiers look accidentally identical instead
+ * of deliberately so. The marker is a visible word, not a glyph - `Same` reads correctly
+ * whether it is seen or heard.
+ */
+import SectionHeader from '../primitives/SectionHeader.astro';
+import { COMPARISON } from '../../data/pricing';
+import { catalogue } from '../../i18n';
+
+const t = catalogue(Astro.currentLocale);
+const { columns, rows, same } = t.pricing.compare;
+---
+
+<section class="compare" data-pricing-compare aria-labelledby="compare-title">
+  <div class="inner">
+    <SectionHeader
+      eyebrow={t.pricing.compare.eyebrow}
+      headline={t.pricing.compare.headline}
+      id="compare-title"
+    />
+
+    <div class="scroller">
+      {
+        /*
+        **Every ARIA role here is the element's own implicit one, written out** - 8.12a.
+        Below 668px this table is restacked into five labelled blocks, and restacking is
+        `display: block` on the table parts - which **removes the table from the accessibility
+        tree entirely**. A sighted reader would get a better layout and a screen reader would
+        get five rows of orphaned strings, which is the trade this component was built to
+        refuse: its own header says the `scope` attributes exist so nobody hears "a grid of
+        orphaned strings". Stating the roles explicitly is what survives the `display` change.
+        They are redundant above the breakpoint and harmless there, which is the point - there
+        is one markup, not two.
+      */
+      }
+      <table data-compare-table role="table">
+        <thead role="rowgroup">
+          <tr role="row">
+            <th scope="col" role="columnheader">{columns.feature}</th>
+            <th scope="col" role="columnheader">{columns.free}</th>
+            <th scope="col" role="columnheader">{columns.pro}</th>
+          </tr>
+        </thead>
+        <tbody role="rowgroup">
+          {
+            COMPARISON.map((row) => (
+              <tr data-compare-row role="row">
+                <th scope="row" role="rowheader">
+                  {rows[row.id].feature}
+                </th>
+                {/*
+                  `data-label` is read by `::before` in the stacked layout only. It is
+                  generated content for the eye: a screen reader is already told which column
+                  a cell is in by the roles above, so the label must not be a second element
+                  it would read twice.
+                */}
+                <td role="cell" data-label={columns.free}>
+                  {rows[row.id].free}
+                </td>
+                <td role="cell" data-label={columns.pro} data-same={row.sameAsFree}>
+                  {row.sameAsFree ? <span class="same">{same}</span> : rows[row.id].pro}
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<style>
+  .compare {
+    padding: 0 var(--gutter) var(--spacing-24);
+  }
+
+  .inner {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-12);
+  }
+
+  /*
+   * Below ~640px three columns of prose cannot fit; the table scrolls in its own box
+   * rather than forcing the page to scroll sideways.
+   *
+   * **`overflow-y` must be stated, and this is the bug it fixes** (owner, Gate C rev 1):
+   * a vertical scrollbar appeared beside the table while the page loaded, on a box with
+   * nothing to scroll to. Setting `overflow-x` to anything but `visible` makes the *other*
+   * axis compute from `visible` to `auto` - so the entrance's 16px rise, which briefly
+   * puts the rows below their resting position, overflowed the box downward and Chrome
+   * drew a scrollbar for the length of the animation. Pinning `overflow-y` to `hidden`
+   * makes that impossible in either axis's absence, and the padding gives the rise the
+   * room it needs so the last row is not clipped on its way in.
+   */
+  .scroller {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: var(--spacing-4);
+  }
+
+  table {
+    width: 100%;
+    min-width: 620px;
+    border-collapse: collapse;
+    font-size: var(--text-base);
+    line-height: 1.5;
+    text-align: left;
+  }
+
+  thead th {
+    padding: 0 var(--spacing-4) var(--spacing-4);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-mute-400);
+  }
+
+  tbody tr {
+    border-top: 1px solid var(--color-ink-700);
+  }
+
+  tbody th {
+    padding: var(--spacing-6) var(--spacing-4);
+    font-weight: 600;
+    color: var(--color-white);
+    vertical-align: top;
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: var(--spacing-6) var(--spacing-4);
+    color: var(--color-mute-200);
+    vertical-align: top;
+  }
+
+  .same {
+    color: var(--color-mute-400);
+  }
+
+  /*
+   * **Five labelled blocks, and 668px is measured rather than chosen** - 8.12a.
+   *
+   * The table asks for `min-width: 620px` and `.scroller`'s box is the viewport less 48px of
+   * gutter, so it overflows at every width below **668**. The comment above said "below
+   * ~640px", and a breakpoint there would have left **641-667 still scrolling** - the band
+   * nobody tests. Measured at twelve widths: scrolls through 640, clear from 680.
+   * **If `min-width` or `--gutter` changes, this number is `min-width + 2 x gutter`.**
+   *
+   * What this replaces was not only a layout problem. The Pro column sat behind a sideways
+   * swipe with no affordance (`phases.md` 8.12), and the box scrolled where **a keyboard
+   * could not scroll it** - `scrollable-region-focusable`, which is how this arrived in the
+   * accessibility unit rather than the performance one. Restacked, the region no longer
+   * scrolls at any width, so it needs no `tabindex` either: a focus stop on a box that never
+   * moves is the same defect as `/brand`'s demos, removed in this same unit.
+   */
+  @media (max-width: 667.98px) {
+    table {
+      min-width: 0;
+    }
+
+    /* The header row's labels move onto each cell below; see `data-label`. */
+    thead {
+      display: none;
+    }
+
+    tbody,
+    tbody tr,
+    tbody th,
+    tbody td {
+      display: block;
+    }
+
+    tbody tr {
+      padding: var(--spacing-6) 0;
+    }
+
+    tbody th {
+      padding: 0 0 var(--spacing-3);
+      white-space: normal;
+    }
+
+    tbody td {
+      display: flex;
+      gap: var(--spacing-3);
+      padding: 0 0 var(--spacing-2);
+    }
+
+    tbody td:last-child {
+      padding-bottom: 0;
+    }
+
+    tbody td::before {
+      content: attr(data-label);
+      flex: 0 0 4.5rem;
+      font-size: var(--text-xs);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-mute-400);
+      /* The label is the column heading the `thead` no longer shows, so it sits on the
+       * heading's baseline rather than the value's. */
+      line-height: 1.7;
+    }
+  }
+</style>

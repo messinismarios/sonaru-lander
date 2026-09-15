@@ -1,0 +1,68 @@
+---
+/**
+ * The site card's canvas - the picture every route that is not a blog post unfurls with.
+ *
+ * **A camera stand, not a page**, and the exact twin of `src/pages/blog/og/[slug].astro`:
+ * `scripts/build-og-images.mjs` photographs it through the Chrome Playwright already
+ * drives, the same way `npm run brand` rasterises the app icons. No satori, no runtime
+ * image service, no second toolchain - the precedent 8.1 set and 8.9c followed.
+ *
+ * **It renders `PostCover` rather than a composition of its own.** That is 8.10a's Gate B
+ * decision and the reason this file is nine lines of markup: the cover is already sized in
+ * `cqw` so that it is the same picture at 640 and at 1200, and a second component would be
+ * ninety lines of duplicated styling for a composition that would then have to be kept in
+ * agreement with the first. **The consequence was disclosed at the gate and approved**: a
+ * share of `/` uses the same composition as a share of a post. Both reference sites accept
+ * exactly that - measured at Gate A, gsap and superlist each serve one image across their
+ * whole site and vary only the title.
+ *
+ * `act="hero"` is the magenta the page opens *and* closes on (`design-system.md` §2), so
+ * the card is lit by the brand's own light rather than by an act's borrowed one.
+ *
+ * **Dev-only.** `isCameraStand()` in `tests/visual/routes.ts` recognises it, which is what
+ * keeps the header, footer and reduced-motion guards from asserting chrome on a page that
+ * deliberately has none. The generated JPEG is committed, so the production build only
+ * copies `public/og/` and never needs this route. 8.13 removes it.
+ */
+import PostCover from '../../components/blog/PostCover.astro';
+import { catalogue } from '../../i18n';
+
+const { claim: CLAIM } = catalogue(Astro.currentLocale).home;
+import '../../styles/tokens.css';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{CLAIM}</title>
+    <link
+      rel="preload"
+      href="/fonts/satoshi-subset.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+  </head>
+  <body>
+    <div class="stage" data-og-stage>
+      <PostCover hook={CLAIM} act="hero" />
+    </div>
+  </body>
+</html>
+
+<style>
+  :global(body) {
+    margin: 0;
+    background: var(--color-ink-950);
+  }
+
+  /*
+   * 1200×600, matching the post covers exactly. The card `og-default.png` replaced was
+   * 1200×630 - a second aspect ratio in a system with one composition, which is the kind
+   * of difference nobody sees until two cards sit next to each other in a timeline.
+   */
+  .stage {
+    width: 1200px;
+    height: 600px;
+  }
+</style>

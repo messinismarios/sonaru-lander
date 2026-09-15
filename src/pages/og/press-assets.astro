@@ -1,0 +1,94 @@
+---
+/**
+ * The press kit's camera stand - the logo files `/press` hands out, before they are files.
+ *
+ * **A camera stand, not a page**, and the third on the site after the blog covers and
+ * `/og/site`. `scripts/build-press-assets.mjs` photographs the elements below through the
+ * Chrome Playwright already drives - the technique `npm run brand` set for the app icons
+ * and `npm run og` followed for the cards. No second image toolchain, again.
+ *
+ * **It lives under `/og/` deliberately.** `isCameraStand()` in `tests/visual/routes.ts`
+ * matches that prefix, so every guard that skips a chrome-less page already skips this one.
+ * Put at `/press/stand` it would have needed the predicate widened - and 8.10a's finding
+ * was that widening a stand predicate after the fact is exactly what nobody remembers to
+ * do. 8.13 removes it with the other stands.
+ *
+ * **Why a stand rather than SVG strings in the generator.** The mark is geometry and a
+ * generator can draw it (`scripts/lib/brand-svg.mjs` does, for the downloadable SVG). The
+ * *lockup* is not: it is the mark beside live Outfit text at 600, tracked −0.03em, with the
+ * word's own spacing - `Wordmark.astro`. Rebuilding that in a script would be a second copy
+ * of a composition, which is the thing 8.10a refused when it reused `PostCover` rather than
+ * writing a twin. So the press PNGs are photographs of the site's own components.
+ *
+ * **The light colourway is two token overrides and touches neither component.** Both read
+ * their colours from tokens - `SonaruMark` paints the S with `--color-white` and the wave
+ * with `--color-plum-300`, and `Wordmark` sets the word in `--color-white` - so the
+ * on-light variant is those two custom properties reassigned on a wrapper. Nothing frozen
+ * behind an earlier Gate C is edited to produce it, which is why it is safe to add here.
+ * Reading `--color-white: #0b0a0b` is jarring on purpose: the token names the *role* the
+ * site's palette gave it, and on a light ground that role is filled by ink.
+ */
+import SonaruMark from '../../components/brand/SonaruMark.astro';
+import Wordmark from '../../components/brand/Wordmark.astro';
+import '../../styles/tokens.css';
+
+/** Font size the lockups are photographed at. The generator scales to the target width. */
+const LOCKUP_SIZE = 128;
+/** The mark is square and sized directly, so it is shot at its delivered size. */
+const MARK_SIZE = 512;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Press assets</title>
+    <link
+      rel="preload"
+      href="/fonts/logotype-subset.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+  </head>
+  <body>
+    <div class="shot" data-press-shot="mark-dark">
+      <SonaruMark size={MARK_SIZE} />
+    </div>
+    <div class="shot on-light" data-press-shot="mark-light">
+      <SonaruMark size={MARK_SIZE} />
+    </div>
+    <div class="shot" data-press-shot="lockup-dark">
+      <Wordmark size={LOCKUP_SIZE} />
+    </div>
+    <div class="shot on-light" data-press-shot="lockup-light">
+      <Wordmark size={LOCKUP_SIZE} />
+    </div>
+  </body>
+</html>
+
+<style>
+  /*
+   * Transparent, all the way down. `omitBackground` only reaches the page's own canvas -
+   * a background painted on `body` or on the shot itself is composited into the PNG and
+   * the "transparent" logo file arrives with a black rectangle behind it.
+   */
+  :global(html),
+  :global(body) {
+    margin: 0;
+    background: transparent;
+  }
+
+  /*
+   * `inline-flex` so the element's box is the artwork's box: a block would be viewport-wide
+   * and the lockup would be photographed with a field of transparency to its right.
+   */
+  .shot {
+    display: inline-flex;
+    padding: 0;
+  }
+
+  .on-light {
+    --color-white: #0b0a0b;
+    --color-plum-300: #8d0b5e;
+  }
+</style>

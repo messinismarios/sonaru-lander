@@ -1,0 +1,40 @@
+---
+/**
+ * The pill badge - the small label above a title, carrying context.
+ *
+ * Taken directly from the iOS app, where a pill sits above the release title holding the
+ * album or artist (`reference-study.md` §4). Reproducing it here is part of what makes
+ * the site read as the same product rather than an interpretation of it.
+ */
+interface Props {
+  readonly tone?: 'neutral' | 'brand';
+  readonly class?: string | undefined;
+}
+
+const { tone = 'neutral', class: className } = Astro.props;
+---
+
+<span class:list={['badge', className]} data-tone={tone}><slot /></span>
+
+<style>
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: 999px;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .badge[data-tone='neutral'] {
+    background: color-mix(in srgb, var(--color-white) 8%, transparent);
+    color: var(--color-white);
+  }
+
+  .badge[data-tone='brand'] {
+    background: color-mix(in srgb, var(--color-plum-700) 34%, transparent);
+    color: var(--color-plum-300);
+  }
+</style>

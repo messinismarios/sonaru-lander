@@ -1,0 +1,115 @@
+---
+/**
+ * A text link whose underline draws in on hover, rather than appearing all at once.
+ *
+ * The underline is a pseudo-element scaled on the X axis - a composited transform, so it
+ * costs nothing and never reflows the sentence around it. `text-decoration` cannot be
+ * animated this way, which is the whole reason for the pseudo-element.
+ *
+ * It is drawn from the left and retracts to the left, so a hover and un-hover read as one
+ * gesture reversing rather than two unrelated ones.
+ *
+ * **Two variants, one mechanism.** `inline` is the original: plum, for a link inside a
+ * sentence, where the accent is what marks it as a link at all. `muted` was added for the
+ * footer at 8.9a - eighteen destinations in a grid, where plum would make the page's
+ * quietest region its loudest. It is grey at rest and lifts to the brighter grey on
+ * hover, and it keeps the underline draw so the affordance is identical in both. The
+ * variant lives here rather than in `Footer.astro` because `design-system.md` §9 calls a
+ * one-off variant invented inside a section a code-review failure.
+ */
+interface Props {
+  readonly href: string;
+  readonly external?: boolean;
+  /** `inline` for prose, `muted` for dense navigation. See the note above. */
+  readonly variant?: 'inline' | 'muted';
+  readonly class?: string | undefined;
+  /**
+   * The language of the destination, and of this link's own text - 8.11b's switcher.
+   *
+   * Both, because they are the same fact stated to two different readers: `hreflang` tells a
+   * search engine what it will find, `lang` tells a screen reader how to pronounce the word
+   * in front of it. *Español* announced in an English voice is the failure, and it is the
+   * one a sighted reviewer cannot see.
+   */
+  readonly hreflang?: string | undefined;
+  readonly lang?: string | undefined;
+}
+
+const {
+  href,
+  external = false,
+  variant = 'inline',
+  class: className,
+  hreflang,
+  lang,
+} = Astro.props;
+const rel = external ? 'noopener noreferrer' : undefined;
+const target = external ? '_blank' : undefined;
+---
+
+<a
+  class:list={['link', `is-${variant}`, className]}
+  href={href}
+  rel={rel}
+  target={target}
+  hreflang={hreflang}
+  lang={lang}
+>
+  <slot />
+</a>
+
+<style>
+  .link {
+    position: relative;
+    text-decoration: none;
+  }
+
+  .link.is-inline {
+    color: var(--color-plum-300);
+  }
+
+  /* Validated against `--plum-900`, the ground stop the footer sits on, in
+   * `scripts/check-contrast.mjs`. */
+  .link.is-muted {
+    color: var(--color-mute-400);
+    transition: color var(--dur-2) var(--ease-out);
+  }
+
+  .link.is-muted:hover,
+  .link.is-muted:focus-visible {
+    color: var(--color-mute-200);
+  }
+
+  .link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur-2) var(--ease-out);
+  }
+
+  .link:hover::after,
+  .link:focus-visible::after {
+    transform: scaleX(1);
+  }
+
+  /* Underline permanently, rather than losing the affordance entirely. */
+  /* At `md` and up only since 8.14c round 8 (owner): below it, phones keep the full
+   * motion build under Reduce Motion. */
+  @media (prefers-reduced-motion: reduce) and (min-width: 768px) {
+    .link::after {
+      transition: none;
+      transform: scaleX(1);
+      opacity: 0.4;
+    }
+    .link:hover::after,
+    .link:focus-visible::after {
+      opacity: 1;
+    }
+  }
+</style>

@@ -1,0 +1,21 @@
+---
+/**
+ * `/es/404` - phases.md 8.11b.
+ *
+ * The prefixed locales only: English's 404 is `src/pages/404.astro`, static, for the reason
+ * that file and `NotFound.astro` both record. Emitting `undefined` here would collide with it.
+ *
+ * **Cloudflare Pages will not find what this emits.** Astro writes it to
+ * `dist/es/404/index.html`, and Pages looks for `dist/es/404.html` - `scripts/locale-404.mjs`
+ * copies it there at `astro:build:done`, and `tests/unit/i18n-routes.spec.ts` asserts the
+ * result. The route stays reachable as a page, which is what Gate C opens and what the
+ * visual suite photographs.
+ */
+import type { GetStaticPaths } from 'astro';
+import NotFound from '../../components/NotFound.astro';
+import { prefixedLocalePaths } from '../../i18n/routing';
+
+export const getStaticPaths = (() => prefixedLocalePaths()) satisfies GetStaticPaths;
+---
+
+<NotFound />

@@ -1,0 +1,1175 @@
+---
+/**
+ * `/brand` - the identity document. phases.md 8.10c.
+ *
+ * **An identity document, not a permissions page, and that is Gate A's finding rather than
+ * a preference.** Seven sites were probed. superlist has no `/brand` at all; gsap's is 734
+ * words of *Logos / Colors / Gradients* with eight hex codes, no usage rules and no
+ * contrast data; linear's is ~450 words whose clear-space rule is the sentence "plenty of
+ * space"; stripe's prints no hex at all; cash.app has none (`/design` is a $cashtag
+ * payment page). The genre has split in two - what product companies ship at `/brand` is a
+ * **permissions page**, and the full identity document exists only as a separate property,
+ * like mailchimp's seventeen-chapter style guide on its own subdomain.
+ *
+ * **We build the second kind, because the first kind is a page we already shipped.** gsap's
+ * `/brand` and linear's `/brand` are, section for section, our `/press`: files, colourways,
+ * colour values, a contact. Building it twice under two names is the duplication
+ * `mission.md` §3.2 bans. And §10's reader is Audience B, for whom the chapter that reads
+ * as portfolio work is the one no reference has - the mark being constructed.
+ *
+ * **Nothing on this page is a number typed by hand.** The construction figures call
+ * `mark-geometry.ts`; the palette is read from `tokens.css`; the ratios and the usage rules
+ * are `src/lib/contrast.ts`'s declared pairings, the same table `npm run contrast` fails
+ * the build on; the durations and curves are `src/motion/tokens.ts`. `src/data/brand.ts`
+ * holds only sentences. A document that computed its own numbers beside the sources would
+ * be wrong the first day one of them moved, and nothing would fail.
+ *
+ * **`/logo` folded in here and is deleted.** It had drifted three ways: it still called the
+ * mark provisional, it listed two dropped items as "still open", and it named the logotype
+ * as **Satoshi** - the opposite of what ships. It was a `DEV_ONLY` route so nothing linked
+ * to it, but it built into `dist/` and 8.13 was never going to remove it, because folding
+ * it in here is what removes it.
+ *
+ * **Two things differ from Gate B's plan and both reduce what ships.** The contents is a
+ * block at the top rather than a sticky sidebar: `Document.astro` is a single column frozen
+ * behind its own Gate C, and a contents *page* is what a printed document has anyway -
+ * which is 8.10d's argument, the same one that made this one route instead of eight. And
+ * with no sticky element to observe, **the page ships zero JavaScript**, where Gate B
+ * budgeted ~0.5 KB for an IntersectionObserver and reused 8.10b's copy module. Colour
+ * values are selectable text, exactly as `/press` prints them.
+ */
+import Document from '../../layouts/Document.astro';
+import SonaruMark from '../../components/brand/SonaruMark.astro';
+import Wordmark from '../../components/brand/Wordmark.astro';
+import ConstructionFigure from '../../components/brand/ConstructionFigure.astro';
+import { CHAPTERS, CLEAR_SPACE, COLOUR_GROUPS, MINIMUM_SIZE, MISUSES } from '../../data/brand';
+import tokensCss from '../../styles/tokens.css?raw';
+import pdf from '../../../public/brand/manifest.json';
+import { fileWeight } from '../../lib/bytes';
+import { palette } from '../../lib/tokens';
+import { score } from '../../lib/contrast';
+import { catalogue } from '../../i18n';
+import { PRESET, minGap } from '../../components/brand/mark-geometry';
+/*
+ * Imported from the module rather than from `src/motion/index.ts`. The barrel pulls GSAP
+ * eagerly - 34 KB gzipped on any route that touches it, which is `/pricing`'s open 8.12
+ * finding - and this page documents the numbers without running a single tween.
+ */
+import { DURATION, EASE, STAGGER, SCRUB, TRIGGER_START } from '../../motion/tokens';
+import type { GetStaticPaths } from 'astro';
+import { localePaths } from '../../i18n/routing';
+
+/*
+ * The route in both locales from one file - phases.md 8.11b. `undefined` is the default
+ * locale, which is what leaves it unprefixed.
+ */
+export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
+
+const tokens = palette(tokensCss);
+const pairings = score(tokens);
+const gap = minGap(PRESET);
+
+/*
+ * Hoisted at 8.10d so the printed cover and the screen masthead cannot drift apart. The
+ * cover replaces the masthead in print - two copies of this sentence would be two
+ * documents the first time one of them was edited.
+ */
+const t = catalogue(Astro.currentLocale);
+const copy = t.brand;
+
+const LEDE = copy.lede;
+
+const pdfWeight = fileWeight(pdf.bytes);
+
+/** The type ramp, set live. The sizes are whatever the tokens currently resolve to. */
+const TYPE_RAMP = (['3xl', '2xl', 'xl', 'lg', 'prose', 'body', 'sm', 'xs'] as const).map(
+  (size) => ({ token: `--text-${size}`, ...copy.type.ramp[size] }),
+);
+
+/** The four durations, longest last, as the motion chapter demonstrates them. */
+const DURATIONS = (['micro', 'ui', 'section', 'hero'] as const).map((name) => ({
+  name,
+  seconds: DURATION[name],
+  use: copy.motion.durations[name],
+}));
+---
+
+<Document
+  title={copy.title}
+  metaTitle={t.ui.meta.brand.title}
+  eyebrow={copy.eyebrow}
+  description={t.ui.meta.brand.description}
+  lede={LEDE}
+>
+  {
+    /*
+    The printed cover - 8.10d.
+
+    It exists only on paper. The masthead is hidden in print and this stands in its place,
+    because a document that opens on a running header is a screenshot of a scroll, and one
+    that opens on its own mark is a document. `aria-hidden` because it says exactly what
+    the masthead beside it already says to a screen reader.
+
+    **No date, deliberately.** A generated artefact that stamps the day it ran is a
+    different file every time the script is run, which would make the committed PDF
+    unreproducible and its manifest hash a record of nothing. What the document is current
+    with is its inputs, and that is what the hash records.
+  */
+  }
+  <div class="print-cover" aria-hidden="true">
+    <SonaruMark size={104} />
+    <p class="print-cover-title">{copy.eyebrow}</p>
+    <p class="print-cover-lede">{LEDE}</p>
+    <p class="print-cover-meta">sonaru.app/brand</p>
+  </div>
+
+  {
+    /*
+    A contents block rather than a sticky rail - see the header. It is a real `<nav>` over
+    the `<h2>` ids, so it is a skip mechanism for a keyboard or a screen reader on the
+    longest page of the site, not decoration.
+  */
+  }
+  <nav class="toc" aria-label={copy.contents}>
+    <p class="toc-label">{copy.contents}</p>
+    <ol>
+      {
+        CHAPTERS.map((chapter) => (
+          <li>
+            <a href={`#${chapter.id}`}>{copy.chapters[chapter.id]}</a>
+          </li>
+        ))
+      }
+    </ol>
+  </nav>
+
+  {
+    /*
+    The same document, as a file - 8.10d.
+
+    Both numbers come from the manifest `npm run pdf` wrote, the way `/press` prints every
+    file size it offers: a hand-typed weight is right until the day it is not, and nothing
+    fails when it stops being true.
+
+    It is `display: none` in print, because a link offering you the document you are
+    already holding is the only thing on the page that cannot be true on paper.
+  */
+  }
+  <p class="download">
+    <a href={`/brand/${pdf.file}`} download>
+      {copy.download.label} · {copy.download.format} · {pdfWeight} · {pdf.pages}{' '}
+      {copy.download.pagesSuffix}
+    </a>
+  </p>
+
+  <h2 id="mark">{copy.chapters.mark}</h2>
+  <p>
+    {copy.chapters['mark-description']}
+  </p>
+
+  <div class="stage">
+    <SonaruMark size={168} title={copy.figures.mark} />
+  </div>
+
+  <div class="row sizes">
+    <span class="size"><SonaruMark size={48} /><em>48</em></span>
+    <span class="size"><SonaruMark size={32} /><em>32</em></span>
+    <span class="size"><SonaruMark size={24} /><em>24</em></span>
+  </div>
+
+  <p>
+    {copy.wordmark}
+  </p>
+
+  <div class="stage">
+    <Wordmark variant="word" size={56} />
+  </div>
+
+  <p>
+    {copy.sideBySide}
+  </p>
+
+  <div class="stage">
+    <Wordmark size={34} />
+  </div>
+
+  <h3>{copy.naming.heading}</h3>
+  <ul class="rules">
+    {copy.naming.rules.map((rule) => <li>{rule}</li>)}
+  </ul>
+
+  <p class="aside">
+    {copy.pressAside.before}{' '}
+    <a href="/press">{copy.pressAside.link}</a>. {copy.pressAside.after}
+  </p>
+
+  <h2 id="construction">{copy.chapters.construction}</h2>
+  <p>
+    {copy.construction.intro}
+  </p>
+
+  <figure class="figure-block">
+    <ConstructionFigure step="bowls" title={copy.figures.bowls} />
+    <figcaption>
+      {copy.figureCaptions.bowls.before}{' '}
+      <code>radius + tailRadius</code>{' '}
+      {copy.figureCaptions.bowls.middle}{' '}
+      <em>{copy.figureCaptions.bowls.emphasis}</em>{' '}
+      {copy.figureCaptions.bowls.after}
+    </figcaption>
+  </figure>
+
+  <figure class="figure-block">
+    <ConstructionFigure step="sonar" title={copy.figures.sonar} />
+    <figcaption>
+      {copy.figureCaptions.sonar.before}{' '}
+      <strong>{copy.figureCaptions.sonar.sameCentre}</strong>{' '}
+      {copy.figureCaptions.sonar.middle}{' '}
+      <strong>{copy.figureCaptions.sonar.largerRadius}</strong> - {PRESET.sonarRadius} against{' '}
+      {PRESET.radius}. {copy.figureCaptions.sonar.after}
+    </figcaption>
+  </figure>
+
+  <figure class="figure-block">
+    <ConstructionFigure step="overlap" title={copy.figures.overlap} />
+    <figcaption>
+      {copy.figureCaptions.overlap.before}{' '}
+      <strong>{copy.figureCaptions.overlap.through}</strong>{' '}
+      {copy.figureCaptions.overlap.middle}
+      {' '}
+      <strong>{gap.toFixed(2)}</strong> - {copy.figureCaptions.overlap.negative}
+      {' '}{Math.abs(gap).toFixed(2)}{' '}
+      {copy.figureCaptions.overlap.middle2}{' '}
+      {PRESET.sonarOpacity}{' '}
+      {copy.figureCaptions.overlap.after}
+    </figcaption>
+  </figure>
+
+  <p class="aside">
+    {copy.markAside}
+  </p>
+
+  <h2 id="clear-space">{copy.chapters['clear-space']}</h2>
+
+  <h3>{copy.clearSpace.heading}</h3>
+  <p>{copy.clearSpace.note}</p>
+  <div class="stage clear">
+    <span class="clear-box" style={`--clear: ${CLEAR_SPACE.strokes * PRESET.stroke}`}>
+      <SonaruMark size={96} />
+    </span>
+  </div>
+
+  <h3>{copy.minimumSize.heading}</h3>
+  <p>{copy.minimumSize.note}</p>
+  <div class="row sizes">
+    {
+      MINIMUM_SIZE.figure.map((px) => (
+        <span class="size" data-minimum={px === MINIMUM_SIZE.px ? '' : undefined}>
+          <SonaruMark size={px} />
+          <em>
+            {px}
+            {px === MINIMUM_SIZE.px ? ' · floor' : ''}
+          </em>
+        </span>
+      ))
+    }
+  </div>
+
+  <h3>{copy.misuse.heading}</h3>
+  <p>
+    {copy.misuse.intro}
+  </p>
+  <div class="misuses">
+    {
+      MISUSES.map((misuse) => (
+        <figure class="misuse" data-misuse={misuse.id}>
+          <div
+            class="misuse-stage"
+            role="img"
+            aria-label={`${copy.misuse.dontPrefix}: ${copy.misuse.items[misuse.id].label.toLowerCase()}`}
+          >
+            {misuse.id === 'reface' ? (
+              <Wordmark variant="word" size={30} face="Georgia, serif" />
+            ) : (
+              <SonaruMark size={64} />
+            )}
+          </div>
+          <figcaption>
+            <strong>{copy.misuse.items[misuse.id].label}</strong>
+            <span>{copy.misuse.items[misuse.id].reason}</span>
+          </figcaption>
+        </figure>
+      ))
+    }
+  </div>
+
+  <h2 id="colour">{copy.chapters.colour}</h2>
+  <p>
+    {copy.colour.intro}
+  </p>
+
+  {
+    COLOUR_GROUPS.map((group) => (
+      <section class="group" aria-labelledby={`group-${group.id}`}>
+        <h3 id={`group-${group.id}`}>{copy.colour.groups[group.id].label}</h3>
+        <p class="group-note">{copy.colour.groups[group.id].note}</p>
+        <ul class="swatches" data-group={group.id}>
+          {group.tokens.map((token) => (
+            <li class="swatch">
+              <span class="chip" style={`background: var(--color-${token})`} />
+              <code class="swatch-name">--color-{token}</code>
+              <code class="swatch-hex">{tokens.get(token)}</code>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+
+  <h3>{copy.colour.usageHeading}</h3>
+  <p>
+    {copy.colour.usageNote}
+  </p>
+
+  {
+    /*
+    **A scrolling box a keyboard cannot scroll is `scrollable-region-focusable`** - 8.12a,
+    found at 390 where these tables overflow. `tabindex="0"` makes the box itself the thing
+    arrow keys drive, and `role="region"` plus the caption as its name is what stops that new
+    stop being an unlabelled one. The caption is already the table's name, so nothing new is
+    written for a screen reader to read.
+  */
+  }
+  <div class="table-wrap" role="region" tabindex="0" aria-labelledby="pairings-caption">
+    <table class="pairings">
+      <caption id="pairings-caption">
+        {copy.colour.pairingsCaption.before}{' '}
+        {pairings.length}{' '}
+        {copy.colour.pairingsCaption.after}
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">{copy.colour.columns.pairing}</th>
+          <th scope="col">{copy.colour.columns.usedFor}</th>
+          <th scope="col">{copy.colour.columns.level}</th>
+          <th scope="col">{copy.colour.columns.ratio}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          pairings.map((pairing) => (
+            <tr>
+              <th scope="row">
+                <span class="pair">
+                  {/*
+                    **The chip shows text only where the pairing is for text** - 8.12a.
+                    It used to set `Aa` at 14px in every one of the 26 pairings, including the
+                    four that are not text pairings at all - so the specimen demonstrated each
+                    rule by breaking it. The divider row was the plainest case: the paragraph
+                    below this table says it is *"tracked here precisely so that nobody sets
+                    text in it"*, and the chip set text in it at **1.32:1**. The `AA-large` row
+                    was the subtler one - drawn at 14px it fails its own level (**3.95:1**),
+                    because `AA-large` is a promise about large text and 14px is not large.
+
+                    So the `level` each pairing already carries decides the chip: `AA` reads
+                    `Aa` as before, `AA-large` reads it at the large-text threshold the level
+                    means, and `non-text` and `tracked` read nothing - a swatch with a bar of
+                    the foreground across it, which is what those pairings are. Nothing is
+                    lost from the row: the ratio, the level label and the `<code>` names are
+                    all still beside it.
+
+                    Refused: `aria-hidden` on the chips. It silences axe and leaves a sighted
+                    reader squinting at 1.32:1.
+                  */}
+                  <span
+                    class="pair-chip"
+                    data-level={pairing.level}
+                    style={`background: ${pairing.bgHex}; color: ${pairing.fgHex}`}
+                  >
+                    {pairing.level === 'AA' || pairing.level === 'AA-large' ? 'Aa' : null}
+                  </span>
+                  <code>
+                    {pairing.fg} on {pairing.bg}
+                  </code>
+                </span>
+              </th>
+              <td>{copy.contrast.uses[pairing.id]}</td>
+              <td>{copy.contrast.levels[pairing.level]}</td>
+              <td class="ratio">{pairing.ratio.toFixed(2)}:1</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p class="aside">
+    {copy.colour.dividerAside.before}{' '}
+    <code>--color-ink-700</code>{' '}
+    {copy.colour.dividerAside.after}
+  </p>
+
+  <h2 id="type">{copy.chapters.type}</h2>
+  <p>
+    <strong>{copy.type.intro.satoshi}</strong>{' '}
+    {copy.type.intro.afterSatoshi}{' '}
+    <strong>{copy.type.intro.outfit}</strong>{' '}
+    {copy.type.intro.after}
+  </p>
+
+  <div class="ramp">
+    {
+      TYPE_RAMP.map((step) => (
+        <div class="ramp-step">
+          <p class="ramp-meta">
+            <code>{step.token}</code> · {step.role}
+          </p>
+          <p class="ramp-sample" style={`font-size: var(${step.token})`}>
+            {step.sample}
+          </p>
+        </div>
+      ))
+    }
+  </div>
+
+  <p>
+    {copy.type.displayType.before}{' '}
+    <strong>{copy.type.displayType.lineHeight}</strong>.{' '}
+    {copy.type.displayType.afterLineHeight}{' '}
+    <code>--text-prose</code>{' '}
+    {copy.type.displayType.afterProseToken}{' '}
+    <code>--measure-prose</code>{' '}
+    {copy.type.displayType.afterMeasureToken}{' '}
+  </p>
+
+  <h2 id="motion">{copy.chapters.motion}</h2>
+  <p>
+    {copy.motion.intro}
+  </p>
+
+  <div class="table-wrap" role="region" tabindex="0" aria-labelledby="durations-caption">
+    <table class="durations">
+      <caption id="durations-caption">{copy.motion.tableCaption}</caption>
+      <thead>
+        <tr>
+          <th scope="col">{copy.motion.columns.name}</th>
+          <th scope="col">{copy.motion.columns.seconds}</th>
+          <th scope="col">{copy.motion.columns.usedFor}</th>
+          <th scope="col">{copy.motion.columns.hoverToRun}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          DURATIONS.map((step) => (
+            <tr>
+              <th scope="row">
+                <code>{step.name}</code>
+              </th>
+              <td class="ratio">{step.seconds}</td>
+              <td>{step.use}</td>
+              <td>
+                {/*
+                  **`aria-hidden` and not focusable** - 8.12a. It carried `tabindex="0"` as
+                  well, which is `aria-hidden-focus`: a stop in the tab order that announces
+                  nothing when it is reached. The duration is in the cell beside it either
+                  way, and this is how the rest of the site treats decoration - `Problem.astro`'s
+                  chips are `aria-hidden` and unfocusable for the same reason.
+                */}
+                <span class="demo" style={`--demo-duration: ${step.seconds}s`} aria-hidden="true">
+                  <i />
+                </span>
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    {copy.motion.curves.before}{' '}
+    <code>{EASE.out}</code>{' '}
+    {copy.motion.curves.afterOut}{' '}
+    <code>{EASE.inOut}</code>{' '}
+    {copy.motion.curves.afterInOut}
+    {' '}{STAGGER.character}{copy.motion.curves.afterCharacter}{' '}
+    {STAGGER.word}
+    {copy.motion.curves.afterWord}
+    {' '}{STAGGER.sequence}{copy.motion.curves.afterSequence}
+  </p>
+
+  <p>
+    {copy.motion.scrub.before}{' '}
+    <strong>{SCRUB}</strong>{' '}
+    {copy.motion.scrub.afterSeconds}{' '}
+    <code>{TRIGGER_START}</code>. {copy.motion.scrub.after}
+  </p>
+
+  <h2 id="artwork">{copy.chapters.artwork}</h2>
+  <p>
+    {copy.artwork.intro.before}{' '}
+    <strong>{copy.artwork.intro.emphasis}</strong>.{' '}
+    {copy.artwork.intro.after}
+  </p>
+  <p>
+    {copy.artwork.treatment.before}{' '}
+    <em>{copy.artwork.treatment.emphasis}</em>{' '}
+    {copy.artwork.treatment.after}
+  </p>
+</Document>
+
+<style>
+  /*
+   * The breakout, exactly as `/press` computes it - and for the reason that page's own
+   * comment gives at length: `100vw` includes a classic scrollbar and the page's usable
+   * width does not, so anything sized from it is ~15px too wide wherever scrollbars take
+   * space. This is bounded by the page's real gutter instead, so it cannot be wrong.
+   *
+   * `body { overflow-x: clip }` is a floor under the three layers still using `100vw`, not
+   * a licence for new ones. Nothing on this page uses a viewport unit.
+   */
+  .toc,
+  .misuses,
+  .swatches,
+  .table-wrap,
+  .figure-block,
+  .ramp {
+    --breakout: max(0px, min(var(--gutter), calc((var(--measure-wide) - 100%) / 2)));
+    margin-inline: calc(-1 * var(--breakout));
+  }
+
+  /* No breakout below `md`, as on `/press` and for its reason (owner, 8.14): on a phone it
+   * put these blocks flush against both edges of the screen. `screen` because the printed PDF
+   * lays this page out at A4's 673px, inside this query, and its layout is not what changed. */
+  @media screen and (max-width: 767px) {
+    .toc,
+    .misuses,
+    .swatches,
+    .table-wrap,
+    .figure-block,
+    .ramp {
+      --breakout: 0px;
+    }
+  }
+
+  .toc {
+    margin-block: 0 var(--spacing-8);
+    padding: var(--spacing-6);
+    border: 1px solid var(--color-ink-700);
+    border-radius: 12px;
+  }
+
+  .toc-label {
+    margin: 0 0 var(--spacing-3);
+    font-size: var(--text-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-mute-400);
+  }
+
+  .toc ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: var(--spacing-2);
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    counter-reset: chapter;
+  }
+
+  .toc li {
+    counter-increment: chapter;
+  }
+
+  .toc li::before {
+    content: counter(chapter) '. ';
+    color: var(--color-mute-400);
+  }
+
+  /*
+   * The document offering itself as a file. It sits under the contents rather than above
+   * the title, because a reader who has not yet seen what the document *is* has no reason
+   * to download it - `/press` leads with its kit button for the opposite reason: a
+   * journalist arrives already knowing they want the files.
+   */
+  .download {
+    margin-block: 0 var(--spacing-8);
+    font-size: var(--text-sm);
+  }
+
+  .stage {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: var(--spacing-8) var(--spacing-6);
+    margin-block: var(--spacing-6);
+    border: 1px solid var(--color-ink-700);
+    border-radius: 12px;
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--spacing-8);
+    margin-block: var(--spacing-6);
+  }
+
+  .size {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-2);
+  }
+
+  .size em {
+    font-style: normal;
+    font-size: var(--text-xs);
+    color: var(--color-mute-400);
+  }
+
+  .size[data-minimum] em {
+    color: var(--color-plum-300);
+  }
+
+  /*
+   * Clear space drawn as the rule itself: the padding is `--clear` in the mark's own units,
+   * scaled to the rendered size. The dashed edge is the boundary, not a decoration - it is
+   * what `CLEAR_SPACE.strokes` stroke widths actually looks like at this size.
+   */
+  .clear-box {
+    display: inline-flex;
+    padding: calc(var(--clear) * 96px / 100);
+    outline: 1px dashed var(--color-mute-400);
+    outline-offset: 0;
+  }
+
+  .figure-block {
+    margin-block: var(--spacing-8);
+  }
+
+  .figure-block :global(.figure) {
+    max-width: 340px;
+    margin-inline: auto;
+  }
+
+  figcaption {
+    margin-top: var(--spacing-4);
+    font-size: var(--text-sm);
+    color: var(--color-mute-200);
+  }
+
+  .rules {
+    display: grid;
+    gap: var(--spacing-3);
+  }
+
+  .aside {
+    font-size: var(--text-sm);
+    color: var(--color-mute-400);
+    border-left: 2px solid var(--color-ink-700);
+    padding-left: var(--spacing-4);
+  }
+
+  .misuses {
+    display: grid;
+    gap: var(--spacing-6);
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    margin-block: var(--spacing-6);
+  }
+
+  .misuse {
+    margin: 0;
+    padding: var(--spacing-6);
+    border: 1px solid var(--color-ink-700);
+    border-radius: 12px;
+  }
+
+  .misuse-stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 96px;
+    margin-bottom: var(--spacing-4);
+    overflow: hidden;
+  }
+
+  .misuse figcaption {
+    margin: 0;
+    display: grid;
+    gap: var(--spacing-2);
+  }
+
+  .misuse strong {
+    color: var(--color-white);
+  }
+
+  .misuse span {
+    font-size: var(--text-sm);
+    color: var(--color-mute-400);
+  }
+
+  /*
+   * The six misuses, applied to the live mark. Each is the mistake itself rather than a
+   * picture of it, so `PRESET` moving updates all six.
+   */
+  .misuse[data-misuse='recolour'] :global(.mark) {
+    color: var(--color-bloom-cyan);
+  }
+
+  .misuse[data-misuse='recolour'] :global(.mark .sonar) {
+    stroke: var(--color-bloom-amber);
+  }
+
+  .misuse[data-misuse='opacity'] :global(.mark .sonar) {
+    opacity: 1;
+  }
+
+  .misuse[data-misuse='stretch'] :global(.mark) {
+    transform: scaleX(1.55);
+  }
+
+  .misuse[data-misuse='rotate'] :global(.mark) {
+    transform: rotate(-18deg);
+  }
+
+  .misuse[data-misuse='busy'] .misuse-stage {
+    background:
+      radial-gradient(circle at 30% 35%, var(--color-bloom-magenta), transparent 45%),
+      radial-gradient(circle at 70% 60%, var(--color-bloom-cyan), transparent 40%),
+      var(--color-mute-200);
+    border-radius: 8px;
+  }
+
+  .group-note {
+    font-size: var(--text-sm);
+    color: var(--color-mute-400);
+  }
+
+  .swatches {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: var(--spacing-3);
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    margin-block: var(--spacing-6);
+  }
+
+  .swatch {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas: 'chip name' 'chip hex';
+    align-items: center;
+    gap: 0 var(--spacing-3);
+  }
+
+  .chip {
+    grid-area: chip;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 1px solid var(--color-ink-700);
+  }
+
+  /*
+   * `--mute-200` and `--mute-400`, never `--ink-700`. That token is declared as a
+   * decorative divider with no contrast minimum - about 1.3:1 on this ground - and setting
+   * a label in it is invisible in a way the contrast gate cannot fail, because it never
+   * scores a pairing nobody called text. It shipped that way on `/press` once.
+   */
+  .swatch-name {
+    grid-area: name;
+    font-size: var(--text-sm);
+    color: var(--color-mute-200);
+  }
+
+  .swatch-hex {
+    grid-area: hex;
+    font-size: var(--text-sm);
+    color: var(--color-mute-400);
+    text-transform: uppercase;
+  }
+
+  /*
+   * Wide content scrolls inside its own box rather than pushing the page sideways - the
+   * rule from 8.10b's Gate C. The wrapper is what scrolls; the table keeps its width.
+   */
+  .table-wrap {
+    overflow-x: auto;
+    /* Promoting one axis promotes the other to `auto`, which draws a scrollbar beside a box
+       with nothing to scroll to. Pin it, the way `/pricing`'s comparison table has to. */
+    overflow-y: hidden;
+    margin-block: var(--spacing-6);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+    text-align: left;
+  }
+
+  caption {
+    text-align: left;
+    font-size: var(--text-sm);
+    color: var(--color-mute-400);
+    padding-bottom: var(--spacing-3);
+  }
+
+  th,
+  td {
+    padding: var(--spacing-3) var(--spacing-4) var(--spacing-3) 0;
+    border-bottom: 1px solid var(--color-ink-700);
+    vertical-align: top;
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  td:nth-child(2) {
+    white-space: normal;
+    min-width: 16ch;
+  }
+
+  thead th {
+    color: var(--color-mute-400);
+    font-size: var(--text-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  tbody th {
+    color: var(--color-mute-200);
+  }
+
+  td {
+    color: var(--color-mute-400);
+  }
+
+  .ratio {
+    font-variant-numeric: tabular-nums;
+    color: var(--color-white);
+  }
+
+  .pair {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-3);
+  }
+
+  .pair-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid var(--color-ink-700);
+    font-size: var(--text-sm);
+  }
+
+  /*
+   * **24px is the large-text threshold at a normal weight** (WCAG 1.4.3), which is the whole
+   * claim an `AA-large` pairing makes. Shown at anything smaller the chip fails the level it
+   * is illustrating.
+   */
+  .pair-chip[data-level='AA-large'] {
+    width: 44px;
+    height: 34px;
+    font-size: 24px;
+    line-height: 1;
+  }
+
+  /*
+   * A pairing that is never text is drawn rather than set: the background is the ground and
+   * the bar is the foreground doing the only job it has - a border, a divider, a fill edge.
+   */
+  .pair-chip[data-level='non-text']::after,
+  .pair-chip[data-level='tracked']::after {
+    content: '';
+    width: 60%;
+    height: 2px;
+    border-radius: 1px;
+    background: currentcolor;
+  }
+
+  .ramp {
+    display: grid;
+    gap: var(--spacing-6);
+    margin-block: var(--spacing-6);
+  }
+
+  .ramp-meta {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--color-mute-400);
+  }
+
+  .ramp-sample {
+    margin: 0;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--color-white);
+  }
+
+  /*
+   * The demonstrations run on hover or focus and never on their own. `transform` and
+   * `opacity` only - the same rule every timeline on the site follows, and the reason is
+   * the same here as there: anything else is a paint on the main thread.
+   */
+  .demo {
+    display: inline-block;
+    width: 90px;
+    height: 22px;
+    border-radius: 4px;
+    background: var(--color-ink-800);
+    overflow: hidden;
+  }
+
+  .demo i {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--color-plum-500);
+    transform: translateX(-100%);
+    transition: transform var(--demo-duration) cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* No `:focus-visible` branch: nothing can focus this any more - see the markup. */
+  .demo:hover i {
+    transform: translateX(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /*
+     * The demonstrations hold their end state rather than animating into it. They are the
+     * only moving thing on the page, and a visitor who has asked for less motion should
+     * still be able to see what the swatch is showing.
+     */
+    .demo i {
+      transition: none;
+      transform: translateX(0);
+    }
+  }
+
+  .print-cover {
+    display: none;
+  }
+
+  /*
+   * ---------------------------------------------------------------------------------
+   * The PDF - phases.md 8.10d.
+   *
+   * **There is no second document.** `public/brand/sonaru-brand.pdf` is this route
+   * printed, by `npm run pdf`, through the Chrome Playwright already drives - the
+   * precedent `npm run brand`, `npm run og` and `npm run press` all set. So anyone who
+   * hits Cmd-P on `/brand` gets the file we ship, byte-for-byte the same design, and
+   * there is nothing here that can drift from the page above.
+   *
+   * **These rules are scoped to this route and have no screen consequence**, so
+   * `review-gates.md` §4 applies: `Base.astro`'s and `Header.astro`'s approved appearance
+   * is untouched and their gates stay closed. `:global()` is what reaches them; Astro
+   * still only ships this stylesheet on the page that declares it.
+   *
+   * **The four fixed layers are the whole unit.** Measured at Gate B: rendered as it
+   * stands, this page is a **12.8 MB** PDF - because Chrome rasterises every
+   * `position: fixed` layer *once per printed page*, and this site has four of them
+   * (the ground gradient's `background-attachment: fixed`, the noise dither, the fixed
+   * header, the bloom). 132 image objects, 32 of them full-page 843×1245 plates. Neutered
+   * below, the same document is **775 KB**. `printBackground: false` is not the answer to
+   * this: it drops the ground and leaves the site's light-on-dark type on white paper.
+   * ---------------------------------------------------------------------------------
+   */
+  @media print {
+    /* One flat ink plate that scrolls with the document instead of sixteen fixed ones. */
+    :global(html) {
+      background: var(--ground-solid) !important;
+      background-image: none !important;
+      background-attachment: scroll !important;
+    }
+
+    /* The dither smooths a gradient that is no longer being printed. */
+    :global(body::before) {
+      display: none !important;
+    }
+
+    /* Site chrome is navigation. A document carries its own. */
+    :global(.site-header),
+    :global(.site-footer) {
+      display: none !important;
+    }
+
+    /*
+     * The atmosphere, and the masthead the cover replaces.
+     *
+     * **Anchored to `.document` rather than written bare, and that was 8.10c's own guard
+     * telling us so.** `:global(.masthead)` compiles to exactly `.masthead { display: none
+     * !important }`, and `utility-collisions.spec.ts` failed on it - correctly. Its premise
+     * is that *"a scoped rule always carries its attribute selector, so this cannot match
+     * the page's own styles"*, and a bare `:global()` is how that premise breaks: in the
+     * cascade our rule is then indistinguishable from a framework utility, which is the
+     * exact hazard that spec exists for. Anchoring restores the premise and says what the
+     * rule means - inside this layout's article, not anywhere the class appears.
+     *
+     * Suppressing it in `KNOWN` was the alternative and is the wrong one: that list is for
+     * names Tailwind owns, and putting ours in it spends the guard's credibility to keep a
+     * selector that was too broad anyway.
+     */
+    :global(.document .masthead),
+    :global(.document .bloom) {
+      display: none !important;
+    }
+
+    /* A link offering the reader the document they are holding. */
+    .download {
+      display: none !important;
+    }
+
+    /*
+     * `preferCSSPageSize` is on in the generator, so this is the single source of the
+     * page geometry - the script passes no format and no margins. A4 rather than Letter:
+     * the site writes en-GB throughout, down to its dates.
+     *
+     * The bottom margin is deeper than the others to clear the running footer, which
+     * Chrome composes outside the page box.
+     */
+    @page {
+      size: A4;
+      margin: 16mm 16mm 20mm;
+      /*
+       * **The margin band is not painted by `html`, and on a dark document that shows.**
+       * A root background propagates to the page *box*; the area outside it is the
+       * canvas, which Chrome paints from `color-scheme` - so the first proof came out
+       * `#0b0a0b` inside a `#121212` frame, with the running footer sitting in the lighter
+       * band. Measured, not guessed: forcing `color-scheme: only light` turns that frame
+       * **white**, which is what identifies it.
+       *
+       * `var()` resolves here, so this stays a token rather than becoming the one hex
+       * literal outside `tokens.css`.
+       */
+      background: var(--ground-solid);
+    }
+
+    .print-cover {
+      display: grid;
+      justify-items: start;
+      align-content: center;
+      gap: var(--spacing-4);
+      /*
+       * The cover *is* the sheet, so it is the content box's own height - A4's 297mm less
+       * the 16mm and 20mm `@page` margins - with its own margins zeroed. Anything short of
+       * that centres the block inside a box smaller than the page and sits it visibly
+       * high; anything over it spills the cover onto a second sheet.
+       */
+      margin: 0;
+      min-height: 258mm;
+      break-after: page;
+    }
+
+    .print-cover-title {
+      margin: var(--spacing-4) 0 0;
+      font-size: var(--text-3xl);
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--color-white);
+    }
+
+    .print-cover-lede {
+      margin: 0;
+      max-width: 34em;
+      font-size: var(--text-lg);
+      color: var(--color-mute-200);
+    }
+
+    .print-cover-meta {
+      margin: 0;
+      font-size: var(--text-xs);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-mute-400);
+    }
+
+    /*
+     * The contents becomes a contents *page* - which is the argument that made this one
+     * route instead of eight chaptered ones at 8.10c, so the printed document is where it
+     * has to pay off. The box it wears on screen is a card in a scroll; on its own page
+     * there is nothing for it to be a card against.
+     */
+    .toc {
+      margin: 0;
+      padding: 0;
+      border: 0;
+      min-height: 258mm;
+      align-content: center;
+      display: grid;
+      break-after: page;
+    }
+
+    .toc ol {
+      grid-template-columns: 1fr;
+      gap: var(--spacing-3);
+      font-size: var(--text-lg);
+    }
+
+    /* Every chapter opens a page. Seven chapters, seven openings. */
+    h2 {
+      break-before: page;
+    }
+
+    /* A heading stranded at the foot of a page is a heading for nothing. */
+    h2,
+    h3 {
+      break-after: avoid;
+    }
+
+    /*
+     * The figures are the argument, not illustrations of it - a construction diagram split
+     * across a fold is a diagram that has stopped showing what it shows.
+     *
+     * **Only things that fit on a page are in this list, and which those are was measured
+     * at the printed column width rather than guessed.** `break-inside: avoid` on a block
+     * taller than the page cannot be honoured, and what Chrome does instead is push the
+     * whole block to a fresh sheet and break it there anyway - so the rule buys nothing
+     * and costs the remainder of the page before it. Against a content box of **986px**:
+     * the contrast table is 1,816px and the misuse grid 1,028px, so both break between
+     * their rows below; the type ramp is **892px and fits**, and only looked too tall when
+     * it was measured at the viewport's width instead of the sheet's.
+     *
+     * `.rules` is here for the other failure. Each of the two rule lists is a third of a
+     * page, and without this the last one split and left **a single three-line bullet
+     * alone on page 22** - the document ending on an orphan.
+     */
+    .stage,
+    .figure-block,
+    .swatches,
+    .ramp,
+    .rules,
+    .row,
+    .clear-box,
+    :global(.group) {
+      break-inside: avoid;
+    }
+
+    /* The rows are what has to survive the fold, not the container around them. */
+    tr,
+    .misuse {
+      break-inside: avoid;
+    }
+
+    /*
+     * A table that crosses a fold and leaves its column heads on the previous sheet is a
+     * page of unlabelled numbers. This is the one thing print gives you for free, and only
+     * if the table is marked up with a real `<thead>` - which these two are.
+     */
+    thead {
+      display: table-header-group;
+    }
+
+    /* Nothing on the page moves; in print there is nothing for a transition to resolve. */
+    .demo i {
+      transition: none !important;
+      transform: translateX(0) !important;
+    }
+  }
+</style>

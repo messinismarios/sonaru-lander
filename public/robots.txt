@@ -1,0 +1,13 @@
+# sonaru.app - phases.md 8.11b.
+#
+# The whole site is meant to be indexed, so this file exists to point at the sitemap
+# rather than to forbid anything. The dev-only routes 8.13 deletes are kept out of the
+# sitemap by `astro.config.mjs`, not by a Disallow here: a Disallow is a published list of
+# the pages we would rather you did not look at, which is an invitation.
+#
+# /404 carries its own `noindex` and needs no line here either.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://sonaru.app/sitemap-index.xml

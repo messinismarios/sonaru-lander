@@ -1,0 +1,386 @@
+---
+/**
+ * The reading layout - one column of prose on the site's own ground.
+ *
+ * **Named for the object, not the subject.** 8.9b builds it for `/privacy`, `/terms` and
+ * `/support`, but what it is is a long-form document, and 8.9c's article template is the
+ * same one. Calling it `LegalLayout` would guarantee a second copy of it three weeks from
+ * now (Gate B, 2026-09-07).
+ *
+ * **This is where the site's reading typography is settled**, on the least decorative
+ * prose it has, so the type has nothing to hide behind. Every value below is a token.
+ *
+ * **Reworked at 8.9c's Gate C change round** (owner: *"the measure prose width is way too
+ * narrow, it looks pretty small when looking at a 1440p screen"*, band D). The reading
+ * column is **700px of 20px type at 1440 - about 80 characters**, up from 540px of 18px
+ * and 68 characters, and it
+ * uses `--text-prose` rather than `--text-body` so that raising it did not repaint the
+ * hero, the four acts, `/pricing`, `/waitlist` and the footer, all frozen behind their own
+ * gates.
+ *
+ * Half of what that round fixed was a defect rather than a preference: `.masthead` and
+ * `.prose` capped at the same `30em`, and `em` resolves against each element's own font
+ * size - 16px inherited here, 18px set there - so the title block was **480px** while the
+ * body was **540px**, and the largest type on the page wrapped in the narrowest column on
+ * it. `--measure-prose` is a length now and both land on the same pixel.
+ *
+ * **No motion, and no motion stack.** No GSAP, no ScrollTrigger, no Lenis - `/waitlist`'s
+ * precedent, and 8.12's open finding about `/pricing`'s 70 KB applied at authoring time
+ * rather than after. The only movement on the page is a link's underline drawing in.
+ */
+import Base from './Base.astro';
+import BloomField from '../components/BloomField.astro';
+
+interface Props {
+  /** The page's `h1`. */
+  readonly title: string;
+  /** The whole `<title>`, from `ui.meta`. */
+  readonly metaTitle: string;
+  readonly eyebrow: string;
+  readonly description: string;
+  readonly lede: string;
+  /** `YYYY-MM-DD`. Absent for a document that does not take effect, e.g. `/support`. */
+  readonly effective?: string | undefined;
+  /**
+   * Forwarded to `Base`. A post passes its own generated cover; the legal documents pass
+   * nothing and inherit the site card, which is what 8.10a wanted them to do.
+   */
+  readonly ogImage?: string | undefined;
+  /** Forwarded to `Base`. `article` on a post. */
+  readonly ogType?: 'website' | 'article' | undefined;
+}
+
+const { title, metaTitle, eyebrow, description, lede, effective, ogImage, ogType } = Astro.props;
+
+const effectiveLabel =
+  effective === undefined
+    ? null
+    : new Date(`${effective}T00:00:00Z`).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+      });
+---
+
+<Base title={metaTitle} description={description} ogImage={ogImage} ogType={ogType}>
+  {
+    /*
+    Forwarded, not consumed. 8.9c's article route renders through this layout and needs
+    `og:image`, `article:published_time` and its `BlogPosting` JSON-LD in the head; the
+    legal pages pass nothing and get nothing. No visual consequence - `review-gates.md`
+    §4 - so this layout's approved appearance is untouched.
+  */
+  }
+  <slot name="head" slot="head" />
+  <article class="document">
+    <div class="atmosphere">
+      {
+        /*
+        `hero`, matching `/pricing` - the site's other static reading route - rather than
+        `problem`, which is what this was until Gate C rev 3. The `problem` palette is
+        violet over `--plum-700` and `--plum-950`: two of its three stops are nearly the
+        ground, so at 390 the single luminous orb read as a bright dot under the effective
+        date instead of as atmosphere. `hero`'s three stops are all luminous and merge
+        into a field at every width. `/waitlist` reaches the same palette by another name
+        (`cta` is `hero`'s stops, deliberately).
+      */
+      }
+      <BloomField act="hero" intensity="ambient" />
+    </div>
+
+    <header class="masthead">
+      <p class="eyebrow">{eyebrow}</p>
+      <h1>{title}</h1>
+      {
+        effectiveLabel !== null && (
+          <p class="effective">
+            Effective <time datetime={effective}>{effectiveLabel}</time>
+          </p>
+        )
+      }
+      <p class="lede">{lede}</p>
+    </header>
+
+    <div class="prose">
+      <slot />
+    </div>
+  </article>
+</Base>
+
+<style>
+  /*
+   * Above `body::before`'s dither, which is fixed at z-index 0 under everything - the
+   * same stacking the footer needs for the same reason.
+   */
+  .document {
+    /*
+     * Where the light is centred: the middle of the masthead, which is the middle of the
+     * title.
+     *
+     * Computed in **viewport** coordinates, because the layer it drives is full-bleed -
+     * see `.atmosphere`. `--page-inset` is the empty space to the left of the content box
+     * (120px at 1440, zero once the viewport is narrower than `--content-max`), and
+     * `--column-width` is the masthead's own width computed the way the masthead computes
+     * it. The result lands on the h1's measured centre to the pixel: 384 at 1440, 264 at
+     * 768, 195 at 390.
+     *
+     * The vertical anchor is a length rather than a percentage because the title's
+     * distance from the top of the document does not change with the viewport: it is the
+     * padding plus the eyebrow. A percentage would drift with `100svh`.
+     */
+    --page-inset: max(0px, (100vw - var(--content-max)) / 2);
+    --column-width: min(var(--measure-prose), 100vw - 2 * var(--page-inset) - 2 * var(--gutter));
+    --bloom-x: calc(var(--page-inset) + var(--gutter) + var(--column-width) / 2);
+    --bloom-y: var(--spacing-48);
+
+    position: relative;
+    z-index: 1;
+    padding: var(--spacing-32) var(--gutter) var(--spacing-24);
+    max-width: var(--content-max);
+    margin-inline: auto;
+  }
+
+  /*
+   * The atmosphere, masked - and the mask is the whole point of this block.
+   *
+   * The field is one viewport tall, so without a mask it ends on a hard horizontal line
+   * at exactly 100svh. On the home route nothing shows it, because every section there
+   * scrolls past under its own pinned layer; on a document you scroll straight through it
+   * and keep going, which is where the owner rejected it at Gate C rev 1.
+   *
+   * **This is not a new technique. It is the site's existing one, applied here.** The
+   * gradient below is character-for-character the one `Hero.astro` and `Feed.astro`
+   * already use, and `Notify.astro` and `Playlist.astro` use variants of at different
+   * centres: the light is taken to zero *inside* the frame, so it dissolves into the
+   * ground instead of being cut by the layer's edge. What the seam actually marked was
+   * the three routes that never adopted it - `/pricing` and `/waitlist` are the other two
+   * (`PricingHero.astro` and `waitlist.astro` both leave `.atmosphere` unmasked), and
+   * they remain 8.12's to fix, now with a one-line remedy rather than an open question.
+   *
+   * It lives here rather than in `BloomField`, for the same reason `Playlist.astro` gives
+   * for its own: that component is shared with four sections whose appearance is frozen
+   * behind their own Gate C, and a mask added inside it would repaint all of them.
+   */
+  .atmosphere {
+    position: absolute;
+    /*
+     * Full-bleed, not confined to the content box - and this is a correction, not a
+     * flourish. Anchoring the light to the title pushes it left, and while the layer was
+     * `inset: 0` of a 1200px centred box it met that box's left edge while still bright:
+     * a vertical seam at x=120, measured at 5.8 mean luminance step per column against
+     * 0.7 everywhere else. Exactly the defect that was just fixed, turned ninety degrees.
+     * Spanning the viewport means the only edge the light can reach is the screen's own.
+     */
+    top: 0;
+    left: calc(50% - 50vw);
+    width: 100vw;
+    height: 100svh;
+    z-index: -1;
+    pointer-events: none;
+    -webkit-mask-image: radial-gradient(
+      72% 58% at var(--bloom-x) var(--bloom-y),
+      #000 0%,
+      transparent 74%
+    );
+    mask-image: radial-gradient(72% 58% at var(--bloom-x) var(--bloom-y), #000 0%, transparent 74%);
+  }
+
+  /*
+   * The constellation, moved to sit under the title rather than under the middle of the
+   * page (owner, Gate C rev 2). `.bloom` is `inset: 0` of the atmosphere and clips its
+   * own orbs, so translating it moves all three lights together without touching
+   * `BloomField` - `Playlist.astro` does the same thing for the same reason.
+   *
+   * **It is anchored, not a fixed percentage, and that is the whole subtlety.** The title
+   * is at 22% of the content box at 1440 and at 50% of it at 390, because the reading
+   * column stops being narrower than the page once the page is narrow. A fixed shift
+   * measured at 1440 pulled the light off the title at 390 - measured, not guessed: the
+   * centroid landed 25px from the title at mobile before any shift and 52px away after
+   * one. Expressing it as the distance from the box's centre to the anchor makes it
+   * resolve to a full shift at 1440 and to exactly zero at 390.
+   *
+   * There is no vertical translate. The mask's own centre already puts the light's
+   * vertical mass within about 10px of the title at every width, and lifting the orbs on
+   * top of that overshot it.
+   */
+  .atmosphere :global(.bloom) {
+    transform: translateX(calc(var(--bloom-x) - 50%));
+  }
+
+  .masthead {
+    max-width: var(--measure-prose);
+  }
+
+  /* `SectionHeader`'s eyebrow, to the value. A document is not a place to invent one. */
+  .eyebrow {
+    margin: 0;
+    font-size: var(--text-xs);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-plum-300);
+  }
+
+  /*
+   * `--text-2xl`, not `--text-3xl`. superlist sets its legal `h1` at the exact metrics of
+   * its homepage hero, and the idea is right - the page should not apologise for being a
+   * legal page. The number is not: our hero step is 84px, and 8.7 measured what that does
+   * to a page that has content underneath it. This is the step `/pricing`'s approved
+   * title band uses, proven from 390 to 1440.
+   */
+  h1 {
+    margin: var(--spacing-4) 0 0;
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    color: var(--color-white);
+    text-wrap: balance;
+  }
+
+  .effective {
+    margin: var(--spacing-4) 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-mute-400);
+  }
+
+  .lede {
+    margin: var(--spacing-6) 0 0;
+    font-size: var(--text-prose-lede);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+  }
+
+  /*
+   * The prose reset.
+   *
+   * `:global()` because the content is rendered markdown, which Astro's scoping never
+   * sees. Every selector is a descendant of `.prose`, so nothing here can reach a
+   * component - `.link` on the waitlist's suggestion button is a real collision that a
+   * global rule of the same name would have caused silently.
+   */
+  .prose {
+    margin-top: var(--spacing-16);
+    max-width: var(--measure-prose);
+    font-size: var(--text-prose);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+  }
+
+  .prose :global(p),
+  .prose :global(ul),
+  .prose :global(ol) {
+    margin: 0 0 var(--spacing-6);
+  }
+
+  .prose :global(h2) {
+    margin: var(--spacing-12) 0 var(--spacing-4);
+    font-size: var(--text-xl);
+    font-weight: 700;
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    color: var(--color-white);
+    text-wrap: balance;
+  }
+
+  .prose :global(h3) {
+    margin: var(--spacing-8) 0 var(--spacing-2);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--color-white);
+  }
+
+  /*
+   * The list styles are restored, not set. Tailwind's preflight resets `ul, ol` to
+   * `list-style: none`, which is right for the navigation and card lists the rest of the
+   * site is built from and wrong here: it made the privacy policy's five-item "what we
+   * collect" list render as five indented paragraphs, and the `::marker` rule below was
+   * colouring a marker that did not exist. Found by looking at the page, not by a test -
+   * nothing was failing.
+   */
+  .prose :global(ul) {
+    list-style: disc;
+    padding-left: var(--spacing-6);
+  }
+
+  .prose :global(ol) {
+    list-style: decimal;
+    padding-left: var(--spacing-6);
+  }
+
+  .prose :global(li) {
+    margin-bottom: var(--spacing-2);
+  }
+
+  .prose :global(li)::marker {
+    color: var(--color-mute-400);
+  }
+
+  .prose :global(strong) {
+    font-weight: 600;
+    color: var(--color-white);
+  }
+
+  /*
+   * Markdown renders a bare <a>, so the `Link` primitive cannot be used here - and its
+   * styles cannot be globalised either, since `.link` is already taken inside
+   * `WaitlistForm.svelte`. These declarations are therefore the inline variant's, written
+   * a second time, which is a drift risk rather than a design decision:
+   * `tests/e2e/legal.spec.ts` asserts a prose link computes to the same colour,
+   * decoration and underline geometry as a real `Link`, so the two cannot part company
+   * without a red build.
+   *
+   * **`a:not([class])`, and the `:not` is load-bearing - owner, 8.11b Gate C rev 4.**
+   * This was a bare tag selector, which meant it did not decorate *prose links*, it decorated
+   * *every anchor inside a document* - and `Button` renders an `<a>` when it is given an
+   * `href`. So `/press`'s kit download, a pill button, was handed the inline link's underline.
+   * It went unseen because of *when* it shows: at rest under default motion the bar sits at
+   * `scaleX(0)`, so it is invisible and every default-motion baseline agreed the page was
+   * fine - while the reduced-motion branch below pins it to `scaleX(1)` at `opacity: 0.4`,
+   * where it is plainly a line under a button. The people who asked for less movement got the
+   * defect; everybody else got it on hover.
+   *
+   * Markdown emits a classless `<a>` and every component-rendered anchor carries its
+   * component's class, so "bare anchor" *is* the distinction this rule always meant. It also
+   * makes the rule safe for components that do not exist yet.
+   * `tests/e2e/prose-decoration.spec.ts` walks every route in both motion modes and fails if
+   * any classed anchor picks this up again.
+   */
+  .prose :global(a:not([class])) {
+    position: relative;
+    color: var(--color-plum-300);
+    text-decoration: none;
+  }
+
+  .prose :global(a:not([class]))::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur-2) var(--ease-out);
+  }
+
+  .prose :global(a:not([class])):hover::after,
+  .prose :global(a:not([class])):focus-visible::after {
+    transform: scaleX(1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .prose :global(a:not([class]))::after {
+      transition: none;
+      transform: scaleX(1);
+      opacity: 0.4;
+    }
+
+    .prose :global(a:not([class])):hover::after,
+    .prose :global(a:not([class])):focus-visible::after {
+      opacity: 1;
+    }
+  }
+</style>

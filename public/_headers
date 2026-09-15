@@ -1,0 +1,63 @@
+# Security headers, served by Cloudflare Pages - phases.md 8.12b.
+#
+# Pages reads this file from the root of the build output; `public/` is copied there
+# verbatim, so this is the deployed artefact and not a template for one.
+#
+# **Nothing here can be verified until Pages serves it.** That is the same class of thing as
+# the Turnstile secret and the 404 status code, and 8.13 carries the item: request the live
+# site and read the headers back. `tests/unit/security-headers.spec.ts` checks what a build
+# can check - that this file and `dist/` agree with each other.
+
+/*
+  # **`default-src 'none'` rather than `'self'`**, so every kind of fetch has to be written
+  # down below and a new one fails loudly instead of quietly inheriting a permission.
+  #
+  # **`script-src` carries no `'unsafe-inline'` and needs none**: there is not one inline
+  # script in the build. That is not luck - 8.10b set Vite's `assetsInlineLimit` to 0 for
+  # exactly this reason, after `/press`'s 614-byte copy-button module arrived inlined.
+  #
+  # **`style-src` carries a hash, not `'unsafe-inline'`.** The one inline `<style>` element
+  # in the whole site is Astro's own 75-byte island rule, byte-identical on `/pricing` and
+  # `/waitlist`, and the guard recomputes this hash from `dist/` on every run - so an Astro
+  # upgrade that changes those bytes turns the build red rather than shipping two pages whose
+  # islands do not paint.
+  #
+  # **`style-src-attr 'unsafe-inline'` is the one allowance, and it is deliberate** (owner,
+  # 2026-09-12). The site server-renders 160+ `style` attributes: Shiki's token colours,
+  # `/brand`'s palette chips printing their own hex, the motion demos' `--demo-duration`. CSP
+  # offers no practical hashing for attributes and `_headers` is static, so a nonce is
+  # impossible. What it leaves open is defacement rather than script execution -
+  # `expression()` was IE-only - and it buys the motion layer nothing either way, since GSAP
+  # writes through CSSOM, which `style-src` does not cover at all.
+  #
+  # **`challenges.cloudflare.com` is Turnstile**, on `/waitlist` only, and it is the only
+  # external origin the built site references.
+  #
+  # **The two `cloudflareinsights.com` origins are Web Analytics** (8.13, 2026-09-15). Its
+  # script is injected at the edge rather than by the build, so no test here can see it: the
+  # beacon loads from `static.cloudflareinsights.com` and reports to `cloudflareinsights.com`,
+  # and without either the chart is silently blank rather than broken.
+  Content-Security-Policy: default-src 'none'; script-src 'self' __INLINE_SCRIPT_HASHES__ https://challenges.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'sha256-vv9IoKo7BSLbWcUHr3tNmfNVmm5L/9Cfn2H6LMk7/ow='; style-src-attr 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://challenges.cloudflare.com https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com; manifest-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests
+
+  # Two years. **`includeSubDomains` binds `api.sonaru.app` as well**, which is the whole
+  # reason it is called out rather than pasted: every sonaru.app subdomain becomes HTTPS-only
+  # in any browser that has seen this header, and there is no quick way back. Approved at
+  # 8.12b's Gate B. **`preload` is deliberately absent** - that is the genuinely irreversible
+  # one, it is a submission to a browser-vendor list rather than a header we control, and
+  # nothing about launch needs it.
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+
+  # A referrer that keeps the origin for our own navigations and sends nothing to plain HTTP.
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # The site serves no user uploads, but a misdeclared type is a scripting bug either way.
+  X-Content-Type-Options: nosniff
+
+  # Everything this site will never ask for, denied by name rather than by omission.
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), midi=(), magnetometer=(), gyroscope=(), accelerometer=()
+
+  # Redundant beside `frame-ancestors 'none'` above, and kept for the crawlers and proxies
+  # that still read only this one.
+  X-Frame-Options: DENY
+
+  Cross-Origin-Opener-Policy: same-origin

@@ -1,0 +1,255 @@
+---
+/**
+ * The site header - mark on the left, action on the right.
+ *
+ * `design-system.md` §9 has always listed a nav in the component inventory; `phases.md`
+ * never scheduled one, so the site ran to the end of 8.2 with no header at all and the
+ * mark nowhere on the page. That was a gap in the plan rather than a decision.
+ *
+ * **It is out of flow rather than in it**, which is the one thing here worth explaining.
+ * The hero's fold is `100svh` and its sticky pin is aligned to the viewport; putting a
+ * header in normal flow above it would push the fold past the bottom of the screen and
+ * shift every device offset the section was gated on. Overlaying it costs the hero
+ * nothing and keeps 8.2's approved geometry exactly as it was measured.
+ *
+ * **It is fixed** (owner, Gate C rev 13), so the mark and the action stay reachable for
+ * the whole scroll rather than leaving with the first screen. It is anchored to the
+ * viewport's corners - no content column, no auto margins - so the mark sits in the
+ * top-left corner itself and the action in the top-right, each held off the edge by
+ * padding alone.
+ *
+ * **There is deliberately no navigation, and this is now a decision rather than a wait.**
+ * The comment here used to say links would appear once pricing and the content routes gave
+ * them somewhere to go. They did, and 8.10e built it: three links - Pricing, Blog,
+ * Changelog - with `aria-current` marking, a zero-JavaScript `<details>` disclosure below
+ * 768, and the whole three-gate cycle behind it. **The owner rejected it at Gate C**
+ * (2026-09-10): *"I don't like the links being in the header. Remove them completely, so
+ * they are only on the footer."*
+ *
+ * So the header is the mark and one action, permanently. `design-system.md` §9's inventory
+ * no longer lists a nav, and `phases.md` 8.10e records what was built and removed. **Do
+ * not add one back as an oversight** - it is the one thing on this site that has been
+ * built, measured against four references, and turned down.
+ *
+ * **The action is dropped on the page it points at** (owner, 8.8's Gate C): "Join the
+ * waitlist" sitting in the corner of `/waitlist` is an invitation to somewhere you already
+ * are, and a second control competing with the form for the same click. On that route the
+ * header is the mark alone.
+ *
+ * It is derived from the path rather than passed in as a prop. Every page renders this
+ * through `Base.astro`, so a prop would have to be threaded through the layout by each
+ * route and could be forgotten by the next one - where "don't advertise the page you are
+ * on" is a rule the component can simply know. It applies to the action and to nothing
+ * else, there being nothing else here.
+ */
+import Wordmark from './brand/Wordmark.astro';
+import Button from './primitives/Button.astro';
+
+const WAITLIST = '/waitlist';
+
+// Trailing slashes vary with Astro's build config; the comparison should not.
+const here = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const showsWaitlistAction = here !== WAITLIST;
+
+/**
+ * The scroll scrim is on every route **except the home page at `md` and up** (owner, 8.9e's
+ * Gate C). Below `md` the home page has it too (owner, 8.14c round 5: the logo and the
+ * action overlap the acts' content on a phone) - see the `.home` rule in the styles.
+ *
+ * It was added at 8.9c for a collision the blog has: a post's cover is a 700px image
+ * carrying its own white display type, so a hook and the wordmark land at the same size,
+ * in the same colour, on the same pixels. **`/` does not have that problem**, and it is
+ * the one route where the scrim itself is the thing you notice - it is the site's only
+ * full-bleed composition, so a band darkening as you scroll reads *as a band* across the
+ * hero and the four acts, where over a column of prose it reads as nothing at all.
+ *
+ * Derived from the path, like `showsWaitlistAction` above and for the same reason: every
+ * page renders this through `Base.astro`, so a prop would have to be threaded through the
+ * layout by each route and could be forgotten by the next one.
+ */
+const onHome = here === '/';
+
+import { catalogue } from '../i18n';
+
+const t = catalogue(Astro.currentLocale);
+---
+
+<header class:list={['site-header', 'scrimmed', { home: onHome }]}>
+  <a class="brand" href="/" aria-label={t.ui.homeLabel}>
+    {
+      /*
+      30 here, not 35: `Wordmark` sizes the mark at 1.15x the word so the lockup's
+      proportion is one number rather than two that can drift, and 30 x 1.15 rounds to the
+      35px mark asked for. Setting the mark alone would have broken that tie.
+    */
+    }
+    <Wordmark variant="lockup" size={30} />
+  </a>
+
+  {
+    /*
+    The header owns the conversion now. Because it is fixed, "Join the waitlist" is on
+    screen for the whole page, which is what freed the hero to carry "See how it works"
+    instead - the two calls to action no longer compete and the duplicate is gone.
+
+    It points at `/waitlist`, a route, since 8.8: the owner chose a page over a closing
+    band on the home page at Gate A. So this is a navigation, not the in-page scroll the
+    `#waitlist` anchor used to be - and it is the only thing on the site that makes that
+    route reachable, which is why the header is not left without navigation twice.
+
+    On `/waitlist` itself it is absent. See the frontmatter.
+  */
+  }
+  {
+    showsWaitlistAction && (
+      <Button href={WAITLIST} variant="ghost">
+        {t.ui.header.action}
+      </Button>
+    )
+  }
+</header>
+
+<style>
+  .site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    /* Above the hero's bloom and its sticky device, both of which own lower layers. */
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-4);
+    /* No content column and no auto margins: the mark belongs in the corner of the
+     * viewport, not in the corner of the text column, and padding is the only thing
+     * holding either end off the edge. */
+    padding: var(--spacing-6);
+  }
+
+  /*
+   * The scrim - added at 8.9c's Gate C rev 2 (owner: *"the text clashes with the Sonaru
+   * logo"*).
+   *
+   * **The header has been transparent since 8.2 and every page's content has always passed
+   * under it.** It only became visible on the blog, because that is the first route whose
+   * content is a 700px image carrying its own white display type - the wordmark and a
+   * post's hook line up at the same size, in the same colour, on the same pixels. The owner
+   * asked whether the page needed more padding; it does not. At rest the masthead already
+   * clears the 92px header by 36px. The collision happens *while scrolling*, which no
+   * amount of padding reaches.
+   *
+   * So the header stops being transparent once there is something behind it. It is a
+   * gradient rather than a bar because a hard-edged strip across the top of a page is a
+   * second horizontal seam, and this site has already spent two gate rounds removing one.
+   *
+   * **It is off on `/` - see `showsScrim` in the frontmatter.** The home route is the one
+   * page this was never for: its content is a composition rather than a column, and the
+   * band is legible there as a band. 8.9c reasoned about the scrim only from the blog,
+   * which is where it was needed and where it is invisible.
+   *
+   * **No JavaScript**: `animation-timeline: scroll()` drives the opacity from the document's
+   * own scroll position, so the blog routes keep the zero-byte budget
+   * `tests/e2e/blog.spec.ts` asserts. Where that is unsupported the `@supports` block below
+   * leaves the scrim on permanently - the fallback is the safe state, not the broken one.
+   */
+  .site-header.scrimmed::before {
+    content: '';
+    position: absolute;
+    /* Past the header's own box, so the gradient finishes feathering below the lockup
+     * rather than being cut off at it. */
+    inset: 0 0 calc(-1 * var(--spacing-8)) 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--ground-solid) 88%, transparent) 0%,
+      color-mix(in srgb, var(--ground-solid) 58%, transparent) 52%,
+      transparent 100%
+    );
+    opacity: 0;
+    animation: header-scrim linear both;
+  }
+
+  /*
+   * **The timeline lives in its own rule, and that is a fix, not tidiness** (8.14). Written as
+   * a longhand beside the shorthand above, the build's minifier folded it in and shipped
+   * `animation: linear both header-scrim scroll()` - which iOS Safari 26 rejects as a whole,
+   * so on every iPhone the scrim had no animation at all and sat at `opacity: 0`. A separate
+   * rule cannot be merged into the one above. `tests/unit/built-css.spec.ts` checks the
+   * shipped bytes, because no browser the suite runs reproduces the rejection.
+   */
+  @supports (animation-timeline: scroll()) {
+    .site-header.scrimmed::before {
+      animation-timeline: scroll();
+      /*
+       * Fully in by the time the page has travelled the header's own height - the distance
+       * after which content is genuinely underneath it rather than approaching it.
+       */
+      animation-range: 0 92px;
+    }
+  }
+
+  @keyframes header-scrim {
+    to {
+      opacity: 1;
+    }
+  }
+
+  @supports not (animation-timeline: scroll()) {
+    .site-header.scrimmed::before {
+      opacity: 1;
+    }
+  }
+
+  /* The home page's exception, at `md` and up only (8.9e; narrowed at 8.14c round 5). After
+   * the scrim rule, which it must out-order at equal specificity. */
+  @media (min-width: 768px) {
+    .site-header.home::before {
+      content: none;
+    }
+  }
+
+  /*
+   * **No reduced-motion override, and the reason is worth stating** because
+   * `design-system.md` §5 would otherwise apply: a scrubbed signal is replaced by its final
+   * state, never removed.
+   *
+   * That rule exists so a visitor who cannot take motion is never left with content the
+   * scrub was hiding. Nothing here is hidden either way - the scrim's whole job is to sit
+   * *behind* the lockup. And it does not move: no transform, no translation, no parallax,
+   * just a background opacity tracking scroll position, which is the class of thing reduced
+   * motion is not about.
+   *
+   * Pinning it on was tried first at 8.9c and is measurably worse: it darkens the top 120px
+   * of every route at rest, where on most of them there is nothing behind it to darken.
+   * Measured then as 38,000-168,000 changed pixels across fifteen frozen reduced-motion
+   * baselines, every one confined to rows 0-122.
+   *
+   * **8.9e took the argument further than the override.** Most of that measurement was the
+   * home route's five sections, and they no longer carry the scrim in either motion mode -
+   * the owner removed it there outright. What the reasoning still covers is `/pricing` and
+   * `/waitlist`, which keep the scrim and have nothing behind the header either; the
+   * override stays absent for them on the same grounds.
+   */
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    /* The mark is the link's whole content; no underline, and no colour change on hover -
+     * a logo that recolours reads as broken rather than as interactive. */
+    text-decoration: none;
+    border-radius: var(--spacing-2);
+  }
+
+  /* The lockup is already sized by its own prop; this only softens the hover. */
+  .brand:hover {
+    opacity: 0.85;
+  }
+
+  @media (max-width: 767px) {
+    .site-header {
+      padding: var(--spacing-4);
+    }
+  }
+</style>

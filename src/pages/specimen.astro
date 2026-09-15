@@ -1,0 +1,248 @@
+---
+/**
+ * Type specimen - the approved type system, standing.
+ *
+ * Its first job is done: the owner chose Satoshi, the app's plum ground, and 1.05/-0.03em
+ * at the 8.1 gate (gate-log.md), and the three unchosen faces are gone from the repo.
+ * What it does now is hold that decision where it can be looked at - and prove the
+ * metrics-matched fallback claim, which is the one part of the font pipeline that cannot
+ * be verified by reading the CSS.
+ *
+ * Toggle "Fallback" and nothing should move. That is the whole test: text laid out in
+ * rescaled Arial before Satoshi arrives has to occupy identical space, or the swap spends
+ * a CLS budget of 0.01 (acceptance-criteria.md §3) that it is not allowed to touch.
+ *
+ * Dev-only: 8.13 removes this route from the production build. It is a design tool.
+ */
+import Base from '../layouts/Base.astro';
+
+const HEADLINES = [
+  'Never miss a beat with Sonaru.',
+  'Every release. In order. No algorithm.',
+  'The music you follow, the day it lands.',
+] as const;
+
+const WEIGHTS = [
+  { w: 300, name: 'Light' },
+  { w: 400, name: 'Regular' },
+  { w: 500, name: 'Medium' },
+  { w: 700, name: 'Bold' },
+  { w: 900, name: 'Black' },
+] as const;
+---
+
+<Base title="Type specimen - Sonaru" description="The approved Sonaru type system.">
+  <header class="bar">
+    <div class="bar-in">
+      <p class="kicker">Approved · 8.1 · Satoshi · app plum · 1.05 / −0.03em</p>
+      <fieldset>
+        <legend>Render with</legend>
+        <div class="seg" data-group="face">
+          <button type="button" data-value="webfont" aria-pressed="true">Satoshi</button>
+          <button type="button" data-value="fallback" aria-pressed="false">
+            Fallback (nothing should move)
+          </button>
+        </div>
+      </fieldset>
+    </div>
+  </header>
+
+  <main id="stage" data-face="webfont">
+    <section>
+      <p class="label">Hero · clamp(40px, 7vw, 84px) · weight 800</p>
+      {HEADLINES.map((h) => <p class="display">{h}</p>)}
+
+      <p class="label">Act headline · clamp(28px, 4vw, 44px) · weight 700</p>
+      <p class="act">You follow 300 artists. You hear from about twelve of them.</p>
+
+      <p class="label">Body · 18px / 1.6 · weight 400</p>
+      <p class="body">
+        Sonaru watches every artist you follow and puts their new releases in one list, newest
+        first. Nothing is ranked, nothing is held back for a Friday, and nothing is quietly left out
+        because an algorithm decided you wouldn&rsquo;t care. It works alongside Spotify and Apple
+        Music - you keep paying whoever you already pay, and you stop finding out about records
+        three weeks late.
+      </p>
+
+      <p class="label">Muted meta · 14px - the pairing the validator caught at 4.46:1</p>
+      <p class="muted">New single · 16 August 2026 · added to Release Radar Replacement</p>
+
+      <p class="label">Weight range · wght 300–900, one variable file</p>
+      <div class="weights">
+        {
+          WEIGHTS.map((weight) => (
+            <p class="weight" style={`font-weight: ${weight.w};`}>
+              {weight.w} {weight.name} - Never miss a beat
+            </p>
+          ))
+        }
+      </div>
+
+      <p class="label">Spanish coverage · ¿ ¡ ñ á é í ó ú ü</p>
+      <p class="body">
+        No vuelvas a perderte un lanzamiento. Sigue a tus artistas y míralo todo en orden, del más
+        reciente al más antiguo. ¿Cuántos discos te has perdido ya?
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const stage = document.getElementById('stage');
+    const seg = document.querySelector<HTMLElement>('.seg');
+    if (stage && seg) {
+      seg.addEventListener('click', (event) => {
+        const button = (event.target as HTMLElement).closest('button');
+        if (!button) return;
+        const value = button.dataset['value'];
+        if (value === undefined) return;
+        for (const other of seg.querySelectorAll('button')) {
+          other.setAttribute('aria-pressed', String(other === button));
+        }
+        stage.dataset['face'] = value;
+      });
+    }
+  </script>
+
+  <style>
+    .bar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: color-mix(in srgb, var(--color-ink-950) 86%, transparent);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--color-ink-700);
+    }
+    .bar-in {
+      max-width: var(--content-max);
+      margin: 0 auto;
+      padding: var(--spacing-4) var(--spacing-6);
+    }
+    .kicker {
+      margin: 0 0 var(--spacing-3);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-plum-400);
+    }
+    fieldset {
+      border: 0;
+      margin: 0;
+      padding: 0;
+    }
+    legend {
+      padding: 0 0 var(--spacing-2);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-mute-400);
+    }
+    .seg {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-1);
+    }
+    .seg button {
+      font: inherit;
+      font-size: 13px;
+      padding: var(--spacing-2) var(--spacing-3);
+      border: 1px solid var(--color-ink-700);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--color-mute-200);
+      cursor: pointer;
+      transition:
+        color var(--dur-1) var(--ease-out),
+        border-color var(--dur-1) var(--ease-out);
+    }
+    .seg button:hover {
+      border-color: var(--color-plum-700);
+      color: var(--color-white);
+    }
+    .seg button[aria-pressed='true'] {
+      border-color: var(--color-plum-400);
+      color: var(--color-plum-300);
+    }
+
+    #stage {
+      min-height: 100vh;
+      padding: var(--spacing-16) var(--spacing-6) var(--spacing-48);
+    }
+    /* The fallback on its own - what the visitor sees before Satoshi lands. */
+    #stage[data-face='fallback'] {
+      font-family: 'Satoshi Fallback', system-ui, sans-serif;
+    }
+
+    section {
+      max-width: var(--content-max);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .label {
+      margin: var(--spacing-8) 0 var(--spacing-2);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-mute-400);
+    }
+    section > .label:first-child {
+      margin-top: 0;
+    }
+
+    .display {
+      margin: 0 0 var(--spacing-6);
+      font-size: clamp(40px, 7vw, 84px);
+      font-weight: 800;
+      line-height: var(--leading-display);
+      letter-spacing: var(--tracking-display);
+      color: var(--color-white);
+      text-wrap: balance;
+      /* em, not ch: see docs/adr-0002-no-ch-for-measure.md */
+      max-width: 12.9em;
+    }
+    .display:nth-of-type(n + 2) {
+      color: var(--color-mute-200);
+    }
+    .act {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--color-white);
+      max-width: 15.8em;
+      text-wrap: balance;
+    }
+    .body {
+      margin: 0;
+      font-size: 18px;
+      line-height: var(--leading-body);
+      max-width: 48.8em;
+      color: var(--color-mute-200);
+    }
+    .muted {
+      margin: 0;
+      font-size: 14px;
+      color: var(--color-mute-400);
+    }
+    .weights {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-2);
+    }
+    .weight {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.25;
+      color: var(--color-white);
+      letter-spacing: -0.015em;
+    }
+
+    @media (max-width: 640px) {
+      #stage {
+        padding-inline: var(--spacing-4);
+      }
+    }
+  </style>
+</Base>

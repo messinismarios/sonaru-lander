@@ -1,0 +1,341 @@
+---
+/**
+ * The pricing card - `design-system.md` §9's "pricing card", built once and used twice.
+ *
+ * Anatomy taken from superlist.com/pricing (`reference-study.md` §the pricing page):
+ * raised dark surface, generous radius, the price set very large with a small stacked
+ * unit label, and the annualised figure as a quiet line underneath rather than a second
+ * loud number.
+ *
+ * **Both prices are rendered, always.** The monthly and yearly figures are two nodes
+ * stacked in one fixed-height slot, and `PlanToggle.svelte` cross-fades between them by
+ * setting `data-billing` on `<html>` - it never rewrites this markup. That is what keeps
+ * the prices in the static HTML for a crawler and for a visitor without JavaScript, and
+ * it is why switching plans cannot shift the layout: the slot's height is the taller of
+ * the two, reserved at render.
+ *
+ * `visibility` rides along with the opacity transition so the hidden price leaves the
+ * accessibility tree once it has faded, instead of being read out twice.
+ */
+import Badge from './Badge.astro';
+import Button from './Button.astro';
+import {
+  CURRENCY,
+  PRICING_IS_INDICATIVE,
+  formatPrice,
+  monthlyEquivalentCents,
+  type Plan,
+} from '../../data/pricing';
+import { catalogue } from '../../i18n';
+
+interface Props {
+  readonly plan: Plan;
+}
+
+const { plan } = Astro.props;
+
+const t = catalogue(Astro.currentLocale);
+const card = t.pricing.card;
+/* The plan's own words, joined by `Plan.id` - the cents stay in `src/data/pricing.ts`. */
+const copy = t.pricing.plans[plan.id];
+
+const isPaid = plan.monthlyCents > 0;
+const yearlyPerMonth = formatPrice(monthlyEquivalentCents(plan));
+const yearlyTotal = formatPrice(plan.yearlyTotalCents);
+---
+
+<article class="price-card" data-featured={plan.featured} aria-labelledby={`plan-${plan.id}`}>
+  <header class="head">
+    <div class="name-row">
+      {
+        /*
+        **An `<h2>`, and the level is the page's rather than the card's** - 8.12a.
+        `/pricing` runs `<h1>` straight to `<h3>` and axe reports `heading-order`, because
+        `Plans.astro` is the one pricing section with no `SectionHeader` and so there is no
+        `<h2>` between them. The alternative was giving that section a visible heading, which
+        is new copy on a page frozen at 8.7's Gate C to fix an outline nobody can see.
+        This component has exactly one caller and styles the tag directly, so the level is
+        not a decision it shares with anybody.
+      */
+      }
+      <h2 id={`plan-${plan.id}`}>{copy.name}</h2>
+      {plan.featured && <Badge tone="brand">{card.featured}</Badge>}
+    </div>
+    <p class="tagline">{copy.tagline}</p>
+  </header>
+
+  {
+    isPaid ? (
+      <div class="price-slot">
+        <p class="price" data-price="monthly">
+          <span class="amount">
+            <span class="currency">{CURRENCY}</span>
+            {formatPrice(plan.monthlyCents)}
+          </span>
+          <span class="unit">{card.perMonth}</span>
+        </p>
+        <p class="price" data-price="yearly">
+          <span class="amount">
+            <span class="currency">{CURRENCY}</span>
+            {yearlyPerMonth}
+          </span>
+          <span class="unit">{card.perMonth}</span>
+        </p>
+      </div>
+    ) : (
+      <div class="price-slot">
+        <p class="price" data-price="free">
+          <span class="amount">{card.freeAmount}</span>
+          <span class="unit">{card.freeUnit}</span>
+        </p>
+      </div>
+    )
+  }
+
+  {
+    /*
+     * Paid cards only. The free card has no annualised line and no disclaimer, and
+     * rendering an empty reserved block for it opened a hole between its price and its
+     * button that made the two cards look misaligned.
+     */
+  }
+  {
+    isPaid && (
+      <div class="notes">
+        <p class="note" data-note="yearly">
+          {card.yearlyNote.replace('{amount}', `${CURRENCY}${yearlyTotal}`)}
+        </p>
+        {PRICING_IS_INDICATIVE && <p class="note note-indicative">{card.indicative}</p>}
+      </div>
+    )
+  }
+
+  <Button href="/waitlist" variant={plan.featured ? 'primary' : 'secondary'} class="cta">
+    {copy.cta}
+  </Button>
+
+  <ul class="includes">
+    {
+      copy.includes.map((item) => (
+        <li>
+          <span class="tick" aria-hidden="true" />
+          {item}
+        </li>
+      ))
+    }
+  </ul>
+</article>
+
+<style>
+  .price-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+    padding: var(--spacing-8);
+    border: 1px solid var(--color-ink-700);
+    border-radius: 24px;
+    background: var(--color-ink-900);
+  }
+
+  /* Pro is the emphasised card: a plum rim and a faint wash, no scale-up - a card that
+   * grows past its neighbour breaks the row's alignment for no information gained. */
+  .price-card[data-featured='true'] {
+    border-color: var(--color-plum-700);
+    background:
+      linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--color-plum-900) 34%, transparent),
+        transparent 42%
+      ),
+      var(--color-ink-900);
+  }
+
+  .head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+
+  .name-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+  }
+
+  h2 {
+    margin: 0;
+    font-size: var(--text-xl);
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--color-white);
+  }
+
+  .tagline {
+    margin: 0;
+    font-size: var(--text-base);
+    line-height: 1.5;
+    color: var(--color-mute-200);
+  }
+
+  /*
+   * One slot, two stacked children. The first is in flow and sets the height; the second
+   * is taken out of flow on top of it. Both prices are the same shape, so the reserved
+   * height is correct for either - CLS budget is 0.01 and a toggle may not spend it.
+   */
+  .price-slot {
+    position: relative;
+  }
+
+  .price {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+    margin: 0;
+  }
+
+  .price[data-price='yearly'] {
+    position: absolute;
+    inset: 0;
+  }
+
+  .amount {
+    /*
+     * Not a scale token on purpose. `--text-3xl` is the hero's display size and is far
+     * too large inside a card; `--text-2xl` is an act headline and reads as body weight
+     * next to one. The price is this component's one defining metric, so it carries its
+     * own clamp rather than bending a shared step to fit.
+     */
+    font-size: clamp(3rem, 2.3rem + 2.8vw, 4.25rem);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--color-white);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Small, raised, and set in the muted tone - it labels the number without competing. */
+  .currency {
+    margin-right: 0.06em;
+    font-size: 0.5em;
+    vertical-align: 0.55em;
+    color: var(--color-mute-200);
+  }
+
+  .unit {
+    font-size: var(--text-sm);
+    color: var(--color-mute-400);
+  }
+
+  /*
+   * The cross-fade. `visibility` is in the transition so the faded-out price leaves the
+   * accessibility tree; because it is a discrete property it stays visible for the whole
+   * of an incoming transition and flips only at the end of an outgoing one.
+   */
+  .price[data-price='monthly'],
+  .price[data-price='yearly'] {
+    transition:
+      opacity var(--dur-2) var(--ease-in-out),
+      transform var(--dur-2) var(--ease-in-out),
+      visibility var(--dur-2);
+  }
+
+  .price[data-price='yearly'] {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+  }
+
+  :global(html[data-billing='yearly']) .price[data-price='monthly'] {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+  }
+
+  :global(html[data-billing='yearly']) .price[data-price='yearly'] {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+  }
+
+  /*
+   * The annualised line belongs to the yearly state only, so its space is reserved here
+   * rather than claimed when it appears - revealing it must not push the button down.
+   */
+  .notes {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+    /* Reserved so revealing the line does not push the button down. */
+    min-height: calc(var(--spacing-8) + var(--spacing-1));
+  }
+
+  .note {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    color: var(--color-mute-400);
+  }
+
+  .note[data-note='yearly'] {
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity var(--dur-2) var(--ease-in-out),
+      visibility var(--dur-2);
+  }
+
+  :global(html[data-billing='yearly']) .note[data-note='yearly'] {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .note-indicative {
+    color: var(--color-plum-300);
+  }
+
+  .cta {
+    width: 100%;
+  }
+
+  .includes {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--text-base);
+    line-height: 1.5;
+    color: var(--color-mute-200);
+  }
+
+  .includes li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--spacing-3);
+    align-items: start;
+  }
+
+  /* A small plum dot rather than a checkmark glyph: the mark is decorative, and a tick
+   * read aloud as "check" on every line is noise. */
+  .tick {
+    width: 6px;
+    height: 6px;
+    margin-top: 0.55em;
+    border-radius: 999px;
+    background: var(--color-plum-400);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .price,
+    .note[data-note='yearly'] {
+      transition: none;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .price-card {
+      padding: var(--spacing-6);
+    }
+  }
+</style>

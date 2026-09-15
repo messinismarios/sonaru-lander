@@ -1,0 +1,14 @@
+---
+/**
+ * `/404` in English - phases.md 8.9f, split from its Spanish twin at 8.11b.
+ *
+ * **This file is static, and it has to be.** Astro's dev server answers an unmatched path
+ * with the route it finds at this exact path; a rest-parameter route that produces `/404`
+ * is not recognised, and eight of 8.9f's assertions went red against Astro's own default
+ * 404 page when this moved under `[...locale]`. The page itself is
+ * `src/components/NotFound.astro`, which its Spanish twin renders too.
+ */
+import NotFound from '../components/NotFound.astro';
+---
+
+<NotFound />

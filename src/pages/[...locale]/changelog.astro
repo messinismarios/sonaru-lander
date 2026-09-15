@@ -1,0 +1,172 @@
+---
+/**
+ * `/changelog` - the release notes themselves, stacked, newest first.
+ *
+ * **That shape is the finding of 8.9e's Gate A.** Both references were measured and they
+ * share no layout, no taxonomy and no route name - superlist's is at `/updates`, and gsap
+ * has no changelog route at all, only blog posts under a `release` tag. They still both
+ * render entries **in full on the index**. Neither uses cards, neither has categories. A
+ * changelog you must click into to find out what changed is a design both of them
+ * rejected, so this page has no index, no cards, and no per-entry route: the version is an
+ * anchor, which is a permalink without a template.
+ *
+ * `Document.astro` is reused unforked - the third route to do so, after the legal
+ * documents and the blog article. No new layout and no new token.
+ *
+ * No motion, no islands, no JavaScript. `tests/e2e/changelog.spec.ts` asserts that as a
+ * request filter rather than taking this comment's word for it.
+ */
+import { render } from 'astro:content';
+import Document from '../../layouts/Document.astro';
+import { releases } from '../../lib/releases';
+import { dateLabel } from '../../lib/date';
+import { catalogue } from '../../i18n';
+import type { GetStaticPaths } from 'astro';
+import { localePaths } from '../../i18n/routing';
+
+/*
+ * The route in both locales from one file - phases.md 8.11b. `undefined` is the default
+ * locale, which is what leaves it unprefixed.
+ */
+export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
+
+const t = catalogue(Astro.currentLocale);
+
+const entries = await Promise.all(
+  (await releases()).map(async (release) => ({
+    ...release,
+    Content: (await render(release.entry)).Content,
+  })),
+);
+---
+
+<Document
+  title={t.ui.changelog.title}
+  metaTitle={t.ui.meta.changelog.title}
+  eyebrow={t.ui.changelog.eyebrow}
+  description={t.ui.meta.changelog.description}
+  lede={t.ui.changelog.lede}
+>
+  <ol class="releases">
+    {
+      entries.map(({ entry, version, anchor, releasedAt, Content }) => (
+        <li>
+          <article>
+            {/*
+              The heading owns the anchor, and takes `tabindex="-1"` with it. Without that
+              a fragment link scrolls the page and leaves keyboard focus at the top, so the
+              next Tab returns the visitor to the header they just navigated away from.
+            */}
+            <h2 id={anchor} tabindex="-1">
+              {entry.data.title}
+            </h2>
+
+            {/*
+              `PostMeta`'s treatment, to the value - the quiet `date · detail` line gsap
+              contributed at 8.9c. The explicit spaces are not decoration: the flex `gap`
+              puts nothing in the document, so without them the line's text content reads
+              `Version 1.012 September 2026` everywhere text is taken rather than looked at.
+              `tests/visual/inline-spacing.spec.ts` exists for exactly that.
+
+              **`Not yet released` is the honest state, not a placeholder.** Sonaru has
+              never shipped - no git tag, no App Store record, no TestFlight build - so 1.0
+              has no date to print, and printing today's would be the fabrication Gate A
+              rejected on the same ground 8.9a refused superlist's `version 1.57.0` line.
+              It is plain text rather than an empty `<time>`, because a `<time>` with no
+              `datetime` is a machine-readable claim with nothing in it.
+            */}
+            <p class="meta">
+              <span>
+                {t.ui.changelog.version} {version}
+              </span>{' '}
+              <span aria-hidden="true">·</span>{' '}
+              {releasedAt === undefined ? (
+                <span>{t.ui.changelog.unreleased}</span>
+              ) : (
+                <time datetime={releasedAt}>{dateLabel(releasedAt)}</time>
+              )}
+            </p>
+
+            <div class="notes">
+              <Content />
+            </div>
+          </article>
+        </li>
+      ))
+    }
+  </ol>
+</Document>
+
+<style>
+  /*
+   * These entries render **inside** `Document.astro`'s `.prose`, which is the whole point
+   * of reusing that layout - paragraphs, lists, markers, link underlines and their
+   * reduced-motion variant all arrive already settled by 8.9b and 8.9c, and none of them
+   * is restated here.
+   *
+   * It also means the layout's own rules reach this markup, so the three selectors below
+   * that look like resets are load-bearing. `ol.releases` rather than `.releases`, and
+   * `> li` spelled out, because `.prose :global(ol)` and `:global(li)` would otherwise
+   * number the releases `1.`, indent them 24px and add a bottom margin between them.
+   * Matched on specificity deliberately rather than with `!important`.
+   */
+  ol.releases {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /*
+   * Space, and no dividing rule - superlist's own treatment, and the right one here for a
+   * reason of this site's own: the bloom's horizontal seam took two gate rounds to remove,
+   * and a line between every release is that seam reintroduced once per entry.
+   */
+  ol.releases > li {
+    margin-bottom: 0;
+  }
+
+  ol.releases > li + li {
+    margin-top: var(--spacing-16);
+  }
+
+  /*
+   * **The entry title is `.prose h2` - this does not restate its type.** That step is
+   * `--text-xl`, one below the page's own `h1`, which is exactly the relationship wanted:
+   * superlist sets a release title at its *article title* metrics, which works because
+   * their page has no title of its own, where ours would then carry two competing
+   * headings per screen. All that changes is the space above it, which the list owns.
+   */
+  ol.releases :global(h2) {
+    margin-top: 0;
+  }
+
+  /* The heading is focusable so a permalink lands on it; it is not a control. */
+  ol.releases :global(h2):focus {
+    outline: none;
+  }
+
+  ol.releases :global(h2):focus-visible {
+    outline: 2px solid var(--color-plum-300);
+    outline-offset: var(--spacing-2);
+    border-radius: var(--spacing-1);
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-2);
+    margin: var(--spacing-3) 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-mute-400);
+  }
+
+  /*
+   * A release note's own sections are `h3`, because `h2` is the release. That is why the
+   * unit guard requires `###` in a note where the legal guard requires `##` - the two
+   * collections sit at different depths of the same outline.
+   */
+  .notes {
+    margin-top: var(--spacing-6);
+  }
+</style>
