@@ -53,6 +53,8 @@ export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
 ---
 
 <Base title={t.ui.meta.waitlist.title} description={t.ui.meta.waitlist.description}>
+  {/* Turnstile's origin, opened before its script is found - SEO audit M1. This route only. */}
+  <link slot="head" rel="preconnect" href="https://challenges.cloudflare.com" />
   <section class="waitlist-route">
     <div class="atmosphere">
       <BloomField act="cta" intensity="ambient" />
