@@ -1,6 +1,6 @@
 {
   "file": "sonaru-brand.pdf",
-  "bytes": 773362,
+  "bytes": 773714,
   "pages": 18,
   "inputs": {
     "src/pages/[...locale]/brand.astro": "0cd53b41739258be",
@@ -13,7 +13,7 @@
     "src/motion/tokens.ts": "5126d6a3252b3822",
     "src/components/brand/mark-geometry.ts": "861d65bcd062b00a",
     "src/components/brand/SonaruMark.astro": "560d10bbe5a6bc3f",
-    "src/components/brand/Wordmark.astro": "6762b58f6552bd1d",
+    "src/components/brand/Wordmark.astro": "a977970d9c23ad48",
     "src/components/brand/ConstructionFigure.astro": "b2dddfea32102156"
   }
 }

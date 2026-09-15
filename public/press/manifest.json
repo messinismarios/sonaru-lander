@@ -18,14 +18,14 @@
       "height": 1024
     },
     "sonaru-lockup-1024.png": {
-      "bytes": 21968,
+      "bytes": 21365,
       "width": 1024,
-      "height": 271
+      "height": 255
     },
     "sonaru-lockup-2048.png": {
-      "bytes": 23707,
-      "width": 2048,
-      "height": 543
+      "bytes": 22487,
+      "width": 2049,
+      "height": 510
     },
     "sonaru-mark-light-512.png": {
       "bytes": 8849,
@@ -38,14 +38,14 @@
       "height": 1024
     },
     "sonaru-lockup-light-1024.png": {
-      "bytes": 22305,
-      "width": 1024,
-      "height": 271
+      "bytes": 21860,
+      "width": 1026,
+      "height": 255
     },
     "sonaru-lockup-light-2048.png": {
-      "bytes": 23660,
-      "width": 2048,
-      "height": 543
+      "bytes": 22491,
+      "width": 2052,
+      "height": 510
     },
     "screens/welcome-full.jpg": {
       "bytes": 95659,
@@ -65,7 +65,7 @@
       "sourceSha": "33ac792a1c15c957"
     },
     "screens/feed.jpg": {
-      "bytes": 17326,
+      "bytes": 17464,
       "width": 360,
       "height": 781
     },
@@ -76,7 +76,7 @@
       "sourceSha": "10ed5754ddb494ca"
     },
     "screens/search.jpg": {
-      "bytes": 31875,
+      "bytes": 32131,
       "width": 360,
       "height": 781
     },
@@ -103,7 +103,7 @@
       "height": 781
     },
     "sonaru-press-kit.zip": {
-      "bytes": 981674
+      "bytes": 978680
     }
   }
 }
