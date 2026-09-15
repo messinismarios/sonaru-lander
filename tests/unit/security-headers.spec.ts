@@ -164,10 +164,17 @@ test('every external origin the build references is allowed by the CSP', () => {
    * inside library banner comments in the bundles, none of them a request. A guard that
    * reports a comment teaches people to add exceptions to it.
    *
-   * So: `src` and `href` in HTML, and `url()` in CSS. Those are requests; a string in a
-   * comment is not.
+   * So: `src` on any element, `href` on `<link>`, and `url()` in CSS. Those are requests; a
+   * string in a comment is not - and neither is an `<a href>`, which is a navigation CSP does
+   * not govern. That distinction arrived with the footer's MusicBrainz credit (2026-09-15),
+   * the site's first outbound link, which the earlier `src|href` pattern reported as an
+   * origin missing from the policy.
    */
-  const FETCHED = [/\s(?:src|href)="(https?:\/\/[^"]+)"/gi, /url\(["']?(https?:\/\/[^"')]+)/gi];
+  const FETCHED = [
+    /\ssrc="(https?:\/\/[^"]+)"/gi,
+    /<link\s[^>]*href="(https?:\/\/[^"]+)"/gi,
+    /url\(["']?(https?:\/\/[^"')]+)/gi,
+  ];
   for (const file of [...builtFiles('.html'), ...builtFiles('.css')]) {
     const text = readFileSync(file, 'utf8');
     for (const pattern of FETCHED) {
