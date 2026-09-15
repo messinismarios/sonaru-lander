@@ -1,0 +1,76 @@
+---
+/**
+ * "About Sonaru" - the home page's crawlable text, after the last act (SEO audit H3, which
+ * absorbs H2). Gate A and Gate B approved 2026-09-15.
+ *
+ * **Why it exists.** The acts above say what Sonaru feels like and almost none of the words
+ * anyone searches: the `h1` has no category words and much of the page's text is mock phone
+ * UI. Search engines and AI answer engines summarise from HTML text, so this section states
+ * what Sonaru is in the terms people type, and answers four real queries with `FAQPage`
+ * markup. Its intro is also the only link on the site to `/pricing`, which closes H2.
+ *
+ * **References.** superlist.com's home page - headings that are whole sentences saying what
+ * the product does, measured at the gate - and superlist.com/pricing's FAQ, whose anatomy
+ * `/pricing` already took at 8.7 and which `FaqList` reuses rather than re-deriving. None of
+ * gsap, revolut or superlist carries a home FAQ; that part is an argued divergence.
+ *
+ * **Static, on every breakpoint.** No pin, no bloom, no entrance - the plus/minus marker is
+ * the only thing that moves. It sits on the same solid ground as `Closing.astro`.
+ *
+ * **After the page's ask, with no call to action of its own** (owner, Gate B): the fourth
+ * answer points at the waitlist in words, and the header's action is on screen throughout.
+ *
+ * **It drives the header's scrim on `/`** (owner, Gate B). The section names a view timeline
+ * and scopes it to `<body>` so `Header.astro` - which is not its ancestor - can read it.
+ */
+import SectionHeader from '../primitives/SectionHeader.astro';
+import FaqList from '../primitives/FaqList.astro';
+import Link from '../primitives/Link.astro';
+import { catalogue } from '../../i18n';
+
+const t = catalogue(Astro.currentLocale);
+const { eyebrow, headline, intro, entries } = t.home.about;
+---
+
+<section class="about" data-about aria-labelledby="about-title">
+  <div class="inner">
+    <SectionHeader eyebrow={eyebrow} headline={headline} id="about-title" />
+
+    <p class="intro">
+      {intro.before}<Link href="/pricing">{intro.link}</Link>{intro.after}
+    </p>
+
+    <FaqList entries={entries} />
+  </div>
+</section>
+
+<style>
+  .about {
+    position: relative;
+    padding-block: var(--spacing-24) var(--spacing-32);
+    padding-inline: var(--gutter);
+    background: var(--color-ink-950);
+    view-timeline-name: --home-about;
+  }
+
+  /* An element selector, never a bare class - see `utility-collisions.spec.ts`. */
+  :global(body) {
+    timeline-scope: --home-about;
+  }
+
+  .inner {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-12);
+  }
+
+  .intro {
+    max-width: var(--measure);
+    margin: 0;
+    font-size: var(--text-lg);
+    line-height: var(--leading-body);
+    color: var(--color-mute-200);
+  }
+</style>

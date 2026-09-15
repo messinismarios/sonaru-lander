@@ -27,6 +27,7 @@ import Feed from '../../components/sections/Feed.astro';
 import Playlist from '../../components/sections/Playlist.astro';
 import Notify from '../../components/sections/Notify.astro';
 import Closing from '../../components/sections/Closing.astro';
+import About from '../../components/sections/About.astro';
 import { catalogue } from '../../i18n';
 import type { GetStaticPaths } from 'astro';
 import { localePaths } from '../../i18n/routing';
@@ -86,6 +87,8 @@ const structuredData = [
   <Notify />
   {/* Phones only - the closing ask as its own static section (8.14c). */}
   <Closing />
+  {/* Every breakpoint - SEO audit H3. Static text for search, after the page's ask (owner). */}
+  <About />
   {/* Last, like `Faq.astro`'s: a script first in the slot would shift `:first-child`. */}
   <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />
 </Base>

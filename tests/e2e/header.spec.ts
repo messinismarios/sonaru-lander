@@ -105,10 +105,11 @@ test('the scrim still tracks scroll under reduced motion', async ({ page }) => {
  * and the scrim being CSS is visible in `Header.astro` rather than provable from here.
  */
 
-test('every route except the home page renders its scrim on desktop', async ({ page }) => {
+test('every route renders its scrim on desktop', async ({ page }) => {
   // The header is one component on every route; a page that somehow lost the pseudo-element
-  // would be a page where the wordmark stops being legible over its own content. `/` is the
-  // deliberate exception and is asserted as one rather than skipped.
+  // would be a page where the wordmark stops being legible over its own content. Since SEO
+  // audit H3 that includes `/`, whose scrim is driven by the "About Sonaru" section alone -
+  // the next test is what keeps it off the acts.
   await page.setViewportSize({ width: 1440, height: 900 });
   for (const route of PAGES) {
     await page.goto(route);
@@ -117,38 +118,40 @@ test('every route except the home page renders its scrim on desktop', async ({ p
       if (header === null) return 'no header';
       return getComputedStyle(header, '::before').content === 'none' ? 'no scrim' : 'ok';
     });
-    expect(present, `${route}`).toBe(route === '/' ? 'no scrim' : 'ok');
+    expect(present, `${route}`).toBe('ok');
   }
 });
 
-test('the home page never darkens its header, at rest or scrolled', async ({ page }) => {
+test('the home page darkens its header over "About Sonaru" and nowhere above it', async ({
+  page,
+}) => {
   /*
-   * The direction that actually matters. The scrim is opacity-animated from a scroll
-   * timeline, so a page that still had one would look correct at rest and only reveal itself
-   * 92px down - which is exactly how it went unnoticed on `/` between 8.9c and 8.9e.
-   *
-   * **It asserts `content`, not opacity, and that distinction cost a test round.** With the
-   * rule gated off there is no generated box at all, and `getComputedStyle(el, '::before')`
-   * still answers for a pseudo-element that was never created - reporting `opacity: 1`, the
-   * property's initial value. An opacity assertion here fails against a correct page and
-   * would have passed against a broken one had the sense been flipped.
+   * The acts are the direction that matters: the owner removed the scrim from them at 8.9e,
+   * and a timeline wired to the wrong range would look correct at rest and only reveal itself
+   * mid-page - which is exactly how it went unnoticed on `/` between 8.9c and 8.9e. So it is
+   * sampled inside act one as well as at rest, and only then over the section it is for.
    */
-  const scrimBox = () =>
-    page.evaluate(() => {
-      const header = document.querySelector('.site-header');
-      if (header === null) return 'no header';
-      return getComputedStyle(header, '::before').content;
-    });
-
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
   await page.evaluate(() => document.fonts.ready);
+  // The pins add thousands of pixels of document once GSAP builds them; read offsets after.
+  await page.waitForSelector('.pin-spacer', { state: 'attached' });
 
-  expect(await scrimBox(), 'the home header must not generate a scrim at rest').toBe('none');
+  expect(await scrimOpacity(page), 'the home header must not darken at rest').toBeLessThan(0.02);
 
   await page.evaluate(() => window.scrollTo(0, 600));
   await page.waitForFunction(() => window.scrollY > 590);
-  expect(await scrimBox(), 'and must not grow one once scrolled').toBe('none');
+  expect(await scrimOpacity(page), 'nor over the acts').toBeLessThan(0.02);
+
+  await expect
+    .poll(async () => {
+      await page.evaluate(() => {
+        const about = document.querySelector('[data-about]') as HTMLElement;
+        window.scrollTo(0, about.getBoundingClientRect().top + window.scrollY);
+      });
+      return scrimOpacity(page);
+    }, 'over "About Sonaru" the wordmark needs its ground')
+    .toBeGreaterThan(0.98);
 });
 
 test('below md the home page has its scrim too, once scrolled', async ({ page }) => {

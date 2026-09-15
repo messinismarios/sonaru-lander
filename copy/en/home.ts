@@ -73,6 +73,50 @@ export const home = {
   },
 
   /**
+   * "About Sonaru" - the crawlable section after the last act (SEO audit H3, which absorbs
+   * H2; Gate B approved 2026-09-15). **Written for search and answer engines as much as for
+   * a visitor**: the category words people actually type - new music release notifications,
+   * Spotify, Apple Music, Release Radar - which the acts above carry nowhere. Facts agree
+   * with `/pricing`'s FAQ: "within about an hour", free feed, notifications and auto-add.
+   *
+   * `intro` is three parts because the link to `/pricing` sits mid-sentence and a
+   * translation must be able to move it.
+   */
+  about: {
+    eyebrow: 'About Sonaru',
+    headline: 'New music release notifications for every artist you follow.',
+    intro: {
+      before:
+        'Sonaru is the app that tells you when an artist you follow releases new music, and keeps every release in one chronological feed. It works with Spotify and Apple Music, and the feed, notifications and auto-add to a playlist are free - forever. Want more? See the ',
+      link: 'pro features',
+      after: '.',
+    },
+    /** Order is the page's order and the `FAQPage` structured data's. */
+    entries: [
+      {
+        question: 'How do I get notified when an artist releases new music?',
+        answer:
+          "Just add them in Sonaru, that's it. When an artist you follow releases a single, EP or album, you receive a notification about it and the release lands in your feed. You can opt-in which artists notify you and which don't.",
+      },
+      {
+        question: 'Does Sonaru work with Spotify and Apple Music?',
+        answer:
+          'Yes. Sonaru plays each release through the subscription you already have, and can add new releases to a playlist there automatically. It is not a streaming service itself.',
+      },
+      {
+        question: 'How is Sonaru different from Release Radar?',
+        answer:
+          "Release Radar is a weekly playlist chosen by Spotify's algorithm, so releases from artists you follow can be left out. Sonaru shows every release from every artist you follow, in order, as they comes out.",
+      },
+      {
+        question: 'When can I use Sonaru?',
+        answer:
+          'It is coming soon to the App Store. Join the waitlist to hear the day it launches.',
+      },
+    ],
+  },
+
+  /**
    * Text inside the device mockups.
    *
    * `design-system.md` §6 reserves the device frame for real app UI, so these are the
