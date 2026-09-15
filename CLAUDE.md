@@ -710,7 +710,7 @@ crossfade layers stay intact. It was deferred from 8.2 to 8.4 and **has now pass
 
 **The logo is FINAL as of 2026-09-08** (owner, asked directly). It was provisional from
 8.1 until then. The owner supplied a full parameter block from `/logo/lab` and it is in
-`PRESET`; the logotype was already settled (Outfit 600, −0.03em, beat in `--plum-300`).
+`PRESET`; the logotype was already settled (Outfit 600, −0.03em).
 
 **The optical-correction work this file used to list is dropped, not done.** The mark is
 still exact circular arcs - joins unteased, stroke unmodulated, terminals uncut - and the

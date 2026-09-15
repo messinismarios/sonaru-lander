@@ -68,10 +68,6 @@ export const EXEMPT_STRINGS: readonly ExemptString[] = [
       'the thing rather than describe it.',
   },
   {
-    value: 'Sonar',
-    reason: '`Wordmark.astro` splits the logotype to colour one letter. Half of the name.',
-  },
-  {
     value: 'width=device-width, initial-scale=1',
     reason: 'The viewport meta’s value. A directive to the browser, not words to a reader.',
   },

@@ -44,7 +44,7 @@ export const brand = {
     artwork: 'Artwork',
   },
 
-  /** The wordmark paragraph, split around the letter and the CSS token it names. */
+  /** The wordmark paragraph. */
   wordmark: 'The wordmark sets the name in Outfit at 600, tracked −0.03em:',
   sideBySide: 'Side by side:',
 

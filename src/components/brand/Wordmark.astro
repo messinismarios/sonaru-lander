@@ -1,17 +1,10 @@
 ---
 /**
- * The Sonaru wordmark - "Sonaru", with the `u` carrying the beat.
+ * The Sonaru wordmark - "Sonaru", set in the logotype face.
  *
- * Owner's direction at 8.1's Gate A: keep the beat story and the tinted last letter from
- * direction 03, and use it on the home page - hero or header - alongside the S mark.
- *
- * The beat is the whole letter, set as a live glyph. The finished wordmark will be
- * outlines, at which point the beat becomes a shape we own rather than a letter.
- *
- * Set in **Outfit at 600, tracked −0.03em**, with the beat in `--plum-300`. Chosen by the
- * owner over Satoshi and three other rounder candidates (Figtree, Plus Jakarta Sans,
- * Nunito) with the word set in each - the rounder, fully geometric face against the
- * site's tighter one.
+ * Set in **Outfit at 600, tracked −0.03em**, in one colour. Chosen by the owner over
+ * Satoshi and three other rounder candidates (Figtree, Plus Jakarta Sans, Nunito) with the
+ * word set in each - the rounder, fully geometric face against the site's tighter one.
  *
  * It is subset to the six letters of the word (~2 KB), so the second face costs almost
  * nothing. Provisional alongside the mark: when the logotype is finished it becomes
@@ -25,29 +18,21 @@ interface Props {
   readonly size?: number;
   /** CSS font-family override. Defaults to the logotype face. */
   readonly face?: string | undefined;
-  /** Token name for the beat, e.g. `--color-plum-600`. */
-  readonly beat?: string | undefined;
   readonly class?: string | undefined;
 }
 
 import SonaruMark from './SonaruMark.astro';
 
-const {
-  variant = 'lockup',
-  size = 28,
-  face,
-  beat = '--color-plum-300',
-  class: className,
-} = Astro.props;
+const { variant = 'lockup', size = 28, face, class: className } = Astro.props;
 ---
 
 <span
   class:list={['wordmark', className]}
   data-variant={variant}
-  style={`--wm-size: ${size}px; --wm-beat: var(${beat});${face === undefined ? '' : ` --wm-face: ${face};`}`}
+  style={`--wm-size: ${size}px;${face === undefined ? '' : ` --wm-face: ${face};`}`}
 >
   {variant === 'lockup' && <SonaruMark size={Math.round(size * 1.15)} />}
-  <span class="word">Sonar<span class="beat">u</span></span>
+  <span class="word">Sonaru</span>
 </span>
 
 <style>
@@ -57,6 +42,10 @@ const {
     gap: 0.42em;
     font-size: var(--wm-size);
   }
+  /*
+   * One colour for the whole word. The brand colour lives on the mark's wave (owner, Gate C
+   * rev 13), the element that carries the meaning.
+   */
   .word {
     font-family: var(--wm-face, var(--font-logotype));
     font-weight: 600;
@@ -64,18 +53,5 @@ const {
     line-height: 1;
     letter-spacing: -0.03em;
     color: var(--color-white);
-  }
-  /*
-   * The beat is white with the rest of the word (owner, Gate C rev 13). The brand colour
-   * moved to the mark's wave, which is the element that carries the meaning. Keeping a
-   * tinted letter as well put two accents in a six-letter logotype and made the word read
-   * as two words.
-   *
-   * `--wm-beat` is still plumbed through and the span is still here, because the finished
-   * wordmark becomes outlines and the beat becomes a shape we own - at which point colour
-   * on it is available again as a deliberate choice rather than a fallback.
-   */
-  .beat {
-    color: inherit;
   }
 </style>
