@@ -67,7 +67,9 @@ export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
 
       {
         LAUNCH_STAGE === 'waitlist' ? (
-          <WaitlistForm client:load strings={t.waitlist} />
+          <div class="form-slot" data-form-slot>
+            <WaitlistForm client:load strings={t.waitlist} />
+          </div>
         ) : (
           <div class="ga">
             <AppStoreBadge />
@@ -170,6 +172,30 @@ export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
     color: var(--color-mute-200);
   }
 
+  /*
+   * **The form's resting height, reserved before the form exists** - SEO audit M1 (owner,
+   * Gate A, 2026-09-15). Astro writes its island runtime as two inline scripts ahead of the
+   * island, the parser yields there, and a slow load paints this block without the form:
+   * 160px tall instead of 406. The block is centred in the frame, so when the 230px form
+   * arrived everything above it moved up by half - CLS 0.065 on every cold mobile load.
+   *
+   * `min-height`, not `height`, so the error and suggestion states still grow the form as
+   * they always have; the resting form is 230px at 390, 768 and 1440 alike, and
+   * `tests/e2e/waitlist-slot.spec.ts` fails if it stops matching. `flow-root` so no margin
+   * inside can collapse through the new box and move anything.
+   *
+   * **Released once the form has been answered.** Success and duplicate replace the form with
+   * a shorter `.outcome`, and holding 230px there moved the centred block - caught by the
+   * baseline diff, 24k px on both states. The reservation is in the `is:global` block at the
+   * end of this file, because `.outcome` is the island's markup: Astro leaves `:global()`
+   * untouched inside `:has()`, the browser drops the selector as invalid, and the scoped
+   * version reserved nothing at all. Without `:has()` support the rule is dropped whole,
+   * which is the behaviour before this.
+   */
+  .form-slot {
+    display: flow-root;
+  }
+
   .ga {
     display: flex;
     flex-direction: column;
@@ -194,5 +220,22 @@ export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
 
   .noscript a {
     color: var(--color-plum-300);
+  }
+</style>
+
+<style is:global>
+  /*
+   * The form slot's reservation - see `.form-slot` above for why it exists and why it is
+   * global. Anchored to this route's own section, so it cannot reach anything else.
+   */
+  .waitlist-route .form-slot:not(:has(.outcome)) {
+    min-height: 230px;
+  }
+
+  /* No JavaScript, no form (`WaitlistForm` hides itself), so nothing to hold room for. */
+  @media (scripting: none) {
+    .waitlist-route .form-slot:not(:has(.outcome)) {
+      min-height: 0;
+    }
   }
 </style>
