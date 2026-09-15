@@ -1,0 +1,35 @@
+name: Production check
+
+# SEO audit C1 (2026-09-15): the canonicals, sitemap and links all named URLs that
+# Cloudflare Pages 308-redirected, and no build or test could see it - only the live site
+# could. `scripts/check-production.mjs` asks the live site.
+#
+# **Triggered by the Pages deploy itself.** The Pages GitHub integration completes a check
+# run named `Cloudflare Pages` on every commit it builds; a push to `main` would race the
+# build instead. Preview builds are filtered out by branch. The daily run, 30 minutes after
+# `scheduled-rebuild.yml`, covers the deploy hook's builds, which have no commit and so no
+# check run.
+on:
+  check_run:
+    types: [completed]
+  schedule:
+    - cron: '30 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    if: >-
+      github.event_name != 'check_run' ||
+      (github.event.check_run.name == 'Cloudflare Pages' &&
+       github.event.check_run.conclusion == 'success' &&
+       github.event.check_run.check_suite.head_branch == 'main')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      # The check run completes as the deploy finishes; give the edge a moment to serve it.
+      - if: github.event_name == 'check_run'
+        run: sleep 60
+      - run: npm run check:production

@@ -62,7 +62,7 @@ test('the English tree is exactly where it was', () => {
   // 8.11b moves seventeen page files one directory deeper. Not one URL may move with them:
   // /privacy and /terms are filed with App Store Connect and linked from the iOS app.
   for (const route of ['/', '/pricing', '/privacy', '/terms', '/support', '/blog', '/changelog']) {
-    const path = route === '/' ? 'index.html' : `${route.slice(1)}/index.html`;
+    const path = route === '/' ? 'index.html' : `${route.slice(1)}.html`;
     expect(() => built(path), `dist/${path}`).not.toThrow();
   }
 });
@@ -109,15 +109,37 @@ test('the sitemap lists shipping pages only, and no URL it lists is a tool', () 
 
 test('no URL in the sitemap carries a trailing slash the canonical disclaims', () => {
   /*
-   * `Base.astro` strips it, because `trailingSlash: 'ignore'` serves both forms. The
-   * integration emits `/pricing/` - so without `serialize` the sitemap advertises a URL the
-   * page itself points away from, which is what a search engine dedupes on.
+   * Cloudflare Pages serves `pricing.html` at `/pricing` and redirects `/pricing/` to it
+   * (SEO audit C1), so a slashed sitemap entry is a redirect - which is what a search engine
+   * dedupes on, and what it is free to ignore.
    */
   const urls = [...built('sitemap-en-0.xml').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!);
   /* The root keeps its slash, exactly as the canonical does - `/` is the one path where
    * stripping it would leave no path at all. */
   const slashed = urls.filter((url) => new URL(url).pathname !== '/' && url.endsWith('/'));
   expect(slashed).toEqual([]);
+});
+
+test('every built page names its served URL, not its file', () => {
+  /*
+   * `build.format: 'file'` makes `Astro.url.pathname` the file's path during a build, so a
+   * component reading it raw emits `https://sonaru.app/pricing.html` - a canonical that
+   * redirects - and loses every rule derived from the route. `astro dev` answers with the
+   * route, so only `dist/` can catch it. `routePath()` is the fix; this is the guard.
+   */
+  const urls = [...built('sitemap-en-0.xml').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!);
+  for (const url of urls) {
+    const route = new URL(url).pathname;
+    const html = built(route === '/' ? 'index.html' : `${route.slice(1)}.html`);
+    expect(html, `${route} canonical`).toContain(`<link rel="canonical" href="${url}">`);
+    expect(html, `${route} og:url`).toContain(`<meta property="og:url" content="${url}">`);
+  }
+
+  /* The two header rules derived from the path, each checked where it applies. */
+  const header = (path: string) => built(path).match(/<header[\s\S]*?<\/header>/)![0];
+  expect(header('index.html'), 'the home rule on /').toMatch(/class="site-header scrimmed home"/);
+  expect(header('waitlist.html'), 'no waitlist action on /waitlist').not.toContain('/waitlist');
+  expect(header('pricing.html'), 'the waitlist action elsewhere').toContain('href="/waitlist"');
 });
 
 test('robots.txt points at the sitemap index and forbids nothing', () => {

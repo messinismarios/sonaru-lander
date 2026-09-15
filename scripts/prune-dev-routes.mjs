@@ -33,23 +33,28 @@ export function pruneDevRoutes({ isShippingRoute }) {
       'astro:build:done': async ({ dir, logger }) => {
         const root = fileURLToPath(dir);
 
-        /** Every built page, as the route it is served at. */
+        /**
+         * Every built page, as the route it is served at. `build.format: 'file'` writes
+         * `/pricing` as `pricing.html`; only the root is an `index.html`.
+         */
         async function pages(directory, prefix = '') {
           const found = [];
           for (const entry of await readdir(directory, { withFileTypes: true })) {
+            const file = `${directory}/${entry.name}`;
             if (entry.isDirectory()) {
-              found.push(...(await pages(`${directory}/${entry.name}`, `${prefix}/${entry.name}`)));
-            } else if (entry.name === 'index.html') {
-              found.push({ route: prefix || '/', directory });
+              found.push(...(await pages(file, `${prefix}/${entry.name}`)));
+            } else if (entry.name.endsWith('.html')) {
+              const name = entry.name.slice(0, -'.html'.length);
+              found.push({ route: name === 'index' ? prefix || '/' : `${prefix}/${name}`, file });
             }
           }
           return found;
         }
 
         const pruned = [];
-        for (const { route, directory } of await pages(root)) {
+        for (const { route, file } of await pages(root)) {
           if (isShippingRoute(route)) continue;
-          await rm(directory, { recursive: true, force: true });
+          await rm(file, { force: true });
           pruned.push(route);
         }
 

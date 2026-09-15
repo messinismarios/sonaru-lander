@@ -44,11 +44,12 @@
  */
 import Wordmark from './brand/Wordmark.astro';
 import Button from './primitives/Button.astro';
+import { routePath } from '../i18n/routing';
 
 const WAITLIST = '/waitlist';
 
-// Trailing slashes vary with Astro's build config; the comparison should not.
-const here = Astro.url.pathname.replace(/\/+$/, '') || '/';
+// The build names the file (`/waitlist.html`), the dev server the route; compare routes.
+const here = routePath(Astro.url.pathname);
 const showsWaitlistAction = here !== WAITLIST;
 
 /**

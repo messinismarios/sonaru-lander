@@ -96,12 +96,12 @@ test('the built page ships no JavaScript', () => {
    * after editing the page and it reads whatever was built last - which is why the message
    * below says so rather than letting a stale pass look like a real one.
    */
-  const built = new URL('../../dist/brand/index.html', import.meta.url);
+  const built = new URL('../../dist/brand.html', import.meta.url);
   let html: string;
   try {
     html = readFileSync(built, 'utf8');
   } catch {
-    throw new Error('dist/brand/index.html is missing - run `npm run build` before this test.');
+    throw new Error('dist/brand.html is missing - run `npm run build` before this test.');
   }
   expect(html).not.toMatch(/<script/i);
 });

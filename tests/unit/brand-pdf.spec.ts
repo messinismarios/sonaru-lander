@@ -87,7 +87,7 @@ test('the download is offered by the built page, not just by the dev server', ()
    * difference. Both routes offer this file and both are built pages.
    */
   for (const route of ['brand', 'press']) {
-    const html = readFileSync(fileURLToPath(new URL(`dist/${route}/index.html`, ROOT)), 'utf8');
-    expect(html, `dist/${route}/index.html`).toContain(`/brand/${manifest.file}`);
+    const html = readFileSync(fileURLToPath(new URL(`dist/${route}.html`, ROOT)), 'utf8');
+    expect(html, `dist/${route}.html`).toContain(`/brand/${manifest.file}`);
   }
 });

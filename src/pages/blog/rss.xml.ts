@@ -35,6 +35,8 @@ export async function GET(context: APIContext): Promise<Response> {
     title: t.ui.blog.feedTitle,
     description: t.ui.meta.blog.description,
     site,
+    /* The integration appends a slash by default; Pages redirects that form (SEO audit C1). */
+    trailingSlash: false,
     items: posts.map((post) => ({
       title: post.entry.data.title,
       description: post.entry.data.lede,

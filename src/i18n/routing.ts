@@ -50,15 +50,28 @@ export function prefixedLocalePaths(): { params: { locale: string } }[] {
 /**
  * The same route in a given locale, in the form the canonical tag uses.
  *
- * **No trailing slash, ever** - `Base.astro` strips it from the canonical because
- * `trailingSlash: 'ignore'` serves both forms and a canonical that varies with how the
- * visitor arrived is worse than none. The Spanish home is therefore `/es` and not `/es/`,
+ * **No trailing slash, ever** - `astro.config.mjs` builds `/pricing` as `pricing.html`, which
+ * Pages serves at the slashless URL and redirects the slashed one to (SEO audit C1). A
+ * canonical that names a redirect is worse than none. The Spanish home is therefore `/es` and not `/es/`,
  * which is where we part from superlist: theirs is `/es/`. One rule everywhere beats
  * matching a reference on a detail our own canonical would then contradict.
  */
 export function localePath(locale: Locale, path: string): string {
   const bare = path === '/' ? '' : path.replace(/\/$/, '');
   return locale === DEFAULT_LOCALE ? bare || '/' : `/${locale}${bare}`;
+}
+
+/**
+ * The route a request path names, whatever the build called the file.
+ *
+ * **`build.format: 'file'` makes `Astro.url.pathname` the file's path during a build** -
+ * `/pricing.html`, `/index.html` - while `astro dev` answers `/pricing`. Every component that
+ * derives something from the path goes through here, so the build and the dev server agree:
+ * without it the canonical read `/pricing.html` and the header lost its home-page rule, in
+ * `dist/` only.
+ */
+export function routePath(pathname: string): string {
+  return pathname.replace(/(?:\/index)?\.html$/, '').replace(/(.)\/$/, '$1') || '/';
 }
 
 /**
@@ -69,7 +82,7 @@ export function localePath(locale: Locale, path: string): string {
  * the other language is the switcher failure everyone has met.
  */
 export function splitLocale(pathname: string): { locale: Locale; path: string } {
-  const bare = pathname.replace(/(.)\/$/, '$1');
+  const bare = routePath(pathname);
   for (const locale of LOCALES) {
     if (locale === DEFAULT_LOCALE) continue;
     if (bare === `/${locale}` || bare.startsWith(`/${locale}/`)) {
