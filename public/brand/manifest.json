@@ -12,8 +12,8 @@
     "src/lib/tokens.ts": "06a613f368697757",
     "src/motion/tokens.ts": "5126d6a3252b3822",
     "src/components/brand/mark-geometry.ts": "861d65bcd062b00a",
-    "src/components/brand/SonaruMark.astro": "560d10bbe5a6bc3f",
-    "src/components/brand/Wordmark.astro": "a977970d9c23ad48",
+    "src/components/brand/SonaruMark.astro": "cc0bcc27cfd2608c",
+    "src/components/brand/Wordmark.astro": "93940860a182cd75",
     "src/components/brand/ConstructionFigure.astro": "b2dddfea32102156"
   }
 }
