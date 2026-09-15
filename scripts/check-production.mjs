@@ -80,6 +80,35 @@ for (const [, link] of feed?.matchAll(/<item>[\s\S]*?<link>([^<]+)<\/link>/g) ??
   await expect200(here(link), 'RSS item');
 }
 
+/*
+ * **One host, one scheme** - SEO audit C2. `www.sonaru.app` served the whole site as a
+ * duplicate. Every other entry point must end on the apex through permanent redirects only,
+ * keeping path and query. Production only: a preview or a local server has no `www`.
+ */
+const APEX = 'https://sonaru.app';
+if (origin === APEX) {
+  const target = `${APEX}/pricing?ref=production-check`;
+  for (const start of [
+    'http://sonaru.app/pricing?ref=production-check',
+    'https://www.sonaru.app/pricing?ref=production-check',
+    'http://www.sonaru.app/pricing?ref=production-check',
+  ]) {
+    let url = start;
+    for (let hop = 0; hop < 3 && url !== target; hop++) {
+      const response = await fetch(url, { redirect: 'manual', headers });
+      const location = response.headers.get('location');
+      if (response.status !== 301 || location === null) {
+        failures.push(`${url} returned ${response.status}, not a 301 (from ${start})`);
+        break;
+      }
+      url = new URL(location, url).href;
+    }
+    if (url !== target && !failures.some((f) => f.endsWith(`(from ${start})`))) {
+      failures.push(`${start} does not redirect to ${target}`);
+    }
+  }
+}
+
 if (failures.length > 0) {
   process.stderr.write(`${failures.length} problem(s) on ${origin}:\n`);
   for (const failure of failures) process.stderr.write(`  ${failure}\n`);
