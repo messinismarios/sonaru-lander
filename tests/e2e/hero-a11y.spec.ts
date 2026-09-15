@@ -74,7 +74,8 @@ test.describe('hero - accessibility', () => {
     await expect(headings).toHaveCount(1);
     // The device's own release titles are h3s inside the aria-hidden subtree; the page's
     // heading outline must not be built out of the mockup's copy.
-    await expect(headings).toHaveText(/They dropped it\s*You always catch it/);
+    // The visually hidden full stop (SEO audit H3-h1) is part of the heading's text.
+    await expect(headings).toHaveText(/They dropped it\.\s*You always catch it/);
   });
 
   /**
