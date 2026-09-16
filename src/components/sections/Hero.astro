@@ -79,8 +79,8 @@ const t = catalogue(Astro.currentLocale);
   <div class="pin" data-hero-pin>
     <div class="copy">
       <h1 class="headline">
-        <span class="drop">{t.home.hero.drop}</span><br /><span class="turn"
-          >{t.home.hero.turn}</span
+        <span class="drop">{t.home.hero.drop}</span><span class="extract-stop">. </span><br /><span
+          class="turn">{t.home.hero.turn}</span
         >
       </h1>
 
@@ -263,6 +263,25 @@ const t = catalogue(Astro.currentLocale);
     font-weight: 700;
     color: var(--color-white);
     text-wrap: balance;
+  }
+
+  /*
+   * A full stop for text extractors and nobody else - SEO audit H3-h1 (owner, Gate A,
+   * 2026-09-15). A `<br>` is not text, so search engines and AI summaries read the headline
+   * as "They dropped itYou always catch it". Hidden the standard way, so nothing paints and
+   * the LCP element (`docs/adr-0003-hero-lcp.md`) keeps its box; screen readers hear the
+   * sentence break, which the owner accepted. Not `sr-only`: that name is Tailwind's.
+   */
+  .extract-stop {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
   }
 
   .turn {

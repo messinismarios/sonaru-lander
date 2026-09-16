@@ -111,19 +111,17 @@ test.describe('the chrome the design leans on', () => {
     }
   });
 
-  test('but it cannot offer /pricing, which nothing links to', async ({ page }) => {
+  test('including /pricing', async ({ page }) => {
     /*
-     * **Written to fail the day the gap closes, because the gap is the point.**
+     * **This used to assert the hole, and was written to turn red the day it closed.**
      *
-     * The Pricing entry was dropped from the footer by the owner at 8.9a's Gate A, and
-     * `/pricing` has been orphaned ever since - carried to 8.13's pre-launch sweep. This
-     * unit is what gives that a visible cost: the 404's entire argument is that the footer
-     * is the recovery, so a visitor who mistypes a pricing URL reaches a page that cannot
-     * point them at pricing. Asserting the hole keeps it from being rediscovered as a
-     * surprise, and turns red the moment 8.13 links the route from anywhere.
+     * The Pricing entry was dropped from the footer at 8.9a's Gate A and `/pricing` stayed
+     * orphaned until the owner restored the entry on 2026-09-15 (SEO audit H2). The 404's
+     * whole argument is that the footer is the recovery, so a visitor who mistypes a pricing
+     * URL can now reach pricing from here - and this now fails if that link is lost again.
      */
     await page.goto('/404');
-    await expect(page.locator('footer a[href="/pricing"]')).toHaveCount(0);
+    await expect(page.locator('footer a[href="/pricing"]')).toHaveCount(1);
   });
 
   test('and the header still offers the waitlist', async ({ page }) => {
@@ -140,6 +138,13 @@ test.describe('the head', () => {
     // correct: a page that exists to say "this is not a page" must never enter an index.
     await page.goto('/404');
     await expect(page.locator('head meta[name="robots"]')).toHaveAttribute('content', 'noindex');
+  });
+
+  test('and claims no canonical URL or language versions', async ({ page }) => {
+    // SEO audit L2: both named `/404`, which contradicts the noindex beside them.
+    await page.goto('/404');
+    await expect(page.locator('head link[rel="canonical"]')).toHaveCount(0);
+    await expect(page.locator('head link[rel="alternate"][hreflang]')).toHaveCount(0);
   });
 });
 

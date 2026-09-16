@@ -8,6 +8,8 @@ import { devWaitlistEndpoint } from './scripts/dev-waitlist-endpoint.mjs';
 import { localeFallback404 } from './scripts/locale-404.mjs';
 import { cspHashes } from './scripts/csp-hashes.mjs';
 import { pruneDevRoutes } from './scripts/prune-dev-routes.mjs';
+import { lastmod } from './scripts/lib/lastmod.mjs';
+import { SCREENS } from './src/data/press.ts';
 import { isShippingRoute } from './src/data/routes.ts';
 import { hasCatalogue, PUBLISHED_LOCALES, DEFAULT_LOCALE } from './src/i18n/index.ts';
 import { splitLocale } from './src/i18n/routing.ts';
@@ -16,6 +18,17 @@ import { splitLocale } from './src/i18n/routing.ts';
 export default defineConfig({
   site: 'https://sonaru.app',
   output: 'static',
+  /*
+   * **One URL per page, and it is the one Cloudflare Pages answers with a 200** - SEO audit
+   * C1 (2026-09-15). The default `directory` format emits `pricing/index.html`, which Pages
+   * serves at `/pricing/` and 308-redirects `/pricing` to - so every canonical, sitemap entry
+   * and internal link on the site named a redirect. `file` emits `pricing.html`, which Pages
+   * serves at `/pricing` and redirects the other forms to. `never` makes `astro dev` refuse
+   * the slashed form too, so a slashed link fails locally instead of costing a hop in
+   * production.
+   */
+  trailingSlash: 'never',
+  build: { format: 'file' },
   /*
    * en is unprefixed at the apex - tech-stack.md §10.
    *
@@ -122,13 +135,29 @@ export default defineConfig({
         return hasCatalogue(locale) && isShippingRoute(path);
       },
       /*
-       * `Base.astro` strips the trailing slash from every canonical, because
-       * `trailingSlash: 'ignore'` serves both forms and a canonical that varies with how a
-       * visitor arrived is worse than none. The integration emits `.../pricing/` - measured
-       * at Gate B - so without this the sitemap would advertise a URL the page itself
-       * disclaims. The root keeps its slash, as the canonical does.
+       * **`<lastmod>` from each page's own content date, and the press screenshots as
+       * `image:image`** - SEO audit M3 and L7. `scripts/lib/lastmod.mjs` says where each date
+       * comes from and why it is never the build time.
+       *
+       * `serialize` no longer strips trailing slashes: under `trailingSlash: 'never'` the
+       * integration emits `/pricing` itself, which is the URL Pages serves and the canonical
+       * names (SEO audit C1). `tests/unit/i18n-routes.spec.ts` holds it there.
        */
-      serialize: (item) => ({ ...item, url: item.url.replace(/(\w)\/$/, '$1') }),
+      serialize: (item) => {
+        const { path } = splitLocale(new URL(item.url).pathname);
+        const date = lastmod(path);
+        return {
+          ...item,
+          ...(date === undefined ? {} : { lastmod: date.toISOString() }),
+          ...(path === '/press'
+            ? {
+                img: SCREENS.map((screen) => ({
+                  url: new URL(`/press/screens/${screen.id}.jpg`, item.url).href,
+                })),
+              }
+            : {}),
+        };
+      },
       chunks: Object.fromEntries(
         PUBLISHED_LOCALES.map((locale) => [
           locale,

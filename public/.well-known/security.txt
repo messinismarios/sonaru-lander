@@ -1,0 +1,6 @@
+# RFC 9116 - SEO audit L8. Renew Expires before it passes; tests/unit/seo-housekeeping.spec.ts
+# fails once it has.
+Contact: mailto:support@sonaru.app
+Expires: 2027-09-14T00:00:00Z
+Preferred-Languages: en
+Canonical: https://sonaru.app/.well-known/security.txt

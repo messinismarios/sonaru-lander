@@ -46,6 +46,7 @@ export const ui = {
     items: {
       waitlist: 'Join the waitlist',
       changelog: 'Changelog',
+      pricing: 'Pro',
       blog: 'Blog',
       press: 'Press',
       brand: 'Brand',
@@ -67,8 +68,9 @@ export const ui = {
      * It was hardcoded in `Footer.astro` until then, the one footer string 8.11a's extraction
      * missed - invisible because `/es/` is out of the published build.
      */
+    metadata: 'Music metadata provided by ',
     artwork:
-      'Music metadata provided by MusicBrainz. Album artwork and artist photography are the property of their respective rights holders.',
+      '. Album artwork and artist photography are the property of their respective rights holders.',
   },
 
   /** The App Store link's accessible name. The badge itself is an image with no text. */
@@ -101,9 +103,15 @@ export const ui = {
         "Meet the app that makes sure you hear from your favorite artists. Notifications the moment they drop, a feed that doesn't skip songs, playlist auto-adds.",
     },
     pricing: {
-      title: 'Pricing · Sonaru',
+      /** Query-led (SEO audit M6). `{amount}` is Pro's lowest monthly price, with its currency. */
+      title: 'Sonaru pricing: free release alerts, Pro from {amount}/month',
+      /**
+       * **Its own, not the home page's** - SEO audit M6's second half. It was the home
+       * description word for word, which wastes the sharpest answers on the site and invites
+       * Google to write its own snippet instead.
+       */
       description:
-        "Meet the app that makes sure you hear from your favorite artists. Notifications the moment they drop, a feed that doesn't skip songs, playlist auto-adds.",
+        'Sonaru is free forever: every release from every artist you follow, with instant notifications. Pro adds playlist rules and better recommendations.',
     },
     waitlist: {
       title: 'Be the first to know · Sonaru',

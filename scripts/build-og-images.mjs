@@ -8,6 +8,12 @@
  *   public/og/<slug>.jpg       1200x600 - the `og:image`, and the card's 2x source
  *   public/og/<slug>-640.jpg    640x320 - what the index card actually loads
  *
+ * **Plus `.avif` and `.webp` of both**, added for SEO audit M1 (owner, 2026-09-15): the index
+ * card is a `<picture>` that offers them first and keeps the JPEG as its fallback. The JPEG is
+ * still the `og:image`, because social scrapers read JPEG and PNG. The modern formats are
+ * encoded with sharp from a lossless capture of the same frozen frame, since a screenshot
+ * cannot be taken as AVIF or WebP; the JPEGs are shot exactly as before.
+ *
  * **And one card for the whole site**, added at 8.10a:
  *
  *   public/og/site.jpg         1200x600 - what every route that is not a post unfurls with
@@ -42,6 +48,7 @@ import { existsSync, mkdirSync, writeFileSync, readdirSync, readFileSync, rmSync
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { chromium } from 'playwright';
+import sharp from 'sharp';
 import { perceptuallyEqual } from './lib/image-compare.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -129,17 +136,32 @@ const freezeAnimations = () =>
  */
 const comparePage = await browser.newPage();
 
+const MIME = { jpg: 'image/jpeg', avif: 'image/avif', webp: 'image/webp' };
+
 async function writeCover(file, buffer) {
   const path = join(OUT, file);
+  const mime = MIME[file.split('.').pop()];
   if (
     existsSync(path) &&
-    (await perceptuallyEqual(comparePage, readFileSync(path), buffer, 'image/jpeg'))
+    (await perceptuallyEqual(comparePage, readFileSync(path), buffer, mime))
   ) {
     written.push(`unchanged public/og/${file}`);
     return;
   }
   writeFileSync(path, buffer);
   written.push(`public/og/${file}`);
+}
+
+/*
+ * AVIF and WebP of one lossless capture. The qualities are the smallest that keep the hook's
+ * type as crisp as the q86 JPEG beside it - the same test that picked 86.
+ */
+const AVIF_QUALITY = 60;
+const WEBP_QUALITY = 82;
+
+async function writeModernCovers(base, png) {
+  await writeCover(`${base}.avif`, await sharp(png).avif({ quality: AVIF_QUALITY }).toBuffer());
+  await writeCover(`${base}.webp`, await sharp(png).webp({ quality: WEBP_QUALITY }).toBuffer());
 }
 
 let slugs;
@@ -173,6 +195,7 @@ for (const slug of slugs) {
     `${slug}.jpg`,
     await page.locator('[data-og-stage]').screenshot({ type: 'jpeg', quality: JPEG_QUALITY }),
   );
+  await writeModernCovers(slug, await page.locator('[data-og-stage]').screenshot({ type: 'png' }));
 
   const source = await page.evaluate(() => ({
     hook: document.querySelector('[data-og-stage] .cover-hook')?.textContent?.trim() ?? '',
@@ -200,6 +223,10 @@ for (const slug of slugs) {
   await writeCover(
     `${slug}-640.jpg`,
     await page.locator('[data-og-stage]').screenshot({ type: 'jpeg', quality: JPEG_QUALITY }),
+  );
+  await writeModernCovers(
+    `${slug}-640`,
+    await page.locator('[data-og-stage]').screenshot({ type: 'png' }),
   );
 }
 
@@ -243,7 +270,7 @@ await browser.close();
  */
 for (const file of readdirSync(OUT)) {
   if (file === 'manifest.json') continue;
-  const slug = file.replace(/(-640)?\.(jpg|png)$/, '');
+  const slug = file.replace(/(-640)?\.(jpg|png|avif|webp)$/, '');
   if (!(slug in manifest)) {
     rmSync(join(OUT, file));
     written.push(`removed public/og/${file}`);

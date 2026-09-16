@@ -140,7 +140,7 @@ function fileLabel(label: keyof typeof copy.logo.files, file: string): string {
           <div class="preview">
             <img
               src={`/press/sonaru-lockup${way.id === 'light' ? '-light' : ''}-1024.png`}
-              alt=""
+              alt={copy.logo.ways[way.id].alt}
               width={files[`sonaru-lockup${way.id === 'light' ? '-light' : ''}-1024.png`]?.width}
               height={files[`sonaru-lockup${way.id === 'light' ? '-light' : ''}-1024.png`]?.height}
               loading="lazy"

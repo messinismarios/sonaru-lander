@@ -102,5 +102,14 @@ export const TRIGGER_START = 'top 75%';
  */
 export const SCROLL_IDLE = 0.15;
 
+/**
+ * How long after first contentful paint an entrance may still start and hide what it is about
+ * to reveal, in seconds - SEO audit M1 (owner, Gate B, 2026-09-15). A timeline that begins
+ * later than this is late: what is already on screen has been seen, and taking it away to
+ * bring it back reads as the page glitching, not arriving. `pricing.ts` leaves those elements
+ * alone. A quarter second is under the point where a painted card registers as "there".
+ */
+export const LATE_START = 0.25;
+
 export type Duration = (typeof DURATION)[keyof typeof DURATION];
 export type Ease = (typeof EASE)[keyof typeof EASE];

@@ -77,8 +77,9 @@ export const FOOTER_GROUPS: readonly NavGroup[] = [
   {
     id: 'product',
     items: [
-      { id: 'changelog', href: '/changelog', live: true },
       { id: 'waitlist', href: '/waitlist', live: true },
+      { id: 'changelog', href: '/changelog', live: true },
+      { id: 'pricing', href: '/pricing', live: true },
     ],
   },
   {

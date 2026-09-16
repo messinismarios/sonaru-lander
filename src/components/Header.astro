@@ -44,11 +44,12 @@
  */
 import Wordmark from './brand/Wordmark.astro';
 import Button from './primitives/Button.astro';
+import { routePath } from '../i18n/routing';
 
 const WAITLIST = '/waitlist';
 
-// Trailing slashes vary with Astro's build config; the comparison should not.
-const here = Astro.url.pathname.replace(/\/+$/, '') || '/';
+// The build names the file (`/waitlist.html`), the dev server the route; compare routes.
+const here = routePath(Astro.url.pathname);
 const showsWaitlistAction = here !== WAITLIST;
 
 /**
@@ -207,6 +208,28 @@ const t = catalogue(Astro.currentLocale);
   @media (min-width: 768px) {
     .site-header.home::before {
       content: none;
+    }
+  }
+
+  /*
+   * **Except over "About Sonaru"** (SEO audit H3, owner at Gate B, 2026-09-15). That section
+   * is plain text after the acts, which is the blog's collision rather than the acts'
+   * composition, so the scrim comes back there and only there. `About.astro` names a view
+   * timeline and scopes it to `<body>`; the range fades the scrim in over the 92px before
+   * the section's top reaches the top of the viewport, the same distance as everywhere else.
+   *
+   * **A browser without `timeline-scope` keeps the frozen state**, no scrim on `/` at `md`
+   * and up, rather than the permanent scrim other routes fall back to - over the acts that
+   * would be the band the owner removed. `animation-timeline` sits in this rule, apart from
+   * the shorthand above, for the iOS reason recorded there.
+   */
+  @supports (timeline-scope: --home-about) {
+    @media (min-width: 768px) {
+      .site-header.home::before {
+        content: '';
+        animation-timeline: --home-about;
+        animation-range: cover calc(100svh - 184px) cover calc(100svh - 92px);
+      }
     }
   }
 

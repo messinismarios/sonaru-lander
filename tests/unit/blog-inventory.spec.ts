@@ -5,7 +5,7 @@ import { TAGS } from '../../src/data/tags';
 import { catalogue } from '../../src/i18n';
 
 const CLAIM = catalogue('en').home.claim;
-import { ROUTES } from '../visual/routes';
+import { ROUTES, liveTagSlugs } from '../visual/routes';
 import { countWords, readingMinutes } from '../../src/lib/reading-time';
 import { isLive } from '../../src/lib/published';
 
@@ -79,10 +79,23 @@ test('no two posts share a publication instant', () => {
   expect([...new Set(duplicates)]).toEqual([]);
 });
 
-test('every tag has a route, and every route has a tag', () => {
-  const expected = TAGS.map((tag) => `/blog/tags/${tag.slug}`).sort();
-  const actual = ROUTES.filter((route) => route.startsWith('/blog/tags/')).sort();
-  expect(actual).toEqual(expected);
+test('a tag has a page exactly when a published post carries it', () => {
+  /*
+   * SEO audit H5 (owner, 2026-09-15): a tag with no published post is not built. Checked
+   * against `dist/`, because `ROUTES` is filled by `liveTagSlugs()` and comparing the two
+   * would compare that function with itself. `npm run verify` builds before it tests.
+   */
+  const expected = liveTagSlugs()
+    .map((slug) => `${slug}.html`)
+    .sort();
+  const built = readdirSync(new URL('../../dist/blog/tags/', import.meta.url)).sort();
+  expect(expected.length, 'the published post carries at least one tag').toBeGreaterThan(0);
+  expect(built).toEqual(expected);
+  expect(ROUTES.filter((route) => route.startsWith('/blog/tags/')).sort()).toEqual(
+    liveTagSlugs()
+      .map((slug) => `/blog/tags/${slug}`)
+      .sort(),
+  );
 });
 
 test('every tag a post carries exists in the inventory', () => {

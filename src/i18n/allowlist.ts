@@ -153,6 +153,17 @@ export const EXEMPT_STRINGS: readonly ExemptString[] = [
   { value: 'FAQPage', reason: 'A schema.org @type name. See the note above this group.' },
   { value: 'Question', reason: 'A schema.org @type name. See the note above this group.' },
   { value: 'Answer', reason: 'A schema.org @type name. See the note above this group.' },
+  { value: 'WebSite', reason: 'A schema.org @type name. See the note above this group.' },
+  { value: 'ContactPoint', reason: 'A schema.org @type name. See the note above this group.' },
+  {
+    value: 'customer support',
+    reason: 'A schema.org contactType value, read by search engines and never shown. SEO H1.',
+  },
+  {
+    value: 'Sonaru app',
+    reason:
+      'The WebSite alternateName - the product’s name plus a category word, not copy. SEO H1.',
+  },
   /*
    * 8.14c's viewport branches. Each timeline hands `gsap.matchMedia()` a media query and a
    * few selectors and ScrollTrigger positions; the heuristic reads them as two-word prose.

@@ -84,7 +84,7 @@ const breadcrumbs = {
 
 <Document
   title={data.title}
-  metaTitle={`${data.title} · Sonaru`}
+  metaTitle={data.metaTitle ?? `${data.title} · Sonaru`}
   eyebrow={t.ui.blog.eyebrow}
   description={data.description}
   lede={data.lede}
@@ -106,7 +106,7 @@ const breadcrumbs = {
       rel="alternate"
       type="application/rss+xml"
       title={t.ui.blog.feedTitle}
-      href="/blog/rss.xml"
+      href={new URL('/blog/rss.xml', Astro.site).href}
     />
     <meta property="article:published_time" content={data.publishedAt} />
     {

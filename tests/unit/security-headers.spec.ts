@@ -164,10 +164,17 @@ test('every external origin the build references is allowed by the CSP', () => {
    * inside library banner comments in the bundles, none of them a request. A guard that
    * reports a comment teaches people to add exceptions to it.
    *
-   * So: `src` and `href` in HTML, and `url()` in CSS. Those are requests; a string in a
-   * comment is not.
+   * So: `src` on any element, `href` on `<link>`, and `url()` in CSS. Those are requests; a
+   * string in a comment is not - and neither is an `<a href>`, which is a navigation CSP does
+   * not govern. That distinction arrived with the footer's MusicBrainz credit (2026-09-15),
+   * the site's first outbound link, which the earlier `src|href` pattern reported as an
+   * origin missing from the policy.
    */
-  const FETCHED = [/\s(?:src|href)="(https?:\/\/[^"]+)"/gi, /url\(["']?(https?:\/\/[^"')]+)/gi];
+  const FETCHED = [
+    /\ssrc="(https?:\/\/[^"]+)"/gi,
+    /<link\s[^>]*href="(https?:\/\/[^"]+)"/gi,
+    /url\(["']?(https?:\/\/[^"')]+)/gi,
+  ];
   for (const file of [...builtFiles('.html'), ...builtFiles('.css')]) {
     const text = readFileSync(file, 'utf8');
     for (const pattern of FETCHED) {
@@ -180,6 +187,32 @@ test('every external origin the build references is allowed by the CSP', () => {
 
   const unlisted = [...origins].filter((origin) => !csp.includes(origin));
   expect(unlisted, 'referenced by the build and absent from the CSP').toEqual([]);
+});
+
+/** The header lines under one exact path pattern, up to the next unindented line. */
+function rule(path: string): string {
+  const lines = headers.split('\n');
+  const start = lines.indexOf(path);
+  if (start === -1) throw new Error(`_headers has no ${path} rule`);
+  const end = lines.findIndex((l, i) => i > start && l !== '' && !/^\s/.test(l));
+  return lines.slice(start + 1, end === -1 ? undefined : end).join('\n');
+}
+
+test('hashed assets are cached for a year, and unhashed fonts for a week', () => {
+  /*
+   * SEO audit M2. `immutable` is only true of a file whose name changes with its bytes, which
+   * Vite guarantees under `_astro/` and nothing guarantees under `fonts/`.
+   */
+  expect(rule('/_astro/*')).toContain('Cache-Control: public, max-age=31536000, immutable');
+  expect(rule('/fonts/*')).toContain('Cache-Control: public, max-age=604800');
+  expect(rule('/fonts/*')).not.toContain('immutable');
+});
+
+test('the app site association is served as JSON', () => {
+  /* SEO audit L3: Pages served the extensionless file as `application/octet-stream`. */
+  expect(rule('/.well-known/apple-app-site-association')).toContain(
+    'Content-Type: application/json',
+  );
 });
 
 test('HSTS is two years and is not preloaded', () => {

@@ -118,6 +118,14 @@ const groupId = (id: string) => `footer-${id}`;
       <LocaleSwitcher />
     </div>
     <p class="artwork">
+      {t.ui.footer.metadata}
+      {
+        (
+          <Link href={'https://musicbrainz.org/'} variant="muted" external={true}>
+            MusicBrainz
+          </Link>
+        )
+      }
       {t.ui.footer.artwork}{' '}
       {
         TAKEDOWN.live ? (

@@ -27,6 +27,7 @@ import Feed from '../../components/sections/Feed.astro';
 import Playlist from '../../components/sections/Playlist.astro';
 import Notify from '../../components/sections/Notify.astro';
 import Closing from '../../components/sections/Closing.astro';
+import About from '../../components/sections/About.astro';
 import { catalogue } from '../../i18n';
 import type { GetStaticPaths } from 'astro';
 import { localePaths } from '../../i18n/routing';
@@ -38,6 +39,44 @@ import { localePaths } from '../../i18n/routing';
 export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
 
 const t = catalogue(Astro.currentLocale);
+
+/*
+ * `Organization` and `WebSite` - SEO audit H1, `tech-stack.md` §9. `WebSite` is what gives
+ * results the site name; `Organization` is the logo and the knowledge panel, and the most
+ * direct lever there is on a brand search that used to land on another app.
+ *
+ * **On the home page only**, where Google reads both. The logo is the app icon, not the
+ * press mark: the press PNG is a white mark on transparent and disappears on a white results
+ * page (owner, 2026-09-15). **No `sameAs` yet** - there are no profiles to name; M10 adds
+ * them with the footer links. **No `MobileApplication` until launch** - without an App
+ * Store URL it only earns validator warnings; the launch-day checklist (audit M13) adds it.
+ */
+const SITE = 'https://sonaru.app';
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    '@id': `${SITE}/#organization`,
+    name: 'Sonaru',
+    url: SITE,
+    logo: `${SITE}/icons/icon-512.png`,
+    contactPoint: [
+      { '@type': 'ContactPoint', contactType: 'customer support', email: 'support@sonaru.app' },
+      { '@type': 'ContactPoint', contactType: 'press', email: 'press@sonaru.app' },
+      { '@type': 'ContactPoint', contactType: 'general', email: 'hello@sonaru.app' },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': `${SITE}/#website`,
+    name: 'Sonaru',
+    alternateName: 'Sonaru app',
+    url: SITE,
+    description: t.ui.meta.home.description,
+    publisher: { '@id': `${SITE}/#organization` },
+  },
+];
 ---
 
 <Base title={t.ui.meta.home.title} description={t.ui.meta.home.description}>
@@ -48,24 +87,34 @@ const t = catalogue(Astro.currentLocale);
   <Notify />
   {/* Phones only - the closing ask as its own static section (8.14c). */}
   <Closing />
+  {/* Every breakpoint - SEO audit H3. Static text for search, after the page's ask (owner). */}
+  <About />
+  {/* Last, like `Faq.astro`'s: a script first in the slot would shift `:first-child`. */}
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+  {
+    /*
+      Inside the layout's slot, not after `</Base>`: a page-level script outside the slot is
+      emitted after `</html>`, which the HTML validator stops at (SEO audit H7). It still runs
+      as the module it was - position in the body changes nothing for a module script.
+    */
+  }
+  <script>
+    import {
+      initMotion,
+      createHeroTimeline,
+      createProblemTimeline,
+      createPromiseTimeline,
+      createPlaylistTimeline,
+      createNotifyTimeline,
+      restBlooms,
+    } from '../../motion';
+
+    restBlooms();
+    initMotion();
+    createHeroTimeline();
+    await createProblemTimeline();
+    createPromiseTimeline();
+    createPlaylistTimeline();
+    createNotifyTimeline();
+  </script>
 </Base>
-
-<script>
-  import {
-    initMotion,
-    createHeroTimeline,
-    createProblemTimeline,
-    createPromiseTimeline,
-    createPlaylistTimeline,
-    createNotifyTimeline,
-    restBlooms,
-  } from '../../motion';
-
-  restBlooms();
-  initMotion();
-  createHeroTimeline();
-  await createProblemTimeline();
-  createPromiseTimeline();
-  createPlaylistTimeline();
-  createNotifyTimeline();
-</script>

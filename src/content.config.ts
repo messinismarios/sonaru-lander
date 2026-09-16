@@ -170,6 +170,11 @@ const blog = defineCollection({
     /** The post's `h1`, and the headline in its `BlogPosting` JSON-LD. */
     title: z.string().min(1),
     /**
+     * The `<title>` and share-card title, when the `h1` is not what people search for - SEO
+     * audit M6. Optional: without it the title is the `h1` with the site name after it.
+     */
+    metaTitle: z.string().min(1).optional(),
+    /**
      * The line the generated cover carries - **not** the title.
      *
      * The owner's amendment at Gate A, and the thing that makes the card work: as first

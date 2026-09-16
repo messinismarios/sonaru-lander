@@ -18,7 +18,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "contrast": "node --experimental-strip-types scripts/check-contrast.mjs",
-    "verify": "npm run typecheck && npm run lint && npm run format:check && npm run contrast && npm run build && npm test",
+    "check:production": "node scripts/check-production.mjs",
+    "validate:html": "node scripts/validate-html.mjs",
+    "verify": "npm run typecheck && npm run lint && npm run format:check && npm run contrast && npm run build && npm run validate:html && npm test",
     "fonts": "node scripts/build-fonts.mjs",
     "test": "playwright test",
     "brand": "node --experimental-strip-types scripts/build-brand-assets.mjs",
@@ -53,10 +55,12 @@
     "prettier": "3.9.6",
     "prettier-plugin-astro": "0.14.1",
     "prettier-plugin-svelte": "4.1.1",
+    "sharp": "0.35.4",
     "subset-font": "2.7.0",
     "svelte": "5.57.0",
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.68.0"
+    "typescript-eslint": "8.68.0",
+    "vnu-jar": "26.9.7"
   }
 }

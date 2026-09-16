@@ -21,14 +21,15 @@ import { ROUTES } from '../visual/routes';
 
 const DIST = new URL('../../dist/', import.meta.url);
 
-/** Every built page, as the route it is served at. */
+/** Every built page, as the route it is served at - `pricing.html` is `/pricing`. */
 function builtRoutes(dir = DIST, prefix = ''): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(fileURLToPath(dir), { withFileTypes: true })) {
     if (entry.isDirectory()) {
       found.push(...builtRoutes(new URL(`${entry.name}/`, dir), `${prefix}/${entry.name}`));
-    } else if (entry.name === 'index.html') {
-      found.push(prefix || '/');
+    } else if (entry.name.endsWith('.html')) {
+      const name = entry.name.slice(0, -'.html'.length);
+      found.push(name === 'index' ? prefix || '/' : `${prefix}/${name}`);
     }
   }
   return found;
@@ -47,14 +48,10 @@ test('nothing in the build is a dev-only route or a camera stand', () => {
 
 test('every shipping route is still in the build', () => {
   /*
-   * The other direction, and the one that catches a prune predicate that is too greedy. The
-   * `/404` route is excluded because Astro writes it as `dist/404.html` rather than as a
-   * directory with an index, so it is not a route this walk can see.
+   * The other direction, and the one that catches a prune predicate that is too greedy.
    */
   const shipped = new Set(builtRoutes());
-  const missing = ROUTES.filter(
-    (route) => isShippingRoute(route) && route !== '/404' && !shipped.has(route),
-  );
+  const missing = ROUTES.filter((route) => isShippingRoute(route) && !shipped.has(route));
   expect(missing, 'a shipping route the prune took with it').toEqual([]);
 });
 

@@ -53,6 +53,8 @@ export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
 ---
 
 <Base title={t.ui.meta.waitlist.title} description={t.ui.meta.waitlist.description}>
+  {/* Turnstile's origin, opened before its script is found - SEO audit M1. This route only. */}
+  <link slot="head" rel="preconnect" href="https://challenges.cloudflare.com" />
   <section class="waitlist-route">
     <div class="atmosphere">
       <BloomField act="cta" intensity="ambient" />
@@ -65,7 +67,9 @@ export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
 
       {
         LAUNCH_STAGE === 'waitlist' ? (
-          <WaitlistForm client:load strings={t.waitlist} />
+          <div class="form-slot" data-form-slot>
+            <WaitlistForm client:load strings={t.waitlist} />
+          </div>
         ) : (
           <div class="ga">
             <AppStoreBadge />
@@ -83,6 +87,22 @@ export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
       </noscript>
     </div>
   </section>
+
+  {
+    /*
+    Turnstile's widget script, and the site's only third-party script - loaded on this route
+    alone, never on the home page. It carries no `integrity` hash deliberately: Cloudflare
+    ships this file mutably and documents that pinning it will break the widget the next time
+    they change it. The trade is accepted here and nowhere else.
+
+    Inside the slot: after `</Base>` it was emitted after `</html>` (SEO audit H7).
+  */
+  }
+  <script
+    is:inline
+    async
+    defer
+    src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
 </Base>
 
 <style>
@@ -152,6 +172,30 @@ export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
     color: var(--color-mute-200);
   }
 
+  /*
+   * **The form's resting height, reserved before the form exists** - SEO audit M1 (owner,
+   * Gate A, 2026-09-15). Astro writes its island runtime as two inline scripts ahead of the
+   * island, the parser yields there, and a slow load paints this block without the form:
+   * 160px tall instead of 406. The block is centred in the frame, so when the 230px form
+   * arrived everything above it moved up by half - CLS 0.065 on every cold mobile load.
+   *
+   * `min-height`, not `height`, so the error and suggestion states still grow the form as
+   * they always have; the resting form is 230px at 390, 768 and 1440 alike, and
+   * `tests/e2e/waitlist-slot.spec.ts` fails if it stops matching. `flow-root` so no margin
+   * inside can collapse through the new box and move anything.
+   *
+   * **Released once the form has been answered.** Success and duplicate replace the form with
+   * a shorter `.outcome`, and holding 230px there moved the centred block - caught by the
+   * baseline diff, 24k px on both states. The reservation is in the `is:global` block at the
+   * end of this file, because `.outcome` is the island's markup: Astro leaves `:global()`
+   * untouched inside `:has()`, the browser drops the selector as invalid, and the scoped
+   * version reserved nothing at all. Without `:has()` support the rule is dropped whole,
+   * which is the behaviour before this.
+   */
+  .form-slot {
+    display: flow-root;
+  }
+
   .ga {
     display: flex;
     flex-direction: column;
@@ -179,16 +223,19 @@ export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
   }
 </style>
 
-{
+<style is:global>
   /*
-  Turnstile's widget script, and the site's only third-party script - loaded on this route
-  alone, never on the home page. It carries no `integrity` hash deliberately: Cloudflare
-  ships this file mutably and documents that pinning it will break the widget the next time
-  they change it. The trade is accepted here and nowhere else.
-*/
-}
-<script
-  is:inline
-  async
-  defer
-  src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
+   * The form slot's reservation - see `.form-slot` above for why it exists and why it is
+   * global. Anchored to this route's own section, so it cannot reach anything else.
+   */
+  .waitlist-route .form-slot:not(:has(.outcome)) {
+    min-height: 230px;
+  }
+
+  /* No JavaScript, no form (`WaitlistForm` hides itself), so nothing to hold room for. */
+  @media (scripting: none) {
+    .waitlist-route .form-slot:not(:has(.outcome)) {
+      min-height: 0;
+    }
+  }
+</style>

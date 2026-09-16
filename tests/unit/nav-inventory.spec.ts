@@ -69,10 +69,15 @@ test('the takedown contact points at the same page the Legal group does', () => 
   expect(TAKEDOWN.live).toBe(support?.live);
 });
 
-test('the groups are the three approved at Gate A, and Pricing is not among them', () => {
+test('the groups are the three approved at Gate A, and Pricing is in Product', () => {
   expect(FOOTER_GROUPS.map((group) => group.id)).toEqual(['product', 'company', 'legal']);
-  // Dropped by the owner at Gate A, 2026-09-07. /pricing was already orphaned.
-  expect(ALL_NAV_ITEMS.some((item) => item.href === '/pricing')).toBe(false);
+  /*
+   * Dropped by the owner at 8.9a's Gate A (2026-09-07), which left /pricing orphaned; restored
+   * by the owner on 2026-09-15, after SEO audit H2 found no page linked it. It sits in Product,
+   * after the changelog, under the label "Pro".
+   */
+  const product = FOOTER_GROUPS.find((group) => group.id === 'product');
+  expect(product?.items.map((item) => item.href)).toEqual(['/waitlist', '/changelog', '/pricing']);
 });
 
 /*

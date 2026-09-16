@@ -10,7 +10,7 @@
     "src/styles/tokens.css": "2fc687538df4b5b1",
     "src/lib/contrast.ts": "0259a1f0d7937734",
     "src/lib/tokens.ts": "06a613f368697757",
-    "src/motion/tokens.ts": "5126d6a3252b3822",
+    "src/motion/tokens.ts": "067f85d406401d87",
     "src/components/brand/mark-geometry.ts": "861d65bcd062b00a",
     "src/components/brand/SonaruMark.astro": "5f7d90bb08d675a8",
     "src/components/brand/Wordmark.astro": "a1d991b518b4d03f",

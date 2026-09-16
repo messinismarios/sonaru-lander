@@ -25,21 +25,32 @@ interface Props {
   readonly ogImage?: string | undefined;
   /** `article` on a post, `website` everywhere else. */
   readonly ogType?: 'website' | 'article' | undefined;
+  /**
+   * Keep the page out of every index - `/404` only. It also drops the canonical and the
+   * hreflang alternates (SEO audit L2): "do not index me" beside "this is my canonical URL"
+   * is two signals that disagree, and the alternates named `/404` as if it had language
+   * versions.
+   */
+  readonly noindex?: boolean | undefined;
 }
 
-const { title, description, ogImage = '/og/site.jpg', ogType = 'website' } = Astro.props;
+const {
+  title,
+  description,
+  ogImage = '/og/site.jpg',
+  ogType = 'website',
+  noindex = false,
+} = Astro.props;
 
 /*
  * Absolute, because a scraper does not resolve relative URLs - a relative `og:image` is a
  * card that silently does not render, which is the one failure mode nobody sees from
  * inside the site. `astro.config.mjs` sets `site`, so `Astro.site` is always defined here.
  *
- * **The trailing slash is stripped deliberately.** `astro.config.mjs` leaves
- * `trailingSlash` at its default of `'ignore'`, so `/pricing` and `/pricing/` both serve
- * the page and `Astro.url.pathname` returns whichever was asked for - which would make the
- * canonical URL a function of how a visitor happened to arrive. A canonical tag that
- * disagrees with itself between two requests for the same page is worse than none at all,
- * because it is what a search engine deduplicates on. The root keeps its slash.
+ * **No trailing slash, because that is the URL Pages serves.** `astro.config.mjs` sets
+ * `build.format: 'file'` and `trailingSlash: 'never'` (SEO audit C1), so `/pricing` is a 200
+ * and `/pricing/` a redirect. A canonical that names a redirect is a hint search engines
+ * are free to ignore. The root keeps its slash.
  */
 const { locale, path } = splitLocale(Astro.url.pathname);
 
@@ -166,9 +177,18 @@ const lang = locale;
       duplicate them; that is theirs to maintain.
     */
     }
-    <link rel="canonical" href={canonical} />
-    {alternates.map((alt) => <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />)}
-    <link rel="alternate" hreflang="x-default" href={xDefault} />
+    {noindex && <meta name="robots" content="noindex" />}
+    {
+      !noindex && (
+        <>
+          <link rel="canonical" href={canonical} />
+          {alternates.map((alt) => (
+            <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />
+          ))}
+          <link rel="alternate" hreflang="x-default" href={xDefault} />
+        </>
+      )
+    }
     <meta property="og:site_name" content="Sonaru" />
     {
       /*
@@ -206,7 +226,7 @@ const lang = locale;
       /*
       Everything a route needs in the head that this layout cannot know:
       `article:published_time` on a post, `BlogPosting` JSON-LD, the feed's
-      `<link rel="alternate">`, `/404`'s `noindex`. Added at 8.9c.
+      `<link rel="alternate">`. Added at 8.9c.
 
       A slot rather than props, because the alternative is a `Props` interface that grows
       a field per route and a layout that has to know what a blog post is. The card left

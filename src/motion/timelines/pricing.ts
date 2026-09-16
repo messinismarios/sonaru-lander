@@ -20,9 +20,18 @@
  * `problem.ts` documents at length: a `fromTo` does not render its first keyframe until
  * its trigger fires, so without an explicit baseline every element sits at full opacity
  * until the moment it is supposed to arrive.
+ *
+ * **A late start leaves what is already on screen alone** (SEO audit M1, owner, Gate B,
+ * 2026-09-15). The baseline can only be set once this module and `initScrollMotion` have
+ * loaded, and CSS has painted the toggle and cards long before that on a slow device - so
+ * setting `opacity: 0` then took away cards a visitor was already reading and brought them
+ * back, measured on production at 1440 under throttling. When the timeline starts more than
+ * `LATE_START` after first contentful paint, targets inside the viewport keep their painted
+ * state and only the rest reveal. A prompt start is unchanged, which is the 8.7 entrance.
+ * `tests/e2e/pricing-late-start.spec.ts` holds the defect's shape.
  */
 import { gsap } from 'gsap';
-import { DURATION, GSAP_EASE, STAGGER, TRIGGER_START } from '../tokens';
+import { DURATION, GSAP_EASE, LATE_START, STAGGER, TRIGGER_START } from '../tokens';
 import { initScrollMotion } from '../registry';
 import { defineTimeline, type MotionContext } from '../reduced-motion';
 
@@ -47,6 +56,23 @@ function collect(root: ParentNode): PricingElements | null {
     faqItems: [...root.querySelectorAll<HTMLElement>('[data-faq-item]')],
     toggle: root.querySelector<HTMLElement>('[data-plans-toggle]'),
   };
+}
+
+/**
+ * Whether the page painted more than `LATE_START` ago. No paint entry - an engine without the
+ * Paint Timing API, or a timeline created before anything painted - is not late, so the
+ * entrance behaves as it always did.
+ */
+function startedLate(): boolean {
+  const paint = performance.getEntriesByName('first-contentful-paint')[0];
+  if (paint === undefined) return false;
+  return performance.now() - paint.startTime > LATE_START * 1000;
+}
+
+/** Any part of the element inside the viewport - painted, if the page has painted. */
+function onScreen(element: HTMLElement): boolean {
+  const box = element.getBoundingClientRect();
+  return box.bottom > 0 && box.top < window.innerHeight;
 }
 
 /**
@@ -100,7 +126,10 @@ export async function createPricingTimeline(root: ParentNode = document): Promis
   return defineTimeline({
     full: ({ self }: MotionContext) => {
       self.add(() => {
-        for (const [targets, rise, stagger] of groups) reveal(targets, rise, stagger);
+        const late = startedLate();
+        for (const [targets, rise, stagger] of groups) {
+          reveal(late ? targets.filter((target) => !onScreen(target)) : targets, rise, stagger);
+        }
       });
     },
 

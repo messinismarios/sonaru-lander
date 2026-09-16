@@ -61,3 +61,20 @@
   X-Frame-Options: DENY
 
   Cross-Origin-Opener-Policy: same-origin
+
+# **A year, immutable, for what Vite names by content hash** - SEO audit M2. Pages' default
+# was four hours with `must-revalidate`, so every returning visitor revalidated bytes that
+# can never change: a changed file gets a new name. Pages merges this with the block above.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# **A week, and not immutable, for the fonts** (owner, 2026-09-16). Their names carry no hash
+# (`satoshi-subset.woff2`), so a year would pin a rebuilt font for a year; a week caps that
+# at a week while sparing returning visitors the four-hour revalidation.
+/fonts/*
+  Cache-Control: public, max-age=604800
+
+# Apple fetches this without an extension and Pages guessed `application/octet-stream` -
+# SEO audit L3. Universal Links want JSON.
+/.well-known/apple-app-site-association
+  Content-Type: application/json
