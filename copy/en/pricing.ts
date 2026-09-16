@@ -13,9 +13,9 @@
  */
 export const pricing = {
   hero: {
-    eyebrow: 'Pricing',
+    eyebrow: 'Pro Features & Pricing',
     headline: 'Everything you came for is free.',
-    lede: 'Pro is for what you do with it afterwards.',
+    lede: 'Get access to advanced features with our Pro membership.',
   },
 
   /** Names the plans section, which has no visible heading of its own. */
@@ -35,38 +35,38 @@ export const pricing = {
     /** Under a monthly or annualised figure. */
     perMonth: 'per month',
     /** The free card prints these two instead of a figure and a unit. */
-    freeAmount: 'Free',
-    freeUnit: 'and staying that way',
+    freeAmount: '0',
+    freeUnit: 'for all users',
     /** `{amount}` arrives already formatted, with its currency symbol. */
     yearlyNote: 'That’s {amount} billed yearly.',
     /** Shown while `PRICING_IS_INDICATIVE`. 8.13 turns it off by flipping that flag. */
-    indicative: 'Indicative beta pricing - confirmed before launch.',
+    freenote: 'Set, forever.',
+    indicative: 'Indicative beta pricing.',
   },
 
   /** Keyed by `Plan.id`. The cents and the `featured` flag stay in `src/data/pricing.ts`. */
   plans: {
     free: {
       name: 'Free',
-      tagline: 'The whole promise, at no cost.',
+      tagline: 'The whole promise, no cost.',
       includes: [
         'Every release from every artist you follow',
         'Chronological feed - nothing curated away',
         'Instant per-artist notifications',
         'Auto-add to one playlist per connected service',
         'Genre-based recommendations',
-        'Follow friends and share',
+        'All social features',
       ],
       cta: 'Join the waitlist',
     },
     pro: {
       name: 'Pro',
-      tagline: 'For the way you actually file music.',
+      tagline: 'Music management, recommendations & filtering.',
       includes: [
         'Everything in Free',
         'Multiple auto-add playlists, with rules per genre or artist',
-        'Recommendations down to the song and album',
+        'Advanced Song & Artist recommendations',
         'Collaborative filtering, not just genre',
-        'Advanced sharing and social',
       ],
       cta: 'Join the waitlist',
     },
@@ -138,12 +138,12 @@ export const pricing = {
       {
         question: 'How quickly will I hear about a new release?',
         answer:
-          'Within about an hour of it landing. Sonaru mirrors release data continuously rather than waiting for a weekly refresh, which is the difference between hearing about a record on the day and hearing about it on Friday.',
+          'In the first hour of it landing worldwide. Sonaru mirrors release data continuously rather than waiting for a weekly refresh, which is the difference between hearing about a record on the day and hearing about it only on a Friday.',
       },
       {
         question: 'Are notifications part of Pro?',
         answer:
-          'No. Instant per-artist notifications are on the free side and ship in the beta. Being told the day a release lands is the thing Sonaru is for, so it is not the thing we charge for.',
+          'No. Instant per-artist notifications are and will always be free. Being told the day a release lands is the thing Sonaru was created for, so it will never be a paid feature.',
       },
       {
         question: 'Is this pricing final?',

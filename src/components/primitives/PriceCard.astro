@@ -85,7 +85,9 @@ const yearlyTotal = formatPrice(plan.yearlyTotalCents);
     ) : (
       <div class="price-slot">
         <p class="price" data-price="free">
-          <span class="amount">{card.freeAmount}</span>
+          <span class="amount">
+            <span class="currency">{CURRENCY}</span>0
+          </span>
           <span class="unit">{card.freeUnit}</span>
         </p>
       </div>
@@ -100,19 +102,20 @@ const yearlyTotal = formatPrice(plan.yearlyTotalCents);
      */
   }
   {
-    isPaid && (
+    isPaid ? (
       <div class="notes">
+        {PRICING_IS_INDICATIVE && <p class="note note-indicative">{card.indicative}</p>}
+
         <p class="note" data-note="yearly">
           {card.yearlyNote.replace('{amount}', `${CURRENCY}${yearlyTotal}`)}
         </p>
-        {PRICING_IS_INDICATIVE && <p class="note note-indicative">{card.indicative}</p>}
+      </div>
+    ) : (
+      <div class="notes">
+        {PRICING_IS_INDICATIVE && <p class="note note-indicative">{card.freenote}</p>}
       </div>
     )
   }
-
-  <Button href="/waitlist" variant={plan.featured ? 'primary' : 'secondary'} class="cta">
-    {copy.cta}
-  </Button>
 
   <ul class="includes">
     {
@@ -124,6 +127,10 @@ const yearlyTotal = formatPrice(plan.yearlyTotalCents);
       ))
     }
   </ul>
+
+  <Button href="/waitlist" variant={plan.featured ? 'primary' : 'secondary'} class="cta">
+    {copy.cta}
+  </Button>
 </article>
 
 <style>

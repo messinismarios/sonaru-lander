@@ -46,6 +46,7 @@ export const ui = {
     items: {
       waitlist: 'Join the waitlist',
       changelog: 'Changelog',
+      pricing: 'Pro',
       blog: 'Blog',
       press: 'Press',
       brand: 'Brand',
@@ -67,8 +68,9 @@ export const ui = {
      * It was hardcoded in `Footer.astro` until then, the one footer string 8.11a's extraction
      * missed - invisible because `/es/` is out of the published build.
      */
+    metadata: 'Music metadata provided by ',
     artwork:
-      'Music metadata provided by MusicBrainz. Album artwork and artist photography are the property of their respective rights holders.',
+      '. Album artwork and artist photography are the property of their respective rights holders.',
   },
 
   /** The App Store link's accessible name. The badge itself is an image with no text. */

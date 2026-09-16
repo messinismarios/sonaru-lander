@@ -158,10 +158,12 @@ convention but **no `500.html` convention**. A designed `/500` would be a route 
 reach and no test can exercise. Do not add one back as cleanup.
 
 **The unit found a gap in the site rather than in itself: the footer cannot offer
-`/pricing`.** That entry was dropped at 8.9a's Gate A and the route has been orphaned since;
-this is the first page where it costs something, because the whole design says the footer
-has everything. `tests/e2e/404.spec.ts` **asserts the hole and turns red the day 8.13 closes
-it**. Found by a failing assertion, not by reading the spec.
+`/pricing`.** That entry was dropped at 8.9a's Gate A and the route was orphaned until
+2026-09-15; this is the first page where it cost something, because the whole design says the
+footer has everything. `tests/e2e/404.spec.ts` asserted the hole and turned red the day it
+closed - **which is exactly what happened**: the SEO audit found no built page linking
+`/pricing`, the owner restored the footer entry as "Pro", and the test now asserts the link.
+Found by a failing assertion, not by reading the spec.
 
 **Route discovery did the test wiring.** `/404` enters `tests/visual/routes.ts` by filename,
 so the seven guards built on `ROUTES` covered it the moment the file existed. **8.13 carries
@@ -352,9 +354,11 @@ be deleted after passing A and B.
   down. `Header.astro`'s comment and `design-system.md` §9's inventory both record the
   rejection - the inventory entry is **struck through rather than deleted**, because an
   absent line reads as a gap and a struck one reads as a decision.
-- **`/pricing` stays orphaned and is carried to 8.13**, where it is now a design gate
-  rather than a sweep item: both obvious homes - the header nav and the footer entry - are
-  deliberately shut, so closing it needs a third answer or a decision to drop the route.
+- **~~`/pricing` stays orphaned and is carried to 8.13~~ - closed 2026-09-15/16 by the
+  owner**, after the SEO audit found that no built page linked it. It is linked twice now:
+  from the home page's "About Sonaru" section, and from **the footer entry itself**, which
+  the owner restored as "Pro". **The header's rejection above still stands** - that door is
+  the one that stayed shut, and a nav is still not the answer to anything.
 - **A closed `<details>` slots its content into a user-agent shadow tree and stops painting
   it.** `display: contents` on the parent does not reach that, so a nav promoted inline
   that way is in the DOM, in the accessibility tree, correctly coloured and **invisible**.
@@ -775,8 +779,10 @@ and `phases.md` scheduled neither - the gap was caught by the owner at 8.2's Gat
 8.7 built a `Pricing` link into it and the owner removed it, confirming the removal was
 deliberate: _"pricing link should not be there up until we decide that we want to add
 it."_ The file is back to its pre-8.7 state and the home page's tab order is back to four
-stops. **So `/pricing` exists and is linked from nowhere**, which is intended, not an
-oversight - do not "fix" it by adding the link back. **And the header drops "Join the
+stops. **The header still has no nav, and that is permanent** - do not add one back. The
+route's other door did open: `/pricing` was linked from nowhere until 2026-09-15, and the
+owner then restored the **footer's** Product entry as "Pro" and linked it from the home
+page's About section (SEO audit H2). **And the header drops "Join the
 waitlist" on `/waitlist` itself** (owner, 8.8's Gate C): a corner link to the page you are
 already on is a second control competing with the form for the same click. It is derived
 from `Astro.url.pathname` inside the component rather than passed as a prop, because every
