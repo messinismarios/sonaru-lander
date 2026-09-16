@@ -86,7 +86,8 @@ const yearlyTotal = formatPrice(plan.yearlyTotalCents);
       <div class="price-slot">
         <p class="price" data-price="free">
           <span class="amount">
-            <span class="currency">{CURRENCY}</span>0
+            <span class="currency">{CURRENCY}</span>
+            {card.freeAmount}
           </span>
           <span class="unit">{card.freeUnit}</span>
         </p>

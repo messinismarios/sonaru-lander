@@ -105,8 +105,13 @@ export const ui = {
     pricing: {
       /** Query-led (SEO audit M6). `{amount}` is Pro's lowest monthly price, with its currency. */
       title: 'Sonaru pricing: free release alerts, Pro from {amount}/month',
+      /**
+       * **Its own, not the home page's** - SEO audit M6's second half. It was the home
+       * description word for word, which wastes the sharpest answers on the site and invites
+       * Google to write its own snippet instead.
+       */
       description:
-        "Meet the app that makes sure you hear from your favorite artists. Notifications the moment they drop, a feed that doesn't skip songs, playlist auto-adds.",
+        'Sonaru is free forever: every release from every artist you follow, with instant notifications. Pro adds playlist rules and better recommendations.',
     },
     waitlist: {
       title: 'Be the first to know · Sonaru',
