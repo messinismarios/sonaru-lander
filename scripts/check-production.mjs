@@ -71,6 +71,15 @@ for (const page of pages) {
   for (const href of new Set(links)) {
     /* A file is a download or an asset, not a page with a canonical form. */
     if (/\.[a-z0-9]+$/i.test(href)) continue;
+    /*
+     * **`/cdn-cgi/` is Cloudflare's, not ours.** With Email Address Obfuscation on, every
+     * `mailto:` in the build is rewritten at the edge to
+     * `/cdn-cgi/l/email-protection#<hex>`, and that endpoint answers 404 without its
+     * fragment - which this check strips, because a fragment is not a URL a crawler
+     * requests. So it reported four 404s for links that work in a browser. Whether the
+     * obfuscation should be on at all is a separate question, and a zone setting.
+     */
+    if (href.startsWith('/cdn-cgi/')) continue;
     await expect200(new URL(href, origin).href, `linked from ${page}`);
   }
 }
