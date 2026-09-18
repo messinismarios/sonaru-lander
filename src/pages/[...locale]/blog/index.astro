@@ -29,7 +29,7 @@ const t = catalogue(Astro.currentLocale);
 const posts = await publishedPosts();
 ---
 
-<Base title={t.ui.meta.blog.title} description={t.ui.meta.blog.description}>
+<Base title={t.ui.meta.blog.title} description={t.ui.meta.blog.description} ogImage="/og/blog.jpg">
   <link
     slot="head"
     rel="alternate"

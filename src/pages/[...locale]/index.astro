@@ -29,6 +29,8 @@ import Notify from '../../components/sections/Notify.astro';
 import Closing from '../../components/sections/Closing.astro';
 import About from '../../components/sections/About.astro';
 import { catalogue } from '../../i18n';
+import { founderPerson } from '../../data/founder';
+import { SOCIAL_PROFILES } from '../../data/social';
 import type { GetStaticPaths } from 'astro';
 import { localePaths } from '../../i18n/routing';
 
@@ -65,6 +67,10 @@ const structuredData = [
       { '@type': 'ContactPoint', contactType: 'press', email: 'press@sonaru.app' },
       { '@type': 'ContactPoint', contactType: 'general', email: 'hello@sonaru.app' },
     ],
+    /* Who makes it - SEO audit M4. The same `Person` `/about` and every byline carry. */
+    founder: founderPerson(t, Astro.site),
+    /* Sonaru's own profiles - SEO audit M10. */
+    sameAs: SOCIAL_PROFILES,
   },
   {
     '@context': 'https://schema.org',

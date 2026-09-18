@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { readFileSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { TAGS } from '../../src/data/tags';
+import { NON_POST_CARDS } from '../../src/data/og-cards';
 import { catalogue } from '../../src/i18n';
 
 const CLAIM = catalogue('en').home.claim;
@@ -144,10 +145,12 @@ test('every published post has both covers and a manifest entry that still match
 });
 
 test('no cover survives the post it belonged to', () => {
-  // `site` is the whole site's card, not a post's - 8.10a. It lives in the same directory
-  // and the same manifest deliberately (one generator, one staleness guard), so it is the
-  // one name this check has to know is not an orphan.
-  const slugs = new Set([...posts().map((post) => post.slug), 'site']);
+  // `site` is the whole site's card, not a post's - 8.10a - and since SEO audit M12 the
+  // five route cards sit beside it. They live in the same directory and the same manifest
+  // deliberately (one generator, one staleness guard), so `NON_POST_CARDS` is the list of
+  // names this check has to know are not orphans. It is read from the module the generator
+  // and the camera stand also read, so a sixth card needs no edit here.
+  const slugs = new Set([...posts().map((post) => post.slug), ...NON_POST_CARDS]);
   const orphans = readdirSync(OG)
     .filter((file) => file.endsWith('.jpg'))
     .map((file) => file.replace(/(-640)?\.jpg$/, ''))

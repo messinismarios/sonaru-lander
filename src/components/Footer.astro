@@ -34,6 +34,12 @@ import Wordmark from './brand/Wordmark.astro';
 import Link from './primitives/Link.astro';
 import LocaleSwitcher from './LocaleSwitcher.astro';
 import { FOOTER_GROUPS, TAKEDOWN } from '../data/nav';
+import { PROFILES } from '../data/social';
+import instagram from '../assets/social/instagram.svg?raw';
+import x from '../assets/social/x.svg?raw';
+import tiktok from '../assets/social/tiktok.svg?raw';
+import reddit from '../assets/social/reddit.svg?raw';
+import spotify from '../assets/social/spotify.svg?raw';
 import { catalogue } from '../i18n';
 
 const t = catalogue(Astro.currentLocale);
@@ -48,6 +54,15 @@ const year = new Date().getFullYear();
  * `footer-company`, `footer-legal`.
  */
 const groupId = (id: string) => `footer-${id}`;
+
+/*
+ * `me` says the profile and this site belong to the same owner; the other two are what
+ * `Link.astro` puts on every external link that opens in a new tab.
+ */
+const PROFILE_REL = ['me', 'noopener', 'noreferrer'].join(' ');
+
+/* Each profile's glyph, inlined so `currentColor` reaches it. See `src/data/social.ts`. */
+const GLYPHS = { instagram, x, tiktok, reddit, spotify } as const;
 ---
 
 <footer class="site-footer">
@@ -57,6 +72,31 @@ const groupId = (id: string) => `footer-${id}`;
         <Wordmark variant="lockup" size={30} />
       </a>
       <p class="pitch">{t.home.claim}</p>
+      {
+        /*
+          Sonaru's profiles, under the claim - SEO audit M10 (owner, 2026-09-18: icons, not
+          text). The platforms' own single-colour glyphs in the footer's muted ink; the glyph
+          is `aria-hidden` and the link carries the name, since a mark alone reads as nothing.
+          A list, so a screen reader announces how many there are before walking them.
+        */
+      }
+      <ul class="profiles" aria-label={t.ui.footer.social.label}>
+        {
+          PROFILES.map((profile) => (
+            <li>
+              <a
+                class="profile"
+                href={profile.href}
+                rel={PROFILE_REL}
+                target="_blank"
+                aria-label={t.ui.footer.social[profile.id]}
+              >
+                <Fragment set:html={GLYPHS[profile.id]} />
+              </a>
+            </li>
+          ))
+        }
+      </ul>
     </div>
 
     {
@@ -175,6 +215,43 @@ const groupId = (id: string) => `footer-${id}`;
     max-width: var(--measure-tight);
     color: var(--color-mute-200);
     font-size: var(--text-base);
+  }
+
+  /*
+   * A 14px glyph in a 38px target (WCAG 2.2's 24px minimum, with room) - 30% under the first
+   * build's 20px, at the owner's Gate C request. The list pulls back by the target's padding
+   * so the first glyph's edge lines up with the claim above it.
+   */
+  .profiles {
+    display: flex;
+    flex-wrap: wrap;
+    margin: var(--spacing-3) 0 0 calc(-1 * var(--spacing-3));
+    padding: 0;
+    list-style: none;
+  }
+
+  .profile {
+    display: inline-flex;
+    padding: var(--spacing-3);
+    border-radius: var(--spacing-2);
+    color: var(--color-mute-400);
+    transition: color var(--dur-2) var(--ease-out);
+  }
+
+  .profile:hover,
+  .profile:focus-visible {
+    color: var(--color-mute-200);
+  }
+
+  .profile :global(svg) {
+    width: calc(0.7 * (var(--spacing-4) + var(--spacing-1)));
+    height: calc(0.7 * (var(--spacing-4) + var(--spacing-1)));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .profile {
+      transition: none;
+    }
   }
 
   .groups {

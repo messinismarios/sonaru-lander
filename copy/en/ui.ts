@@ -30,6 +30,18 @@ export const ui = {
     /** Names the footer's `<nav>`, which is not a heading - see `Footer.astro`. */
     label: 'Footer',
     /**
+     * The icon row under the claim - SEO audit M10. The glyphs carry no text, so each link's
+     * accessible name is here, keyed by `SocialProfile.id`, and `label` names the list.
+     */
+    social: {
+      label: 'Sonaru elsewhere',
+      instagram: 'Sonaru on Instagram',
+      x: 'Sonaru on X',
+      tiktok: 'Sonaru on TikTok',
+      reddit: 'Sonaru on Reddit',
+      spotify: 'Sonaru on Spotify',
+    },
+    /**
      * Group labels, keyed by `NavGroup.id`.
      *
      * Keyed rather than positional because `Footer.astro` derives each group's DOM `id`
@@ -98,9 +110,9 @@ export const ui = {
   /** What `Base.astro` puts in `<title>` and `<meta name="description">`, per route. */
   meta: {
     home: {
-      title: 'Sonaru - Your new music friend.',
+      title: 'Sonaru - Your new music friend. Release alerts for iPhone & Android',
       description:
-        "Meet the app that makes sure you hear from your favorite artists. Notifications the moment they drop, a feed that doesn't skip songs, playlist auto-adds.",
+        "Sonaru is a free app for iPhone and Android that tells you the moment your favorite artists release new music. A feed that doesn't skip songs, and playlist auto-adds.",
     },
     pricing: {
       /** Query-led (SEO audit M6). `{amount}` is Pro's lowest monthly price, with its currency. */
@@ -114,9 +126,9 @@ export const ui = {
         'Sonaru is free forever: every release from every artist you follow, with instant notifications. Pro adds playlist rules and better recommendations.',
     },
     waitlist: {
-      title: 'Be the first to know · Sonaru',
+      title: "Sonaru waitlist · Never miss your favorite artist's new release",
       description:
-        "Coming soon to an App Store near you. Leave your email and we'll tell you the day it lands.",
+        "Sonaru tells you when the artists you follow release new music. Coming soon to iPhone and Android: leave your email and we'll tell you the day it lands.",
     },
     notFound: {
       title: 'Page not found · Sonaru',
@@ -130,6 +142,11 @@ export const ui = {
     changelog: {
       title: "What's new · Sonaru",
       description: 'Every Sonaru release, what shipped in it, and when.',
+    },
+    about: {
+      title: 'About · Sonaru',
+      description:
+        'Why Sonaru exists and who makes it: an app for iPhone and Android that tells you when the artists you follow release new music.',
     },
     press: {
       title: 'Press · Sonaru',

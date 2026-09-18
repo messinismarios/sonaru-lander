@@ -8,7 +8,11 @@ import { expect, test } from '@playwright/test';
  * are all things that can be wrong while the page looks perfect.
  */
 
-const POSTS = ['what-is-sonaru'];
+/** Every published post, newest first. SEO audit H4 added the Spotify post (2026-09-18). */
+const POSTS = ['spotify-new-release-notifications', 'what-is-sonaru'];
+
+/** The post the article-level checks read. Pinned by slug, not by position in `POSTS`. */
+const ARTICLE = 'what-is-sonaru';
 
 test.describe('the index', () => {
   test('lists every published post, newest first', async ({ page }) => {
@@ -37,7 +41,9 @@ test.describe('the index', () => {
     await expect(card.locator('a')).toHaveCount(1);
     const name = await card.locator('a').getAttribute('href');
     expect(name).toBe(`/blog/${POSTS[0]}`);
-    await expect(card.locator('a')).toHaveAccessibleName('What Sonaru is, and who it is for');
+    await expect(card.locator('a')).toHaveAccessibleName(
+      'How to get notified when an artist you follow releases new music on Spotify',
+    );
   });
 
   test('the cover carries the hook as its alt text', async ({ page }) => {
@@ -46,7 +52,7 @@ test.describe('the index', () => {
     await page.goto('/blog');
     await expect(page.locator('.index img').first()).toHaveAttribute(
       'alt',
-      'Every release, the moment it drops.',
+      'Hear about it the day it drops, not on Friday.',
     );
   });
 
@@ -90,7 +96,7 @@ test.describe('an article', () => {
   test('renders through the approved reading layout', async ({ page }) => {
     // `Document.astro`, unchanged - 8.9b's Gate B promised the blog would reuse it rather
     // than fork it, and this is that promise expressed as something that can fail.
-    await page.goto(`/blog/${POSTS[0]}`);
+    await page.goto(`/blog/${ARTICLE}`);
     await expect(page.locator('.document .prose')).toHaveCount(1);
     await expect(page.locator('.document h1')).toHaveText('What Sonaru is, and who it is for');
     await expect(page.locator('.document .eyebrow')).toHaveText('Blog');
@@ -98,13 +104,13 @@ test.describe('an article', () => {
 
   test('does not repeat its cover at the top', async ({ page }) => {
     // The owner's decision at Gate B. It also keeps the LCP element text.
-    await page.goto(`/blog/${POSTS[0]}`);
+    await page.goto(`/blog/${ARTICLE}`);
     const first = page.locator('.document img').first();
     expect(await first.count()).toBe(0);
   });
 
   test('carries BlogPosting and BreadcrumbList structured data', async ({ page }) => {
-    await page.goto(`/blog/${POSTS[0]}`);
+    await page.goto(`/blog/${ARTICLE}`);
     const blocks = await page
       .locator('script[type="application/ld+json"]')
       .evaluateAll((nodes) => nodes.map((node) => JSON.parse(node.textContent ?? '{}')));
@@ -113,14 +119,21 @@ test.describe('an article', () => {
     expect(posting).toBeDefined();
     expect(posting.headline).toBe('What Sonaru is, and who it is for');
     expect(posting.datePublished).toBe('2026-09-14T06:00:00Z');
-    expect(posting.image).toBe(`https://sonaru.app/og/${POSTS[0]}.jpg`);
-    // No byline (owner, Gate A). Structured data that names an author the page does not
-    // is worse than none.
-    expect(posting.author['@type']).toBe('Organization');
+    // An `ImageObject` with its dimensions (SEO audit M4), not a bare URL.
+    expect(posting.image).toEqual({
+      '@type': 'ImageObject',
+      url: `https://sonaru.app/og/${ARTICLE}.jpg`,
+      width: 1200,
+      height: 600,
+    });
+    // The byline names the author since SEO audit M4 (owner, 2026-09-18), so the markup
+    // does too. Structured data that names an author the page does not is worse than none.
+    expect(posting.author['@type']).toBe('Person');
     expect(crumbs.itemListElement).toHaveLength(2);
   });
 
   test('its social card is the file the index card shows', async ({ page }) => {
+    // The newest post, because the index's first card is the one read below.
     await page.goto(`/blog/${POSTS[0]}`);
     const og = await page.locator('meta[property="og:image"]').getAttribute('content');
     await page.goto('/blog');
@@ -133,7 +146,7 @@ test.describe('an article', () => {
     // `PostMeta` cannot use the `Link` primitive inside a flex row, so its declarations are
     // written a second time. This is what stops the two parting company - the same pairing
     // `Document.astro`'s prose links carry.
-    await page.goto(`/blog/${POSTS[0]}`);
+    await page.goto(`/blog/${ARTICLE}`);
     const tag = page.locator('.meta a.tag').first();
     await expect(tag).toHaveAttribute('href', '/blog/tags/product');
     const style = await tag.evaluate((element) => {
@@ -173,8 +186,8 @@ test.describe('tags', () => {
     const hrefs = await page
       .locator('.index a[href^="/blog/"]')
       .evaluateAll((links) => links.map((link) => link.getAttribute('href')));
-    expect(hrefs).toEqual(['/blog/what-is-sonaru']);
-    await expect(page.locator('.count')).toHaveText('1 post');
+    expect(hrefs).toEqual(POSTS.map((slug) => `/blog/${slug}`));
+    await expect(page.locator('.count')).toHaveText('2 posts');
   });
 
   test('a tag page offers a way back', async ({ page }) => {

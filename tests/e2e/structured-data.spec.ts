@@ -1,12 +1,13 @@
 import { expect, test } from '@playwright/test';
+import { SOCIAL_PROFILES } from '../../src/data/social';
 
 /**
  * The home page's `Organization` and `WebSite` JSON-LD - SEO audit H1.
  *
  * `blog.spec.ts` and `pricing.spec.ts` cover the post's and the FAQ's. What is pinned here is
  * what the owner decided on 2026-09-15, so a change to any of it is a visible diff rather than
- * a quiet one: the app icon as the logo, three contact points, no `sameAs` until profiles
- * exist, and no `MobileApplication` before there is an App Store URL for it to point at.
+ * a quiet one: the app icon as the logo, three contact points, `sameAs` naming only Sonaru's
+ * own profiles (M10), and no `MobileApplication` before there is an App Store URL for it to point at.
  */
 
 async function blocks(page: import('@playwright/test').Page, path: string) {
@@ -32,7 +33,8 @@ test('the home page names the organisation and the site', async ({ page }) => {
     'press@sonaru.app',
     'hello@sonaru.app',
   ]);
-  expect(organization.sameAs, 'no profiles exist to name yet (audit M10)').toBeUndefined();
+  // Sonaru's own profiles, once they exist (audit M10) - and only those.
+  expect(organization.sameAs).toEqual(SOCIAL_PROFILES);
 
   expect(website).toMatchObject({
     name: 'Sonaru',

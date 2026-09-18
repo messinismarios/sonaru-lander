@@ -12,6 +12,7 @@
  * one.
  */
 import { dateLabel } from '../../lib/date';
+import { FOUNDER_HREF } from '../../data/founder';
 import type { Tag } from '../../data/tags';
 import { catalogue } from '../../i18n';
 
@@ -21,15 +22,31 @@ interface Props {
   readonly tags: readonly Tag[];
   /** `true` renders the tags as links to their own pages. Articles only. */
   readonly linked?: boolean;
+  /**
+   * `true` leads the line with the author, linked to `/about` - SEO audit M4 (owner, Gate A
+   * 2026-09-18, reversing 8.9c's no-byline decision). Articles only: a card's one link is
+   * its title, for the reason `linked` gives. A name, never an avatar - 8.9c refused gsap's
+   * author avatars and that still holds for a team of one.
+   */
+  readonly byline?: boolean;
 }
 
-const { publishedAt, minutes, tags, linked = false } = Astro.props;
+const { publishedAt, minutes, tags, linked = false, byline = false } = Astro.props;
 
 const t = catalogue(Astro.currentLocale);
 ---
 
 <p class="meta">
   {
+    byline && (
+      <>
+        <a class="byline" href={FOUNDER_HREF}>
+          {t.about.founder.name}
+        </a>{' '}
+        <span aria-hidden="true">·</span>{' '}
+      </>
+    )
+  }{
     tags.map((tag) =>
       linked ? (
         <a class="tag" href={`/blog/tags/${tag.slug}`}>
@@ -79,9 +96,33 @@ const t = catalogue(Astro.currentLocale);
    * and underline geometry as a real `Link`. `Document.astro`'s prose links carry the
    * same pairing for the same reason.
    */
-  a.tag {
+  /* The byline reads as the tag link does - same colour, same underline draw. */
+  .byline {
+    color: var(--color-plum-300);
+  }
+
+  a.tag,
+  a.byline {
     position: relative;
     text-decoration: none;
+  }
+
+  a.byline::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur-2) var(--ease-out);
+  }
+
+  a.byline:hover::after,
+  a.byline:focus-visible::after {
+    transform: scaleX(1);
   }
 
   a.tag::after {
@@ -103,14 +144,17 @@ const t = catalogue(Astro.currentLocale);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    a.tag::after {
+    a.tag::after,
+    a.byline::after {
       transition: none;
       transform: scaleX(1);
       opacity: 0.4;
     }
 
     a.tag:hover::after,
-    a.tag:focus-visible::after {
+    a.tag:focus-visible::after,
+    a.byline:hover::after,
+    a.byline:focus-visible::after {
       opacity: 1;
     }
   }

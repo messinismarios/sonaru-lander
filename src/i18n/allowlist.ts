@@ -155,6 +155,10 @@ export const EXEMPT_STRINGS: readonly ExemptString[] = [
   { value: 'Answer', reason: 'A schema.org @type name. See the note above this group.' },
   { value: 'WebSite', reason: 'A schema.org @type name. See the note above this group.' },
   { value: 'ContactPoint', reason: 'A schema.org @type name. See the note above this group.' },
+  { value: 'Person', reason: 'A schema.org @type name. See the note above this group.' },
+  { value: 'PostalAddress', reason: 'A schema.org @type name. See the note above this group.' },
+  { value: 'AboutPage', reason: 'A schema.org @type name. See the note above this group.' },
+  { value: 'ImageObject', reason: 'A schema.org @type name. See the note above this group.' },
   {
     value: 'customer support',
     reason: 'A schema.org contactType value, read by search engines and never shown. SEO H1.',

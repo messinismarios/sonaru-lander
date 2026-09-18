@@ -34,7 +34,7 @@ hold rights in something shown here, [tell us](/support) and we will remove it.
 
 Pro is an optional paid subscription - monthly or annual - that unlocks auto-add routing
 across multiple playlists, and sharper recommendations. It is
-billed and managed entirely through your respective App Store: it renews until you cancel, which you can do through the application.
+billed and managed entirely through the App Store or Google Play, whichever you subscribed through: it renews until you cancel, which you can do through the application.
 
 ## Using it reasonably
 

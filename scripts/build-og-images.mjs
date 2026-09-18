@@ -260,6 +260,40 @@ manifest.site = coverHash(
   })),
 );
 
+/*
+ * The route cards - SEO audit M12. `/pricing`, `/waitlist`, `/blog`, `/changelog` and
+ * `/press` unfurl with their own picture instead of borrowing the site's. The list, the
+ * line each one carries and its palette are `src/data/og-cards.ts`, read here through
+ * `/og/route/cards.json` for the reason `publishedSlugs` reads `/blog`: this script is
+ * plain Node and the module is TypeScript, so the running site is where they meet.
+ *
+ * **Only the 1200, like the site card.** These are never rendered on a page, so a 640
+ * would be a second file to keep in step for no reader.
+ */
+const routeCards = await page.evaluate(
+  async (origin) => await (await fetch(`${origin}/og/route/cards.json`)).json(),
+  ORIGIN,
+);
+
+for (const slug of routeCards) {
+  await page.goto(`${ORIGIN}/og/route/${slug}`, { waitUntil: 'networkidle' });
+  await page.evaluate(() => document.fonts.ready);
+  await page.addStyleTag({ content: HIDE_DEV_TOOLBAR });
+  await freezeAnimations();
+
+  await writeCover(
+    `${slug}.jpg`,
+    await page.locator('[data-og-stage]').screenshot({ type: 'jpeg', quality: JPEG_QUALITY }),
+  );
+
+  manifest[slug] = coverHash(
+    await page.evaluate(() => ({
+      hook: document.querySelector('[data-og-stage] .cover-hook')?.textContent?.trim() ?? '',
+      act: document.querySelector('[data-og-stage] .bloom')?.getAttribute('data-act') ?? '',
+    })),
+  );
+}
+
 await browser.close();
 
 /*

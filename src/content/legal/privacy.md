@@ -40,7 +40,7 @@ Almost nothing, and none of it is shared with the app.
 
 To run the things you came for: your feed, search, follows, likes, auto-add, and
 notifications. To find out why something crashed and fix it. To process a Pro subscription
-and check the entitlement with Apple. To email you once when the app launches, if you
+and check the entitlement with Apple or Google. To email you once when the app launches, if you
 asked us to.
 
 **We do not sell your personal data, and we do not use your listening history for
@@ -55,7 +55,7 @@ Each of these is governed by its own privacy policy as well as this one.
 - **MusicBrainz** - public release and artist metadata. Sonaru queries its own mirror of
   MusicBrainz's open data; your personal data is never sent there.
 - **Firebase Cloud Messaging** - delivers push notifications to your device.
-- **The Apple App Store** - processes Pro subscription payments. Sonaru never sees your
+- **The Apple App Store** and **Google Play** - process Pro subscription payments. Sonaru never sees your
   card details, only the resulting receipt.
 - **Cloudflare** - serves this website, runs the waitlist form's bot check, and provides
   the cookieless analytics described above.

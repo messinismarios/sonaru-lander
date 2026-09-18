@@ -72,8 +72,8 @@ test.describe('hero - accessibility', () => {
     // toolbar contributes an h1 of its own that is not part of the document outline.
     const headings = page.locator('main h1');
     await expect(headings).toHaveCount(1);
-    // The device's own release titles are h3s inside the aria-hidden subtree; the page's
-    // heading outline must not be built out of the mockup's copy.
+    // The device's own release titles are paragraphs inside the aria-hidden subtree (SEO
+    // audit M7); the page's heading outline must not be built out of the mockup's copy.
     // The visually hidden full stop (SEO audit H3-h1) is part of the heading's text.
     await expect(headings).toHaveText(/They dropped it\.\s*You always catch it/);
   });

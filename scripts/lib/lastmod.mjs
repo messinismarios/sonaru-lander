@@ -5,8 +5,9 @@
  * a crawler the field is noise, and it stops reading it for the whole site. So each URL gets
  * the date its content last really changed, from the most specific source there is:
  *
- * - a post: its `publishedAt` (the schema has no `updatedAt` yet);
- * - `/blog` and a tag page: the newest live post they list;
+ * - a post: its `updatedAt` when it has one, else its `publishedAt` (SEO audit M4);
+ * - `/blog` and a tag page: the newest live post they list, by `publishedAt` - the list
+ *   changes when a post arrives, not when one already on it is revised;
  * - a legal document: its `effective` date;
  * - everything else: the last commit touching the route's own page and copy files.
  *
@@ -50,6 +51,7 @@ const posts = entries('src/content/blog')
   .map(({ id, source }) => ({
     href: `/blog/${id}`,
     publishedAt: new Date(field(source, 'publishedAt') ?? NaN),
+    updatedAt: field(source, 'updatedAt') ? new Date(field(source, 'updatedAt')) : undefined,
     draft: field(source, 'draft') === 'true',
     tags: [...(field(source, 'tags') ?? '').matchAll(/['"]([^'"]+)['"]/g)].map((m) => m[1]),
   }))
@@ -93,7 +95,7 @@ function newest(list) {
 /** When the page at `path` (unprefixed) last changed, or `undefined` when nothing honest says. */
 export function lastmod(path) {
   const post = posts.find((candidate) => candidate.href === path);
-  if (post) return post.publishedAt;
+  if (post) return post.updatedAt ?? post.publishedAt;
   if (path === '/blog') return newest(posts);
 
   const tag = path.match(/^\/blog\/tags\/([^/]+)$/)?.[1];

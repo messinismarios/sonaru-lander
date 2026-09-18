@@ -3,6 +3,7 @@ import { ROUTES, isCameraStand } from '../visual/routes';
 import { DEFAULT_LOCALE, hasCatalogue } from '../../src/i18n';
 import { localePath, splitLocale } from '../../src/i18n/routing';
 import { isShippingRoute } from '../../src/data/routes';
+import { ROUTE_CARDS } from '../../src/data/og-cards';
 
 /**
  * Every route unfurls with a card - phases.md 8.10a.
@@ -98,16 +99,31 @@ test.describe('social cards', () => {
     });
   }
 
-  test('the site card is what a non-post route points at, and the posts differ', async ({
-    page,
-  }) => {
+  test('a route names its own card, and the rest fall back to the site card', async ({ page }) => {
     await page.goto('/');
     const home = await page.locator('head meta[property="og:image"]').getAttribute('content');
     expect(home).toBe(`${SITE}/og/site.jpg`);
 
-    await page.goto('/pricing');
-    const pricing = await page.locator('head meta[property="og:image"]').getAttribute('content');
-    expect(pricing, 'one card is shared across non-post routes').toBe(home);
+    /*
+     * **SEO audit M12 reversed half of 8.10a's rule, and this is the half that changed.**
+     * The five routes people actually share carry their own picture; everything else still
+     * borrows the site's, which is what keeps a new route covered by default. The direction
+     * worth guarding is unchanged - a page must never point at a card that is not its own.
+     */
+    for (const card of ROUTE_CARDS) {
+      await page.goto(card.route);
+      const image = await page.locator('head meta[property="og:image"]').getAttribute('content');
+      expect(image, `${card.route} carries its own card`).toBe(`${SITE}/og/${card.slug}.jpg`);
+    }
+
+    const shared = PAGES.filter(
+      (route) => splitLocale(route).path === '/support' || splitLocale(route).path === '/privacy',
+    );
+    for (const route of shared) {
+      await page.goto(route);
+      const image = await page.locator('head meta[property="og:image"]').getAttribute('content');
+      expect(image, `${route} falls back to the site card`).toBe(home);
+    }
 
     /*
      * The other half of the same rule, and the one a "share the default everywhere"

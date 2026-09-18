@@ -21,6 +21,7 @@ import { render } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 import Document from '../../../layouts/Document.astro';
 import PostMeta from '../../../components/blog/PostMeta.astro';
+import { founderPerson } from '../../../data/founder';
 import { publishedPosts, type Post } from '../../../lib/posts';
 import { catalogue } from '../../../i18n';
 import { localePaths } from '../../../i18n/routing';
@@ -47,10 +48,10 @@ const canonical = new URL(post.href, Astro.site).href;
 const ogImage = new URL(`/og/${post.slug}.jpg`, Astro.site).href;
 
 /*
- * `author` is the Organization, not a person - the owner chose **no byline** at Gate A,
- * and a JSON-LD author that contradicts the page is worse than none. Structured data that
- * says something the page does not say is the kind of thing that gets a site's rich
- * results turned off.
+ * `author` is the person the byline names - SEO audit M4 (owner, 2026-09-18), reversing
+ * 8.9c's no-byline decision. It was the Organization while the page named nobody, because
+ * a JSON-LD author that contradicts the page is worse than none; the page names the author
+ * now, so the markup does. The publisher stays the Organization.
  */
 const blogPosting = {
   '@context': 'https://schema.org',
@@ -60,10 +61,13 @@ const blogPosting = {
   url: canonical,
   headline: data.title,
   description: data.description,
-  image: ogImage,
+  /* With its dimensions - SEO audit M4. Every cover is photographed at 1200x600. */
+  image: { '@type': 'ImageObject', url: ogImage, width: 1200, height: 600 },
   datePublished: data.publishedAt,
-  keywords: data.tags.join(', '),
-  author: { '@type': 'Organization', name: 'Sonaru', url: 'https://sonaru.app' },
+  ...(data.updatedAt === undefined ? {} : { dateModified: data.updatedAt }),
+  /* The tags' display names, not their slugs - SEO audit M4. `product` is an identifier. */
+  keywords: post.tags.map((tag) => t.ui.blog.tags[tag.slug].label).join(', '),
+  author: founderPerson(t, Astro.site),
   publisher: { '@type': 'Organization', name: 'Sonaru', url: 'https://sonaru.app' },
 };
 
@@ -126,6 +130,7 @@ const breadcrumbs = {
       minutes={post.minutes}
       tags={post.tags}
       linked={true}
+      byline={true}
     />
 
     <Content />

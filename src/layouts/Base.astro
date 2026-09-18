@@ -4,6 +4,7 @@
  * hreflang, the preloaded display cut) lands with the pages in 8.2 and the SEO work in
  * 8.9. What it does own now is the token import, so no page can render without it.
  */
+import { X_HANDLE } from '../data/social';
 import '../styles/tokens.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
@@ -222,6 +223,8 @@ const lang = locale;
     }
     <meta property="og:image:alt" content={description} />
     <meta name="twitter:card" content="summary_large_image" />
+    {/* The account a shared card is attributed to - SEO audit M10. */}
+    <meta name="twitter:site" content={X_HANDLE} />
     {
       /*
       Everything a route needs in the head that this layout cannot know:
