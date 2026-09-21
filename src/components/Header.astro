@@ -259,6 +259,9 @@ const t = catalogue(Astro.currentLocale);
   .brand {
     display: inline-flex;
     align-items: center;
+    /* The action's height (`Button`'s min-height), so the row is the same height on
+       `/waitlist`, where the action is absent, and the mark does not move up there. */
+    min-height: 44px;
     /* The mark is the link's whole content; no underline, and no colour change on hover -
      * a logo that recolours reads as broken rather than as interactive. */
     text-decoration: none;

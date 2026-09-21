@@ -18,12 +18,12 @@
       "height": 1024
     },
     "sonaru-lockup-1024.png": {
-      "bytes": 21365,
+      "bytes": 21411,
       "width": 1024,
       "height": 255
     },
     "sonaru-lockup-2048.png": {
-      "bytes": 22487,
+      "bytes": 22490,
       "width": 2049,
       "height": 510
     },
@@ -38,7 +38,7 @@
       "height": 1024
     },
     "sonaru-lockup-light-1024.png": {
-      "bytes": 21860,
+      "bytes": 21900,
       "width": 1026,
       "height": 255
     },
@@ -48,62 +48,62 @@
       "height": 510
     },
     "screens/welcome-full.jpg": {
-      "bytes": 95659,
+      "bytes": 94572,
       "width": 1178,
       "height": 2556,
-      "sourceSha": "33c30f39134c5624"
+      "sourceSha": "05d5f7484f267525"
     },
     "screens/welcome.jpg": {
-      "bytes": 13700,
+      "bytes": 15113,
       "width": 360,
       "height": 781
     },
     "screens/feed-full.jpg": {
-      "bytes": 123662,
+      "bytes": 233613,
       "width": 1178,
       "height": 2556,
-      "sourceSha": "33ac792a1c15c957"
+      "sourceSha": "35dd251f3a6dd552"
     },
     "screens/feed.jpg": {
-      "bytes": 17464,
+      "bytes": 27664,
       "width": 360,
       "height": 781
     },
     "screens/search-full.jpg": {
-      "bytes": 209212,
+      "bytes": 189911,
       "width": 1178,
       "height": 2556,
-      "sourceSha": "10ed5754ddb494ca"
+      "sourceSha": "59369bca80fec66f"
     },
     "screens/search.jpg": {
-      "bytes": 32131,
+      "bytes": 29325,
       "width": 360,
       "height": 781
     },
     "screens/auto-add-full.jpg": {
-      "bytes": 232172,
+      "bytes": 116088,
       "width": 1178,
       "height": 2556,
-      "sourceSha": "5e6336c16a3cdb88"
+      "sourceSha": "fee8eb0d40590eba"
     },
     "screens/auto-add.jpg": {
-      "bytes": 29587,
+      "bytes": 16762,
       "width": 360,
       "height": 781
     },
     "screens/pro-full.jpg": {
-      "bytes": 127480,
+      "bytes": 109975,
       "width": 1178,
       "height": 2556,
-      "sourceSha": "3d839ea61118e00b"
+      "sourceSha": "e4229fee0decb9b8"
     },
     "screens/pro.jpg": {
-      "bytes": 17137,
+      "bytes": 15961,
       "width": 360,
       "height": 781
     },
     "sonaru-press-kit.zip": {
-      "bytes": 978680
+      "bytes": 904938
     }
   }
 }
