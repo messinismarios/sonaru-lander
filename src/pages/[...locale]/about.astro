@@ -1,0 +1,83 @@
+---
+/**
+ * `/about` - why Sonaru exists and who makes it. SEO audit M4, Gates A and B 2026-09-18.
+ *
+ * **The audit's trust finding, answered in the fewest words that answer it.** "Who makes
+ * Sonaru?" had no answer anywhere on the web. None of the three references has an about
+ * page - superlist's `/about` is a 404, measured at 8.10b - so this is an argued divergence
+ * rather than a take, and it borrows its shape from our own `/press`: one short document
+ * that states facts and offers the addresses. **Refused:** team grids, stat tiles, a
+ * mission statement and a milestone timeline, none of which a pre-launch product built by
+ * one person can honestly fill.
+ *
+ * A page of its own rather than a fourth file in the `legal` collection, which is where
+ * `/support` lives: that collection is guarded as exactly the three documents the footer
+ * offers, and this one is not in the footer. It is reached from every post's byline and
+ * from `/llms.txt` (owner, Gate A) - the footer is frozen and stays as it is.
+ *
+ * The `Person` it names is `src/data/founder.ts`, the same one the byline and the home
+ * page's `Organization` carry.
+ */
+import Document from '../../layouts/Document.astro';
+import { catalogue } from '../../i18n';
+import type { GetStaticPaths } from 'astro';
+import { localePaths } from '../../i18n/routing';
+import { founderPerson } from '../../data/founder';
+import { PRESS_EMAIL } from '../../data/press';
+
+export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
+
+const t = catalogue(Astro.currentLocale);
+const copy = t.about;
+
+/** The general address, as the home page's `Organization` publishes it. */
+const HELLO_EMAIL = 'hello@sonaru.app';
+
+const madeBy = copy.madeBy
+  .replace('{name}', copy.founder.name)
+  .replace('{place}', `${copy.founder.locality}, ${copy.founder.country}`);
+
+const canonical = new URL('/about', Astro.site).href;
+
+const aboutPage = {
+  '@context': 'https://schema.org',
+  '@type': 'AboutPage',
+  '@id': canonical,
+  url: canonical,
+  name: t.ui.meta.about.title,
+  description: t.ui.meta.about.description,
+  about: { '@id': new URL('/#organization', Astro.site).href },
+  mainEntity: founderPerson(t, Astro.site),
+};
+---
+
+<Document
+  title={copy.title}
+  metaTitle={t.ui.meta.about.title}
+  eyebrow={copy.eyebrow}
+  description={t.ui.meta.about.description}
+  lede={copy.lede}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(aboutPage)} />
+  </Fragment>
+
+  <p>{copy.what}</p>
+
+  {
+    /*
+      Explicit spaces around each link, not the line breaks between them: a newline between
+      an expression and a tag is whitespace-only and Astro drops it, so the text read
+      "Android.Join the waitlistto hear" - caught by `tests/visual/inline-spacing.spec.ts`.
+    */
+  }
+  <p>
+    {copy.when.before}{' '}<a href="/waitlist">{copy.when.link}</a>{' '}{copy.when.after}
+  </p>
+
+  <p>
+    {madeBy}{' '}{copy.contactAnything}{' '}<a href={`mailto:${HELLO_EMAIL}`}>{HELLO_EMAIL}</a>.{
+      ' '
+    }{copy.contactPress}{' '}<a href={`mailto:${PRESS_EMAIL}`}>{PRESS_EMAIL}</a>.
+  </p>
+</Document>

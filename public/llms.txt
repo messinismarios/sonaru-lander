@@ -1,0 +1,26 @@
+# Sonaru
+
+> Sonaru is an app for iPhone and Android that tells you when the artists you follow
+> release new music - every album, EP and single, in a chronological feed, with a
+> notification the moment it lands.
+
+- Platforms: iPhone and Android. Not released yet; sonaru.app is taking waitlist signups.
+- Works alongside Spotify and Apple Music. Sonaru does not stream music itself.
+- The feed, per-artist notifications and auto-add to a playlist are free and stay free.
+  Pro is an optional paid subscription; /pricing carries the current figures.
+- Notifications arrive within the first hour of a release landing worldwide, because
+  Sonaru mirrors release data continuously rather than waiting for a weekly refresh.
+- Release and artist data comes from Sonaru's own mirror of MusicBrainz.
+- Made by Marios, in Athens, Greece.
+
+## Pages
+
+- [What Sonaru is, and who it is for](https://sonaru.app/blog/what-is-sonaru): what the
+  app does, what it is not, what it costs, and when it arrives.
+- [How to get notified when an artist you follow releases new music on Spotify](https://sonaru.app/blog/spotify-new-release-notifications):
+  what Spotify's What's New, Following feed and Release Radar each do, and where they stop.
+- [Pricing](https://sonaru.app/pricing): what is free, what Pro adds, and the FAQ.
+- [Press](https://sonaru.app/press): boilerplate at three lengths, logos, screenshots and
+  the press address.
+- [About](https://sonaru.app/about): why Sonaru exists, who makes it, and how to get in
+  touch.

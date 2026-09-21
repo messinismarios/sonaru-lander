@@ -39,26 +39,27 @@ const frontmatter = (source: string, key: string) =>
   source.match(new RegExp(`^${key}:\\s*'?([^'\\n]+)'?$`, 'm'))?.[1];
 
 test.describe('sitemap dates (M3)', () => {
-  test('a post is dated by its publishedAt, the index and tags by their newest post', () => {
+  test('a post is dated by its last revision, the index and tags by their newest post', () => {
     const entries = sitemap();
     const posts = entries.filter((e) => /^\/blog\/(?!tags\/)[^/]+$/.test(e.path));
     expect(posts.length).toBeGreaterThan(0);
 
+    const published: number[] = [];
     for (const post of posts) {
       const file = readdirSync(path('src/content/blog')).find((name) =>
         name.startsWith(`${post.path.slice('/blog/'.length)}.`),
       );
       const source = read(`src/content/blog/${file}`);
-      expect(post.lastmod, post.path).toBe(Date.parse(frontmatter(source, 'publishedAt') ?? ''));
+      // `updatedAt` when the post has been revised (SEO audit M4), else `publishedAt`.
+      const revised = frontmatter(source, 'updatedAt') ?? frontmatter(source, 'publishedAt');
+      expect(post.lastmod, post.path).toBe(Date.parse(revised ?? ''));
+      published.push(Date.parse(frontmatter(source, 'publishedAt') ?? ''));
     }
 
-    const newest = Math.max(...posts.map((post) => post.lastmod ?? 0));
-    expect(entries.find((e) => e.path === '/blog')?.lastmod).toBe(newest);
+    // The index and a tag page change when a post arrives, not when one is revised.
+    expect(entries.find((e) => e.path === '/blog')?.lastmod).toBe(Math.max(...published));
     for (const tag of entries.filter((e) => e.path.startsWith('/blog/tags/'))) {
-      expect(
-        posts.map((post) => post.lastmod),
-        `${tag.path} is dated by a post it lists`,
-      ).toContain(tag.lastmod);
+      expect(published, `${tag.path} is dated by a post it lists`).toContain(tag.lastmod);
     }
   });
 

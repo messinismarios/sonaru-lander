@@ -68,7 +68,7 @@ export const home = {
     headline: "You don't go looking around. The release comes to you.",
     sub: "Per artist notifications the moment they drop. For the artists you'd drop everything for - the rest can stay quiet.",
     /** The page's closing ask. Its headline is `claim` above. */
-    ctaSub: 'Sonaru is coming soon to an App Store near you. Want to be the first to know?',
+    ctaSub: 'Sonaru is coming soon to iPhone and Android. Want to be the first to know?',
     ctaAction: 'Join the waitlist',
   },
 
@@ -106,12 +106,12 @@ export const home = {
       {
         question: 'How is Sonaru different from Release Radar?',
         answer:
-          "Release Radar is a weekly playlist chosen by Spotify's algorithm, so releases from artists you follow can be left out. Sonaru shows every release from every artist you follow, in order, as they comes out.",
+          "Release Radar is a weekly playlist chosen by Spotify's algorithm, so releases from artists you follow can be left out. Sonaru shows every release from every artist you follow, in order, as they come out.",
       },
       {
         question: 'When can I use Sonaru?',
         answer:
-          'It is coming soon to the App Store. Join the waitlist to hear the day it launches.',
+          'It is coming soon to iPhone and Android. Join the waitlist to hear the day it launches.',
       },
     ],
   },

@@ -11,5 +11,6 @@ import { pricing } from './pricing';
 import { press } from './press';
 import { brand } from './brand';
 import { waitlist } from './waitlist';
+import { about } from './about';
 
-export const en = { ui, home, pricing, press, brand, waitlist } as const;
+export const en = { ui, home, pricing, press, brand, waitlist, about } as const;

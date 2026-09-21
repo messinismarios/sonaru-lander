@@ -212,6 +212,16 @@ const blog = defineCollection({
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/, 'expected YYYY-MM-DDTHH:MM:SSZ'),
     /**
+     * When the post last changed in substance - SEO audit M4. Optional, and absent means
+     * never: a post is not "modified" by a typo or a re-run formatter, and a date that
+     * moves for those teaches a crawler to stop reading it. Same shape as `publishedAt`,
+     * and it becomes the post's `dateModified`. Not shown to the reader.
+     */
+    updatedAt: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/, 'expected YYYY-MM-DDTHH:MM:SSZ')
+      .optional(),
+    /**
      * Validated against `src/data/tags.ts` rather than accepted as free text, so
      * `Engineering` and `engineering` cannot become two tags with two routes.
      *

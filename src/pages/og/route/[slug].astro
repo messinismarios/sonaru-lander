@@ -1,0 +1,67 @@
+---
+/**
+ * A route card's canvas - SEO audit M12, and the third camera stand in this repo.
+ *
+ * The exact twin of `/og/site` and `/blog/og/[slug]`: `scripts/build-og-images.mjs`
+ * photographs it through the Chrome Playwright already drives. It renders `PostCover` and
+ * nothing else, because whatever is in this document ends up in the picture.
+ *
+ * What it does *not* do is decide anything. The list of routes, the line each card carries
+ * and its palette are `src/data/og-cards.ts`; this file is the stand they are set on.
+ *
+ * **Dev-only.** `isCameraStand()` already answers `true` for everything under `/og/`, so
+ * every guard that skips a stand skipped this one the day it was added - which is the
+ * whole reason that predicate exists. `scripts/prune-dev-routes.mjs` removes it from
+ * `dist/`; the generated JPEGs are committed, so production never needs the route.
+ */
+import type { GetStaticPaths } from 'astro';
+import PostCover from '../../../components/blog/PostCover.astro';
+import { ROUTE_CARDS } from '../../../data/og-cards';
+import { catalogue } from '../../../i18n';
+import '../../../styles/tokens.css';
+
+export const getStaticPaths = (() =>
+  ROUTE_CARDS.map((card) => ({
+    params: { slug: card.slug },
+    props: { card },
+  }))) satisfies GetStaticPaths;
+
+interface Props {
+  readonly card: (typeof ROUTE_CARDS)[number];
+}
+
+const { card } = Astro.props;
+const line = card.line(catalogue(Astro.currentLocale));
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{line}</title>
+    <link
+      rel="preload"
+      href="/fonts/satoshi-subset.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+  </head>
+  <body>
+    <div class="stage" data-og-stage>
+      <PostCover hook={line} act={card.act} />
+    </div>
+  </body>
+</html>
+
+<style>
+  :global(body) {
+    margin: 0;
+    background: var(--color-ink-950);
+  }
+
+  /* 1200x600, the one aspect ratio this site's cards have - see `/og/site`. */
+  .stage {
+    width: 1200px;
+    height: 600px;
+  }
+</style>

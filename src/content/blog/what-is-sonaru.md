@@ -5,6 +5,7 @@ hook: 'Every release, the moment it drops.'
 description: 'Sonaru is an app that notifies you of every new release from your favorite artists, the moment they drop.'
 lede: 'Sonaru is an app that notifies you of every new release from your favorite artists, the moment they drop.'
 publishedAt: '2026-09-14T06:00:00Z'
+updatedAt: '2026-09-18T06:00:00Z'
 tags: ['product']
 ---
 
@@ -39,5 +40,20 @@ The feed, the notifications and auto-add to a playlist are free, and they stay f
 
 ## When you can have it
 
-Sonaru is coming soon to an App Store near you. If you want to hear the day it does,
+Sonaru is coming soon to iPhone and Android. If you want to hear the day it does,
 [join the waitlist](/waitlist).
+
+## The short version
+
+- Sonaru is an app for iPhone and Android that tells you when the artists you follow
+  release new music.
+- It covers albums, EPs and singles, and lists them newest first, with no algorithmic
+  ranking and nothing left out.
+- Notifications arrive within the first hour of a release landing worldwide.
+- It works alongside Spotify and Apple Music, and does not stream music itself.
+- New releases can go straight into a playlist on your streaming service.
+- The feed, the notifications and auto-add are free. Pro is an optional paid subscription,
+  and [pricing](/pricing) carries the current figures.
+- Release and artist data comes from Sonaru's own continuously updated mirror of
+  MusicBrainz.
+- Sonaru has not launched yet. [sonaru.app](/) is taking waitlist signups.

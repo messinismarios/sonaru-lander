@@ -63,7 +63,7 @@ export const waitlist = {
 
   success: {
     heading: "You're on the list.",
-    body: "We'll email you the day Sonaru is on the App Store. That's the only email you'll get.",
+    body: "We'll email you the day Sonaru is on the App Store and Google Play. That's the only email you'll get.",
   },
 
   duplicate: {
