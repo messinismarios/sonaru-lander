@@ -1,0 +1,7 @@
+# LF everywhere, in the repo and in every working tree, so the code is edited
+# identically on macOS and Windows (Windows git defaults to CRLF checkouts).
+* text=auto eol=lf
+
+# Windows batch files only run with CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
